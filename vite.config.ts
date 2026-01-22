@@ -9,14 +9,13 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 export default defineConfig({
   plugins: [
     vue(),
-    vueDevTools(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['logo.png', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Vue Firebase Boilerplate',
-        short_name: 'VueBoiler',
-        description: 'A minimalist Vue 3 Boilerplate with Firebase Auth',
+        name: 'Done',
+        short_name: 'Done',
+        description: 'An exclusive PWA for personal productivity',
         theme_color: '#ffffff',
         icons: [
           {
@@ -33,7 +32,7 @@ export default defineConfig({
       },
     }),
   ],
-  base: '/boiler/',
+  base: '/done/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

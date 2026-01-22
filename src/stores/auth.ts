@@ -12,9 +12,15 @@ import {
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(true)
+  let authInitialized = false
 
-  // Initialize auth listener
+  // Initialize auth listener (only once)
   const initAuth = () => {
+    if (authInitialized) {
+      return Promise.resolve()
+    }
+
+    authInitialized = true
     return new Promise<void>((resolve) => {
       onAuthStateChanged(auth, (currentUser) => {
         user.value = currentUser
