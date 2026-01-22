@@ -8,6 +8,7 @@ import {
   signInWithPopup,
   type User,
 } from 'firebase/auth'
+import { clearDatabaseCache } from '@/db'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -37,6 +38,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async () => {
     await signOut(auth)
+    // Clear database cache on logout
+    clearDatabaseCache()
   }
 
   return { user, loading, initAuth, loginWithGoogle, logout }
