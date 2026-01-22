@@ -1,144 +1,138 @@
-/* Minimal CSS Reset */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mobile-First Base Styles */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family:
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #ffffff;
+    color: #000000;
+    line-height: 1.5;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body.dark {
+    background-color: #1A1A1A;
+    color: #E5E5E5;
+  }
+
+  #app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
-body {
-  font-family:
-    'Inter',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Mobile App Components */
+@layer components {
+  .mobile-container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0;
+  }
 
-  /* Vue-inspired Gradient */
-  background: linear-gradient(135deg, #42b883 0%, #35495e 100%);
-  background-attachment: fixed; /* fix gradient during scroll */
+  .task-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #D1D5DB;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
 
-  color: #ffffff;
-  line-height: 1.6;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+  .task-checkbox:checked {
+    background-color: #10B981;
+    border-color: #10B981;
+  }
 
-#app {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  .category-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: transparent;
+  }
+
+  .category-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
 }
 
 /* Utilities */
-.center-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  text-align: center;
-  padding: 2rem;
-  width: 100%;
+@layer utilities {
+  .text-mobile-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .text-mobile-body {
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  .text-mobile-small {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
 }
 
-/* Glassmorphism Card (optional usage, but nice for text readability) */
-.glass-container {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 3rem;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+/* Smooth Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-/* Typography */
-h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  font-weight: 800;
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
-p {
-  margin-bottom: 1.5rem;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.1rem;
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.2s ease;
 }
 
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.875rem 2rem;
-  border: none;
-  border-radius: 50px; /* Pill shape */
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.list-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
-.btn-primary {
-  background-color: #ffffff;
-  color: #35495e; /* Dark blue text */
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
 }
 
-.btn-primary:hover {
-  background-color: #f8f9fa;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-}
-
-.btn-secondary {
-  background-color: transparent;
-  color: #ffffff;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-}
-
-.btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: #ffffff;
-}
-
-/* Lists */
-ul {
-  list-style-type: none;
-  margin-bottom: 2.5rem;
-  text-align: left;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 1.5rem;
-  border-radius: 8px;
-  width: 100%;
-}
-
-li {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.95);
-  font-weight: 500;
-}
-
-li:last-child {
-  border-bottom: none;
+.list-move {
+  transition: transform 0.2s ease;
 }

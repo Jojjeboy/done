@@ -1,0 +1,57 @@
+{
+  "common": {
+    "appName": "Klar",
+    "logout": "Logga ut",
+    "save": "Spara",
+    "cancel": "Avbryt",
+    "delete": "Radera",
+    "edit": "Redigera",
+    "add": "Lägg till",
+    "back": "Tillbaka",
+    "search": "Sök",
+    "settings": "Inställningar",
+    "close": "Stäng"
+  },
+  "projects": {
+    "title": "Projekt",
+    "addProject": "Lägg till projekt",
+    "projectName": "Projektnamn",
+    "noProjects": "Inga projekt ännu. Skapa ditt första projekt för att komma igång!",
+    "deleteConfirm": "Är du säker på att du vill radera detta projekt? Alla listor och uppgifter kommer att raderas.",
+    "deleteTaskConfirm": "Är du säker på att du vill radera denna uppgift?"
+  },
+  "lists": {
+    "addList": "Lägg till lista",
+    "listName": "Listnamn",
+    "noLists": "Inga listor ännu. Skapa din första lista för att komma igång!"
+  },
+  "tasks": {
+    "addTask": "Lägg till uppgift",
+    "taskName": "Uppgiftsnamn",
+    "selectList": "Välj en lista",
+    "status": {
+      "pending": "Väntande",
+      "inProgress": "Pågående",
+      "completed": "Klar"
+    },
+    "priority": {
+      "low": "Låg",
+      "medium": "Medel",
+      "high": "Hög"
+    }
+  },
+  "settings": {
+    "title": "Inställningar",
+    "language": "Språk",
+    "theme": "Tema",
+    "light": "Ljus",
+    "dark": "Mörk",
+    "selectLanguage": "Välj språk",
+    "english": "Engelska",
+    "swedish": "Svenska"
+  },
+  "auth": {
+    "signIn": "Logga in med Google",
+    "welcome": "Din personliga produktivitetsoas"
+  }
+}

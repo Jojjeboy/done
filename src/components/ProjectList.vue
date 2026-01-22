@@ -2,9 +2,12 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
+import { useI18n } from 'vue-i18n'
+import { Plus, X } from 'lucide-vue-next'
 
 const router = useRouter()
 const todoStore = useTodoStore()
+const { t } = useI18n()
 
 const newProjectTitle = ref('')
 const newProjectColor = ref('#6366f1')
@@ -34,14 +37,14 @@ const handleAddProject = async () => {
     showAddForm.value = false
   } catch (error) {
     console.error('Failed to add project:', error)
-    alert('Failed to add project. Please try again.')
+    alert(t('projects.deleteConfirm'))
   } finally {
     isAdding.value = false
   }
 }
 
 const handleDeleteProject = async (projectId: string) => {
-  if (!confirm('Are you sure you want to delete this project? All lists and tasks will be deleted.')) {
+  if (!confirm(t('projects.deleteConfirm'))) {
     return
   }
 
@@ -59,153 +62,186 @@ const navigateToProject = (projectId: string) => {
 
 onMounted(async () => {
   if (!todoStore.initialized) {
-    await todoStore.initialize()
+    try {
+      await todoStore.initialize()
+    } catch (error) {
+      console.error('Failed to initialize todo store:', error)
+    }
   }
 })
 </script>
 
 <template>
   <div class="project-list">
-    <div class="header-section">
-      <h2>Projects</h2>
-      <button
-        v-if="!showAddForm"
-        @click="showAddForm = true"
-        class="btn btn-primary"
-      >
-        + Add Project
-      </button>
-    </div>
+    <h2 class="section-title">
+      {{ t('projects.title') }}
+    </h2>
 
-    <div v-if="showAddForm" class="add-project-form">
-      <input
-        v-model="newProjectTitle"
-        type="text"
-        placeholder="Project name"
-        class="input"
-        @keyup.enter="handleAddProject"
-        @keyup.esc="showAddForm = false"
-      />
-      <div class="color-picker">
-        <button
-          v-for="color in colors"
-          :key="color"
-          :style="{ backgroundColor: color }"
-          :class="{ active: newProjectColor === color }"
-          class="color-btn"
-          @click="newProjectColor = color"
+    <button
+      v-if="!showAddForm"
+      @click="showAddForm = true"
+      class="add-project-btn"
+    >
+      <Plus class="w-4 h-4" />
+      <span>{{ t('projects.addProject') }}</span>
+    </button>
+
+    <Transition name="fade">
+      <div v-if="showAddForm" class="add-form-card soft-card">
+        <input
+          v-model="newProjectTitle"
+          type="text"
+          :placeholder="t('projects.projectName')"
+          class="soft-input"
+          @keyup.enter="handleAddProject"
+          @keyup.esc="showAddForm = false"
         />
+        <div class="color-picker">
+          <button
+            v-for="color in colors"
+            :key="color"
+            :style="{ backgroundColor: color }"
+            :class="[
+              'color-btn',
+              newProjectColor === color ? 'selected' : ''
+            ]"
+            @click="newProjectColor = color"
+          />
+        </div>
+        <div class="form-actions">
+          <button
+            @click="handleAddProject"
+            class="soft-button flex-1"
+            :disabled="isAdding"
+          >
+            {{ isAdding ? '...' : t('common.add') }}
+          </button>
+          <button
+            @click="showAddForm = false"
+            class="soft-button flex-1 bg-gray-100 dark:bg-gray-700 text-soft dark:text-gray-200"
+          >
+            {{ t('common.cancel') }}
+          </button>
+        </div>
       </div>
-      <div class="form-actions">
-        <button @click="handleAddProject" class="btn btn-primary" :disabled="isAdding">
-          {{ isAdding ? 'Adding...' : 'Add' }}
-        </button>
-        <button @click="showAddForm = false" class="btn btn-secondary">Cancel</button>
-      </div>
-    </div>
+    </Transition>
 
-    <div v-if="todoStore.loading" class="loading">Loading projects...</div>
+    <div v-if="todoStore.loading" class="loading-state">
+      Loading projects...
+    </div>
 
     <div v-else-if="todoStore.projects.length === 0" class="empty-state">
-      <p>No projects yet. Create your first project to get started!</p>
+      <p>{{ t('projects.noProjects') }}</p>
     </div>
 
-    <div v-else class="projects-grid">
+    <TransitionGroup
+      v-else
+      name="list"
+      tag="div"
+      class="projects-list"
+    >
       <div
         v-for="project in todoStore.projects"
         :key="project.id"
         class="project-card"
         @click="navigateToProject(project.id)"
       >
-        <div class="project-header">
-          <div
-            class="project-color"
-            :style="{ backgroundColor: project.color }"
-          />
-          <h3>{{ project.title }}</h3>
-          <button
-            @click.stop="handleDeleteProject(project.id)"
-            class="delete-btn"
-            aria-label="Delete project"
-          >
-            ×
-          </button>
-        </div>
+        <div class="project-dot" :style="{ backgroundColor: project.color }" />
+        <h3 class="project-name">{{ project.title }}</h3>
+        <button
+          @click.stop="handleDeleteProject(project.id)"
+          class="project-delete-btn"
+          :aria-label="t('common.delete')"
+        >
+          <X class="w-4 h-4" />
+        </button>
       </div>
-    </div>
+    </TransitionGroup>
   </div>
 </template>
 
 <style scoped>
 .project-list {
   width: 100%;
-}
-
-.header-section {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-h2 {
-  font-size: 2rem;
+.section-title {
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #ffffff;
+  color: #1A1A1A;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
-.add-project-form {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.dark .section-title {
+  color: #E5E5E5;
 }
 
-.input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  font-size: 1rem;
-  margin-bottom: 1rem;
+.add-project-btn {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  color: #1A1A1A;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
 }
 
-.input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+.dark .add-project-btn {
+  background-color: #2A2A2A;
+  color: #E5E5E5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.input:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.5);
+.add-project-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.dark .add-project-btn:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.add-form-card {
+  margin-top: 0.5rem;
 }
 
 .color-picker {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .color-btn {
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.2s ease;
 }
 
 .color-btn:hover {
   transform: scale(1.1);
 }
 
-.color-btn.active {
-  border-color: #ffffff;
+.color-btn.selected {
+  border-color: #1A1A1A;
   transform: scale(1.15);
+}
+
+.dark .color-btn.selected {
+  border-color: #E5E5E5;
 }
 
 .form-actions {
@@ -213,115 +249,94 @@ h2 {
   gap: 0.75rem;
 }
 
-.loading,
+.loading-state,
 .empty-state {
   text-align: center;
-  padding: 3rem;
-  color: rgba(255, 255, 255, 0.7);
+  padding: 3rem 0;
+  color: #6B7280;
 }
 
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+.dark .loading-state,
+.dark .empty-state {
+  color: #9CA3AF;
 }
 
-.project-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.project-card:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.project-header {
+.projects-list {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.75rem;
 }
 
-.project-color {
-  width: 24px;
-  height: 24px;
+.project-card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.dark .project-card {
+  background-color: #2A2A2A;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.project-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark .project-card:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.project-dot {
+  width: 0.75rem;
+  height: 0.75rem;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.project-card h3 {
+.project-name {
   flex: 1;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: #ffffff;
+  color: #1A1A1A;
   margin: 0;
 }
 
-.delete-btn {
+.dark .project-name {
+  color: #E5E5E5;
+}
+
+.project-delete-btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 1.5rem;
+  color: #9CA3AF;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  line-height: 1;
-  transition: color 0.2s;
-}
-
-.delete-btn:hover {
-  color: #ffffff;
-}
-
-.btn {
-  padding: 0.625rem 1.25rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: #ffffff;
-  color: #35495e;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #f8f9fa;
-  transform: translateY(-1px);
-}
-
-.btn-primary:disabled {
+  padding: 0.375rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0.6;
-  cursor: not-allowed;
 }
 
-.btn-secondary {
-  background: transparent;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+.project-card:hover .project-delete-btn {
+  opacity: 1;
 }
 
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
+.project-delete-btn:hover {
+  color: #EF4444;
+  background-color: #FEE2E2;
 }
 
-@media (max-width: 640px) {
-  .projects-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .header-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
+.dark .project-delete-btn:hover {
+  color: #F87171;
+  background-color: #7F1D1D;
 }
 </style>

@@ -13,22 +13,40 @@ import { clearDatabaseCache } from '@/db'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(true)
-  let authInitialized = false
 
-  // Initialize auth listener (only once)
+  // Use a module-level variable to track initialization across store instances
+  // This persists across page reloads within the same session
+  let initPromise: Promise<void> | null = null
+
+  // Initialize auth listener (only once per session)
   const initAuth = () => {
-    if (authInitialized) {
-      return Promise.resolve()
+    // Return existing promise if already initializing
+    if (initPromise) {
+      return initPromise
     }
 
-    authInitialized = true
-    return new Promise<void>((resolve) => {
+    // Create new promise for initialization
+    initPromise = new Promise<void>((resolve) => {
+      let resolved = false
+
+      // onAuthStateChanged fires immediately with current user (from Firebase persistence)
+      // Firebase automatically restores auth state from localStorage on page load
       onAuthStateChanged(auth, (currentUser) => {
         user.value = currentUser
-        loading.value = false
-        resolve()
+
+        // Only resolve once on the first callback (initial state check)
+        if (!resolved) {
+          resolved = true
+          loading.value = false
+          resolve()
+        } else {
+          // Subsequent callbacks are just state updates (login/logout)
+          loading.value = false
+        }
       })
     })
+
+    return initPromise
   }
 
   const loginWithGoogle = async () => {

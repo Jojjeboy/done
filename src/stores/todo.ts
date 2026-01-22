@@ -77,9 +77,34 @@ export const useTodoStore = defineStore('todo', () => {
         db.subtasks.toArray(),
       ])
 
+      // Migrate old tasks without category field
+      const migratedItems: TodoItem[] = dbItems.map((item: unknown) => {
+        const itemData = item as Record<string, unknown>
+        if (!('category' in itemData)) {
+          return {
+            id: itemData.id,
+            listId: itemData.listId,
+            title: itemData.title,
+            description: itemData.description || '',
+            status: itemData.status,
+            priority: itemData.priority,
+            deadline: itemData.deadline,
+            category: 'none' as TodoItem['category'],
+            createdAt: itemData.createdAt,
+            updatedAt: itemData.updatedAt,
+          } as TodoItem
+        }
+        return itemData as unknown as TodoItem
+      })
+
+      // Update database if migration was needed
+      if (migratedItems.length !== dbItems.length || migratedItems.some((item, i) => item !== dbItems[i])) {
+        await db.todoItems.bulkPut(migratedItems)
+      }
+
       projects.value = dbProjects
       todoLists.value = dbLists
-      todoItems.value = dbItems
+      todoItems.value = migratedItems
       subtasks.value = dbSubtasks
 
       initialized.value = true
@@ -252,7 +277,8 @@ export const useTodoStore = defineStore('todo', () => {
     title: string,
     description: string = '',
     priority: TodoItem['priority'] = 'medium',
-    deadline: number | null = null
+    deadline: number | null = null,
+    category: TodoItem['category'] = 'none'
   ) => {
     const now = Date.now()
     const item: TodoItem = {
@@ -263,6 +289,7 @@ export const useTodoStore = defineStore('todo', () => {
       status: 'pending',
       priority,
       deadline,
+      category,
       createdAt: now,
       updatedAt: now,
     }

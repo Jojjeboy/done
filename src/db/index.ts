@@ -5,11 +5,17 @@ import { useAuthStore } from '@/stores/auth'
 /**
  * Dexie database schema for IndexedDB persistence
  */
+interface Setting {
+  key: string
+  value: string | number | boolean
+}
+
 class TodoDatabase extends Dexie {
   projects!: Table<Project>
   todoLists!: Table<TodoList>
   todoItems!: Table<TodoItem>
   subtasks!: Table<Subtask>
+  settings!: Table<Setting>
 
   constructor() {
     super('DoneDatabase')
@@ -19,6 +25,22 @@ class TodoDatabase extends Dexie {
       todoLists: 'id, projectId, createdAt',
       todoItems: 'id, listId, createdAt, updatedAt',
       subtasks: 'id, todoId',
+    })
+
+    this.version(2).stores({
+      projects: 'id, createdAt',
+      todoLists: 'id, projectId, createdAt',
+      todoItems: 'id, listId, createdAt, updatedAt',
+      subtasks: 'id, todoId',
+      settings: 'key',
+    })
+
+    this.version(3).stores({
+      projects: 'id, createdAt',
+      todoLists: 'id, projectId, createdAt',
+      todoItems: 'id, listId, createdAt, updatedAt, deadline',
+      subtasks: 'id, todoId',
+      settings: 'key',
     })
   }
 }

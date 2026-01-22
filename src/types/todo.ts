@@ -24,6 +24,7 @@ export interface TodoItem {
   status: 'pending' | 'in-progress' | 'completed'
   priority: 'low' | 'medium' | 'high'
   deadline: number | null
+  category: 'work' | 'lifestyle' | 'personal' | 'hobby' | 'none'
   createdAt: number
   updatedAt: number
 }

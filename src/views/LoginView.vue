@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const { t } = useI18n()
 
 const handleLogin = async () => {
   try {
@@ -16,60 +18,55 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <main class="login-container">
-    <div class="login-card">
-      <h1 class="login-title">Done</h1>
-      <p class="login-subtitle">Your personal productivity oasis</p>
-      <button @click="handleLogin" class="btn btn-primary">Sign in with Google</button>
+  <main class="min-h-screen bg-soft-bg dark:bg-soft-dark flex items-center justify-center p-4 transition-colors duration-300">
+    <div class="login-card soft-card max-w-md w-full text-center space-y-6">
+      <h1 class="text-5xl font-bold text-soft dark:text-gray-100 mb-2 tracking-tight">
+        {{ t('common.appName') }}
+      </h1>
+      <p class="text-lg text-soft-muted mb-8">
+        {{ t('auth.welcome') }}
+      </p>
+      <button
+        @click="handleLogin"
+        class="login-button soft-button w-full py-4 text-base font-semibold"
+      >
+        {{ t('auth.signIn') }}
+      </button>
     </div>
   </main>
 </template>
 
 <style scoped>
-.login-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 2rem;
-}
-
 .login-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 3rem 2.5rem;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-  text-align: center;
 }
 
-.login-title {
-  font-size: 3rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
+.login-button {
+  background-color: #6366F1;
   color: #ffffff;
-  letter-spacing: -1px;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
-.login-subtitle {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 2.5rem;
-  font-weight: 400;
+.login-button:hover {
+  background-color: #4F46E5;
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.dark .login-button {
+  background-color: #818CF8;
+}
+
+.dark .login-button:hover {
+  background-color: #6366F1;
 }
 
 @media (max-width: 640px) {
   .login-card {
     padding: 2rem 1.5rem;
   }
-
-  .login-title {
-    font-size: 2.5rem;
+  
+  h1 {
+    font-size: 3rem;
   }
 }
 </style>
