@@ -12,6 +12,11 @@
     "settings": "Inställningar",
     "close": "Stäng",
     "hello": "Hej!",
+    "goodMorning": "God morgon",
+    "goodDay": "God dag",
+    "goodAfternoon": "God eftermiddag",
+    "goodEvening": "God kväll",
+    "goodNight": "God natt",
     "user": "Användare"
   },
   "tasks": {

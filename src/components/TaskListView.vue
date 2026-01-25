@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '@/stores/settings'
-import { Check, Clock, Star } from 'lucide-vue-next'
+import { Check, Clock, Star, List } from 'lucide-vue-next'
 import type { TodoItem } from '@/types/todo'
 
 const todoStore = useTodoStore()
@@ -289,6 +289,12 @@ onMounted(async () => {
                     <Clock :size="12" />
                     <span>{{ formatTime(task.deadline) }}</span>
                   </div>
+                  <div class="task-subtasks" v-if="(todoStore.subtasksByTodoId.get(task.id)?.length || 0) > 0">
+                    <List :size="12" />
+                    <span>
+                      {{ todoStore.subtasksByTodoId.get(task.id)?.filter(s => s.completed).length }}/{{ todoStore.subtasksByTodoId.get(task.id)?.length }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -542,6 +548,14 @@ onMounted(async () => {
 }
 
 .task-time {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.task-subtasks {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);

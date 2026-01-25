@@ -9,7 +9,14 @@ const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const { t } = useI18n()
 
-const greeting = computed(() => t('common.hello'))
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 10) return t('common.goodMorning')
+  if (hour >= 10 && hour < 14) return t('common.goodDay')
+  if (hour >= 14 && hour < 18) return t('common.goodAfternoon')
+  if (hour >= 18 && hour < 22) return t('common.goodEvening')
+  return t('common.goodNight')
+})
 
 const userName = computed(() => {
   if (!authStore.user?.displayName) return t('common.user')
