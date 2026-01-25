@@ -19,6 +19,15 @@
     "goodNight": "Good night",
     "user": "User"
   },
+  "stats": {
+    "title": "Productivity Insights",
+    "completionRate": "Completion Rate",
+    "tasksCompleted": "Tasks Completed",
+    "staleTasks": "Stale Tasks",
+    "categoryBreakdown": "Category Breakdown",
+    "uncategorized": "Uncategorized",
+    "emptyState": "Start creating tasks to see insights!"
+  },
   "tasks": {
     "addTask": "Add Task",
     "taskName": "Task name",

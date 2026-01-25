@@ -9,7 +9,8 @@ import {
   Trash2,
   Edit2,
   Check,
-  X
+  X,
+  BarChart
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import type { Category } from '@/types/todo'
@@ -68,6 +69,15 @@ const addCategory = async () => {
       >
         <Home :size="20" />
         <span>{{ t('tasks.filters.all') }}</span>
+      </button>
+
+      <button
+        class="nav-item"
+        :class="{ active: isActive('/stats') }"
+        @click="router.push('/stats')"
+      >
+        <BarChart :size="20" />
+        <span>Insights</span>
       </button>
 
       <div class="categories-section">

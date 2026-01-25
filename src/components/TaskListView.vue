@@ -3,12 +3,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { useSettingsStore } from '@/stores/settings'
 import { Check, Clock, Star, List } from 'lucide-vue-next'
 import type { TodoItem } from '@/types/todo'
 
 const todoStore = useTodoStore()
-const settingsStore = useSettingsStore()
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -116,24 +114,6 @@ const tasksByDate = computed(() => {
 
   return sortedGroups
 })
-
-const toggleTask = async (task: TodoItem) => {
-  let newStatus: TodoItem['status']
-
-  if (settingsStore.isThreeStepEnabled) {
-    if (task.status === 'pending') newStatus = 'in-progress'
-    else if (task.status === 'in-progress') newStatus = 'completed'
-    else newStatus = 'pending'
-  } else {
-    newStatus = task.status === 'completed' ? 'pending' : 'completed'
-  }
-
-  try {
-    await todoStore.updateTodoItem(task.id, { status: newStatus })
-  } catch (error) {
-    console.error('Failed to toggle task:', error)
-  }
-}
 
 const togglePriority = async (task: TodoItem) => {
   const newPriority = task.priority === 'high' ? 'medium' : 'high'
@@ -266,7 +246,7 @@ onMounted(async () => {
             @click="emit('edit-task', task.id)"
           >
             <button
-              @click.stop="toggleTask(task)"
+              @click.stop="todoStore.toggleTodoCompletion(task.id)"
               class="task-checkbox-btn"
               :title="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'"
               :aria-label="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'"

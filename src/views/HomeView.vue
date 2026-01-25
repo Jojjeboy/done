@@ -7,8 +7,12 @@ import AppSidebar from '@/components/AppSidebar.vue'
 import SearchModal from '@/components/SearchModal.vue'
 import TodoModal from '@/components/TodoModal.vue'
 import { useRoute } from 'vue-router'
+import { useTodoStore } from '@/stores/todo'
+import { computed } from 'vue'
+import { Trash2, AlertTriangle } from 'lucide-vue-next'
 
 const route = useRoute()
+const todoStore = useTodoStore()
 const showSearchModal = ref(false)
 const showTodoModal = ref(false)
 const editingTodoId = ref<string | null>(null)
@@ -30,6 +34,19 @@ const handleModalClose = () => {
     editingTodoId.value = null
     initialCategoryId.value = null
 }
+
+const staleTasks = computed(() => {
+  const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000)
+  return todoStore.todoItems.filter(t => t.status === 'pending' && t.updatedAt < thirtyDaysAgo)
+})
+
+const cleanupStaleTasks = async () => {
+  if (confirm(`Delete ${staleTasks.value.length} stale tasks?`)) {
+    for (const task of staleTasks.value) {
+      await todoStore.deleteTodoItem(task.id)
+    }
+  }
+}
 </script>
 
 <template>
@@ -46,6 +63,18 @@ const handleModalClose = () => {
       </div>
 
       <div class="content-wrapper">
+        <!-- Stale Task Banner -->
+        <div v-if="staleTasks.length > 0" class="stale-banner">
+          <div class="stale-content">
+            <AlertTriangle :size="20" class="stale-icon" />
+            <span>You have {{ staleTasks.length }} tasks untouched for 30 days. Clean up?</span>
+          </div>
+          <button @click="cleanupStaleTasks" class="cleanup-btn">
+            <Trash2 :size="16" />
+            <span>Clean</span>
+          </button>
+        </div>
+
         <TaskListView @edit-task="openEditTask" />
       </div>
 
@@ -161,5 +190,50 @@ const handleModalClose = () => {
   .desktop-fab:hover {
       transform: scale(1.1);
   }
+}
+
+.stale-banner {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid #F59E0B;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #D97706;
+}
+
+.dark .stale-banner {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #F59E0B;
+}
+
+.stale-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+}
+
+.cleanup-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: #F59E0B;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  transition: all 0.2s;
+}
+
+.cleanup-btn:hover {
+  background: #D97706;
 }
 </style>

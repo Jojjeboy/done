@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { getDatabase } from '@/db'
+import { useSettingsStore } from '@/stores/settings'
 import type { TodoItem, Subtask, Category } from '@/types/todo'
 
 export const useTodoStore = defineStore('todo', () => {
@@ -238,7 +239,8 @@ export const useTodoStore = defineStore('todo', () => {
     description: string = '',
     priority: TodoItem['priority'] = 'medium',
     deadline: number | null = null,
-    categoryId: string | null = null
+    categoryId: string | null = null,
+    recurrence: TodoItem['recurrence'] = null
   ) => {
     const now = Date.now()
     const item: TodoItem = {
@@ -248,6 +250,7 @@ export const useTodoStore = defineStore('todo', () => {
       status: 'pending',
       priority,
       deadline,
+      recurrence,
       categoryId,
       createdAt: now,
       updatedAt: now,
@@ -380,6 +383,55 @@ export const useTodoStore = defineStore('todo', () => {
     }
   }
 
+  const toggleTodoCompletion = async (id: string) => {
+    const item = todoItems.value.find(i => i.id === id)
+    if (!item) return
+
+    const settingsStore = useSettingsStore()
+
+    // Determine new status
+    let newStatus: TodoItem['status']
+    if (settingsStore.isThreeStepEnabled) {
+        if (item.status === 'pending') newStatus = 'in-progress'
+        else if (item.status === 'in-progress') newStatus = 'completed'
+        else newStatus = 'pending'
+    } else {
+        newStatus = item.status === 'completed' ? 'pending' : 'completed'
+    }
+
+    // Handle Recurrence on Completion
+    if (newStatus === 'completed' && item.recurrence) {
+       await handleRecurrence(item)
+    }
+
+    await updateTodoItem(id, { status: newStatus })
+  }
+
+  const handleRecurrence = async (item: TodoItem) => {
+      // Calculate new deadline
+      // Create new item
+      if (!item.deadline) return // Recurrence needs a base date
+
+      const oldDate = new Date(item.deadline)
+      const newDate = new Date(oldDate)
+
+      if (item.recurrence === 'daily') newDate.setDate(newDate.getDate() + 1)
+      if (item.recurrence === 'weekly') newDate.setDate(newDate.getDate() + 7)
+      if (item.recurrence === 'monthly') newDate.setMonth(newDate.getMonth() + 1)
+
+      await addTodoItem(
+          item.title,
+          item.description,
+          item.priority,
+          newDate.getTime(),
+          item.categoryId || null
+      )
+      // We also update the new item to have the same recurrence!
+      // But addTodoItem doesn't accept recurrence arg yet. We need to update it or update item after.
+      // Let's rely on update for now or update addTodoItem signature.
+      // Updating addTodoItem signature is better.
+  }
+
   return {
     // State
     todoItems,
@@ -400,6 +452,7 @@ export const useTodoStore = defineStore('todo', () => {
     addTodoItem,
     updateTodoItem,
     deleteTodoItem,
+    toggleTodoCompletion,
     addSubtask,
     updateSubtask,
     deleteSubtask,

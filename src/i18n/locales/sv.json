@@ -19,6 +19,15 @@
     "goodNight": "God natt",
     "user": "Användare"
   },
+  "stats": {
+    "title": "Produktivitetsinsikter",
+    "completionRate": "Slutförandegrad",
+    "tasksCompleted": "Slutförda uppgifter",
+    "staleTasks": "Inaktiva uppgifter",
+    "categoryBreakdown": "Kategorifördelning",
+    "uncategorized": "Okategoriserad",
+    "emptyState": "Skapa uppgifter för att se statistik!"
+  },
   "tasks": {
     "addTask": "Lägg till uppgift",
     "taskName": "Uppgiftsnamn",

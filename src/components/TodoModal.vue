@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { X, Calendar, Edit2, Clock } from 'lucide-vue-next'
+import { X, Calendar, Edit2, Clock, Sparkles, Repeat, CalendarPlus } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
+import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
 
 
 const props = defineProps<{
@@ -23,6 +24,8 @@ const taskDescription = ref('')
 const taskPriority = ref<'low' | 'medium' | 'high'>('medium')
 const taskCategory = ref<string>('none')
 const taskDeadline = ref<string>('')
+const taskRecurrence = ref<'daily' | 'weekly' | 'monthly' | 'none'>('none')
+const parsedIntent = ref<DateParseResult | null>(null)
 const isSubmitting = ref(false)
 
 const isEditMode = ref(false)
@@ -41,6 +44,7 @@ const loadTodoData = () => {
       } else {
         taskDeadline.value = ''
       }
+      taskRecurrence.value = todo.recurrence || 'none'
       viewMode.value = true
       isEditMode.value = true // Tracks if we are "editing existing" vs "creating new" for save logic
     }
@@ -61,6 +65,8 @@ const resetForm = () => {
   taskPriority.value = 'medium'
   taskCategory.value = props.initialCategoryId || 'none'
   taskDeadline.value = ''
+  taskRecurrence.value = 'none'
+  parsedIntent.value = null
 }
 
 onMounted(() => {
@@ -69,6 +75,22 @@ onMounted(() => {
 
 watch(() => props.todoId, () => {
   loadTodoData()
+})
+
+watch(taskTitle, (newVal) => {
+  if (viewMode.value) return
+  if (!newVal) {
+    parsedIntent.value = null
+    return
+  }
+
+  const result = parseDateFromText(newVal)
+  // Only suggest if date found matches something useful and is not just the original text
+  if (result && result.date) {
+    parsedIntent.value = result
+  } else {
+    parsedIntent.value = null
+  }
 })
 
 const handleClose = () => {
@@ -84,19 +106,21 @@ const handleSave = async () => {
 
     if (isEditMode.value && props.todoId) {
       await todoStore.updateTodoItem(props.todoId, {
-        title: taskTitle.value.trim(),
+        title: parsedIntent.value ? parsedIntent.value.text : taskTitle.value.trim(),
         description: taskDescription.value.trim(),
         priority: taskPriority.value,
-        deadline,
-        categoryId: taskCategory.value === 'none' ? null : taskCategory.value
+        deadline: parsedIntent.value && parsedIntent.value.date ? parsedIntent.value.date : deadline,
+        categoryId: taskCategory.value === 'none' ? null : taskCategory.value,
+        recurrence: taskRecurrence.value === 'none' ? null : taskRecurrence.value
       })
     } else {
       await todoStore.addTodoItem(
-        taskTitle.value.trim(),
+        parsedIntent.value ? parsedIntent.value.text : taskTitle.value.trim(),
         taskDescription.value.trim(),
         taskPriority.value,
-        deadline,
-        taskCategory.value === 'none' ? null : taskCategory.value
+        parsedIntent.value && parsedIntent.value.date ? parsedIntent.value.date : deadline,
+        taskCategory.value === 'none' ? null : taskCategory.value,
+        taskRecurrence.value === 'none' ? null : taskRecurrence.value
       )
     }
     handleClose()
@@ -106,6 +130,20 @@ const handleSave = async () => {
     isSubmitting.value = false
   }
 }
+
+const googleCalendarLink = computed(() => {
+  if (!taskDeadline.value) return '#'
+
+  const title = encodeURIComponent(taskTitle.value)
+  const details = encodeURIComponent(taskDescription.value || '')
+
+  // Format dates: YYYYMMDD
+  // Since we only have date (no time in taskDeadline string), we create an all-day event
+  const dateStr = taskDeadline.value.replace(/-/g, '')
+  const dates = `${dateStr}/${dateStr}`
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}`
+})
 </script>
 
 <template>
@@ -121,6 +159,15 @@ const handleSave = async () => {
            </div>
         </div>
         <div class="header-actions">
+          <a
+            v-if="viewMode && taskDeadline"
+            :href="googleCalendarLink"
+            target="_blank"
+            class="action-btn"
+            title="Add to Google Calendar"
+          >
+            <CalendarPlus :size="18" />
+          </a>
           <button v-if="viewMode" @click="toggleViewMode" class="action-btn" :title="t('common.edit')">
             <Edit2 :size="18" />
           </button>
@@ -143,6 +190,10 @@ const handleSave = async () => {
              <div class="meta-item priority-badge" :class="taskPriority">
                {{ t(`tasks.priority.${taskPriority}`) }}
              </div>
+             <div class="meta-item" v-if="taskRecurrence !== 'none'">
+               <Repeat :size="16" />
+               <span class="capitalize">{{ taskRecurrence }}</span>
+             </div>
           </div>
 
           <p class="view-description" v-if="taskDescription">{{ taskDescription }}</p>
@@ -162,6 +213,10 @@ const handleSave = async () => {
               class="form-input"
               autofocus
             />
+            <div v-if="parsedIntent" class="intent-badge">
+              <Sparkles :size="12" />
+              <span>Due: {{ new Date(parsedIntent.date!).toLocaleDateString() }}</span>
+            </div>
           </div>
 
           <div class="form-group mt-xl">
@@ -206,6 +261,22 @@ const handleSave = async () => {
                  type="date"
                  class="form-input date-input"
                />
+             </div>
+          </div>
+
+          <div class="form-group mt-xl">
+             <label class="label">Repeat</label>
+             <div class="recurrence-options">
+               <button
+                 type="button"
+                 v-for="option in ['none', 'daily', 'weekly', 'monthly']"
+                 :key="option"
+                 class="recurrence-btn"
+                 :class="{ active: taskRecurrence === option }"
+                 @click="taskRecurrence = option as any"
+               >
+                 {{ option === 'none' ? 'Never' : option }}
+               </button>
              </div>
           </div>
 
@@ -589,4 +660,44 @@ const handleSave = async () => {
 .mt-xl { margin-top: var(--spacing-xl); }
 .mt-2xl { margin-top: var(--spacing-2xl); }
 .flex-1 { flex: 1; }
+
+.recurrence-options {
+  display: flex;
+  gap: var(--spacing-sm);
+  background: var(--color-bg-lighter);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.recurrence-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  transition: all 0.2s;
+  text-transform: capitalize;
+}
+
+.recurrence-btn.active {
+  background: var(--color-bg-white);
+  color: var(--color-primary);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  font-weight: 500;
+}
+
+.intent-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  margin-top: 4px;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease;
+}
 </style>

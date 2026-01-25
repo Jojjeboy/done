@@ -18,6 +18,7 @@ export interface TodoItem {
   status: 'pending' | 'in-progress' | 'completed'
   priority: 'low' | 'medium' | 'high'
   deadline: number | null
+  recurrence?: 'daily' | 'weekly' | 'monthly' | null
   categoryId: string | null
   createdAt: number
   updatedAt: number
