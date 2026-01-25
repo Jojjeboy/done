@@ -82,7 +82,11 @@
       "hobby": "Hobby"
     },
     "creating": "Creating...",
-    "createTask": "Create Task"
+    "saving": "Saving...",
+    "createTask": "Create Task",
+    "editTask": "Edit Task",
+    "saveTask": "Save Changes",
+    "dueDate": "Due date"
   },
   "pwa": {
     "readyOffline": "App ready to work offline",

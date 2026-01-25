@@ -5,10 +5,26 @@ import TaskListView from '@/components/TaskListView.vue'
 import BottomNavigation from '@/components/BottomNavigation.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import SearchModal from '@/components/SearchModal.vue'
-import AddTaskModal from '@/components/AddTaskModal.vue'
+import TodoModal from '@/components/TodoModal.vue'
 
 const showSearchModal = ref(false)
-const showAddTaskModal = ref(false)
+const showTodoModal = ref(false)
+const editingTodoId = ref<string | null>(null)
+
+const openAddTask = () => {
+    editingTodoId.value = null
+    showTodoModal.value = true
+}
+
+const openEditTask = (taskId: string) => {
+    editingTodoId.value = taskId
+    showTodoModal.value = true
+}
+
+const handleModalClose = () => {
+    showTodoModal.value = false
+    editingTodoId.value = null
+}
 </script>
 
 <template>
@@ -25,24 +41,28 @@ const showAddTaskModal = ref(false)
       </div>
 
       <div class="content-wrapper">
-        <TaskListView />
+        <TaskListView @edit-task="openEditTask" />
       </div>
 
       <!-- Mobile Bottom Nav -->
       <div class="mobile-only">
         <BottomNavigation
           @open-search="showSearchModal = true"
-          @open-add-task="showAddTaskModal = true"
+          @open-add-task="openAddTask"
         />
       </div>
     </main>
 
     <!-- Modals -->
-    <SearchModal v-if="showSearchModal" @close="showSearchModal = false" />
-    <AddTaskModal v-if="showAddTaskModal" @close="showAddTaskModal = false" />
+    <SearchModal
+      v-if="showSearchModal"
+      @close="showSearchModal = false"
+      @edit-task="(id) => { showSearchModal = false; openEditTask(id); }"
+    />
+    <TodoModal v-if="showTodoModal" :todo-id="editingTodoId" @close="handleModalClose" />
 
     <!-- Desktop Add Task FAB -->
-     <button class="desktop-fab" @click="showAddTaskModal = true">
+     <button class="desktop-fab" @click="openAddTask">
         <span class="plus-icon">+</span>
      </button>
   </div>

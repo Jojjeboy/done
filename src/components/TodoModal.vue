@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { X } from 'lucide-vue-next'
+import { X, Calendar } from 'lucide-vue-next'
+
+const props = defineProps<{
+  todoId?: string | null
+}>()
 
 const emit = defineEmits<{
   close: []
@@ -15,28 +19,79 @@ const taskTitle = ref('')
 const taskDescription = ref('')
 const taskPriority = ref<'low' | 'medium' | 'high'>('medium')
 const taskCategory = ref<string>('none')
+const taskDeadline = ref<string>('')
 const isSubmitting = ref(false)
+
+const isEditMode = ref(false)
+
+const loadTodoData = () => {
+  if (props.todoId) {
+    const todo = todoStore.todoItems.find(t => t.id === props.todoId)
+    if (todo) {
+      taskTitle.value = todo.title
+      taskDescription.value = todo.description || ''
+      taskPriority.value = todo.priority
+      taskCategory.value = todo.categoryId || 'none'
+      if (todo.deadline) {
+        taskDeadline.value = new Date(todo.deadline as number).toISOString().split('T')[0] as string
+      } else {
+        taskDeadline.value = ''
+      }
+      isEditMode.value = true
+    }
+  } else {
+    resetForm()
+    isEditMode.value = false
+  }
+}
+
+const resetForm = () => {
+  taskTitle.value = ''
+  taskDescription.value = ''
+  taskPriority.value = 'medium'
+  taskCategory.value = 'none'
+  taskDeadline.value = ''
+}
+
+onMounted(() => {
+  loadTodoData()
+})
+
+watch(() => props.todoId, () => {
+  loadTodoData()
+})
 
 const handleClose = () => {
   emit('close')
 }
 
-const handleAddTask = async () => {
+const handleSave = async () => {
   if (!taskTitle.value.trim()) return
 
   try {
     isSubmitting.value = true
+    const deadline = taskDeadline.value ? new Date(taskDeadline.value).getTime() : null
 
-    await todoStore.addTodoItem(
-      taskTitle.value.trim(),
-      taskDescription.value.trim(),
-      taskPriority.value,
-      null,
-      taskCategory.value === 'none' ? null : taskCategory.value
-    )
+    if (isEditMode.value && props.todoId) {
+      await todoStore.updateTodoItem(props.todoId, {
+        title: taskTitle.value.trim(),
+        description: taskDescription.value.trim(),
+        priority: taskPriority.value,
+        deadline,
+        categoryId: taskCategory.value === 'none' ? null : taskCategory.value
+      })
+    } else {
+      await todoStore.addTodoItem(
+        taskTitle.value.trim(),
+        taskDescription.value.trim(),
+        taskPriority.value,
+        deadline,
+        taskCategory.value === 'none' ? null : taskCategory.value
+      )
+    }
     handleClose()
   } catch (error) {
-    console.error('Failed to add task:', error)
+    console.error('Failed to save task:', error)
   } finally {
     isSubmitting.value = false
   }
@@ -47,7 +102,7 @@ const handleAddTask = async () => {
   <div class="modal-overlay" @click="handleClose">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
-        <h2 class="modal-title">{{ t('modal.newTask') }}</h2>
+        <h2 class="modal-title">{{ isEditMode ? t('modal.editTask') : t('modal.newTask') }}</h2>
         <button @click="handleClose" class="close-btn">
           <X :size="20" />
         </button>
@@ -99,13 +154,25 @@ const handleAddTask = async () => {
             </div>
           </div>
 
+          <div class="form-group mt-xl">
+             <label class="label">{{ t('modal.dueDate') }}</label>
+             <div class="date-input-wrapper">
+               <Calendar :size="18" class="date-icon" />
+               <input
+                 v-model="taskDeadline"
+                 type="date"
+                 class="form-input date-input"
+               />
+             </div>
+          </div>
+
           <div class="footer-actions mt-2xl">
             <button
               class="btn-primary flex-1"
               :disabled="!taskTitle.trim() || isSubmitting"
-              @click="handleAddTask"
+              @click="handleSave"
             >
-              {{ isSubmitting ? t('modal.creating') : t('modal.createTask') }}
+              {{ isSubmitting ? t('modal.saving') : (isEditMode ? t('modal.saveTask') : t('modal.createTask')) }}
             </button>
           </div>
         </div>
@@ -302,6 +369,23 @@ const handleAddTask = async () => {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
   background: var(--color-bg-white);
+}
+
+.date-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.date-icon {
+  position: absolute;
+  left: var(--spacing-lg);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.date-input {
+  padding-left: calc(var(--spacing-lg) * 2 + 18px) !important;
 }
 
 .form-row {

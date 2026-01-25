@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '@/stores/settings'
@@ -11,6 +11,11 @@ const todoStore = useTodoStore()
 const settingsStore = useSettingsStore()
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
+
+const emit = defineEmits<{
+  'edit-task': [taskId: string]
+}>()
 
 type FilterType = 'all' | 'todo' | 'in-progress' | 'completed' | 'starred'
 const activeFilter = ref<FilterType>('all')
@@ -144,7 +149,25 @@ const togglePriority = async (task: TodoItem) => {
 const formatTime = (deadline: number | null) => {
   if (!deadline) return ''
   const date = new Date(deadline)
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  const taskDate = new Date(date)
+  taskDate.setHours(0, 0, 0, 0)
+
+  let datePrefix = ''
+  if (taskDate.getTime() === today.getTime()) {
+    datePrefix = ''
+  } else if (taskDate.getTime() === tomorrow.getTime()) {
+    datePrefix = t('tasks.tomorrow') + ' '
+  } else {
+    datePrefix = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' '
+  }
+
+  return datePrefix + date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 }
 
 onMounted(async () => {
@@ -198,6 +221,27 @@ onMounted(async () => {
       </button>
     </div>
 
+    <!-- Mobile Category Chips -->
+    <div class="category-scroll mobile-only">
+      <button
+        class="category-chip"
+        :class="{ active: !activeCategoryId }"
+        @click="router.push({ path: '/' })"
+      >
+        <span>{{ t('tasks.filters.all') }}</span>
+      </button>
+      <button
+        v-for="category in todoStore.categoriesSortedByActivity"
+        :key="category.id"
+        class="category-chip"
+        :class="{ active: activeCategoryId === category.id }"
+        @click="router.push({ path: '/', query: { category: category.id } })"
+      >
+        <span class="chip-dot" :style="{ backgroundColor: category.color || '#ccc' }"></span>
+        <span>{{ category.title }}</span>
+      </button>
+    </div>
+
     <TransitionGroup
       name="list"
       tag="div"
@@ -219,9 +263,10 @@ onMounted(async () => {
             :key="task.id"
             class="task-card"
             :class="{ completed: task.status === 'completed' }"
+            @click="emit('edit-task', task.id)"
           >
             <button
-              @click="toggleTask(task)"
+              @click.stop="toggleTask(task)"
               class="task-checkbox-btn"
               :title="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'"
               :aria-label="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'"
@@ -308,6 +353,51 @@ onMounted(async () => {
   box-shadow: var(--shadow-purple);
 }
 
+.category-scroll {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: 0 0 var(--spacing-lg);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.category-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.category-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-base);
+}
+
+.dark .category-chip {
+  background: var(--color-bg-card);
+}
+
+.category-chip.active {
+  background: var(--color-bg-purple-tint);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
 .task-sections {
   display: flex;
   flex-direction: column;
@@ -345,6 +435,7 @@ onMounted(async () => {
   gap: var(--spacing-md);
   transition: all var(--transition-base);
   border: 1px solid var(--color-border-light);
+  cursor: pointer;
 }
 
 .task-card:hover {

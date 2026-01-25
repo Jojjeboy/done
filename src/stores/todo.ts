@@ -35,6 +35,44 @@ export const useTodoStore = defineStore('todo', () => {
     return map
   })
 
+  const categoriesSortedByActivity = computed(() => {
+    const activityMap = new Map<string, { lastUpdated: number; pendingCount: number }>()
+
+    // Initialize map
+    categories.value.forEach((cat) => {
+      activityMap.set(cat.id, { lastUpdated: 0, pendingCount: 0 })
+    })
+
+    // Calculate activity per category
+    todoItems.value.forEach((item) => {
+      if (item.categoryId && activityMap.has(item.categoryId)) {
+        const stats = activityMap.get(item.categoryId)!
+        stats.lastUpdated = Math.max(stats.lastUpdated, item.updatedAt)
+        if (item.status !== 'completed') {
+          stats.pendingCount++
+        }
+      }
+    })
+
+    return [...categories.value].sort((a, b) => {
+      const statsA = activityMap.get(a.id)!
+      const statsB = activityMap.get(b.id)!
+
+      // Sort by last updated (descending)
+      if (statsB.lastUpdated !== statsA.lastUpdated) {
+        return statsB.lastUpdated - statsA.lastUpdated
+      }
+
+      // Then by pending count (descending)
+      if (statsB.pendingCount !== statsA.pendingCount) {
+        return statsB.pendingCount - statsA.pendingCount
+      }
+
+      // Fallback to title
+      return a.title.localeCompare(b.title)
+    })
+  })
+
   // Helper function to generate IDs
   const generateId = (): string => {
     return crypto.randomUUID()
@@ -353,6 +391,7 @@ export const useTodoStore = defineStore('todo', () => {
     subtasksByTodoId,
     allItems,
     categoriesById,
+    categoriesSortedByActivity,
     // Methods
     initialize,
     addCategory,

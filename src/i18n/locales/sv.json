@@ -82,7 +82,11 @@
       "hobby": "Hobby"
     },
     "creating": "Skapar...",
-    "createTask": "Skapa uppgift"
+    "saving": "Sparar...",
+    "createTask": "Skapa uppgift",
+    "editTask": "Redigera uppgift",
+    "saveTask": "Spara ändringar",
+    "dueDate": "Förfallodatum"
   },
   "pwa": {
     "readyOffline": "Appen är redo att användas offline",

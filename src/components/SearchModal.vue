@@ -5,7 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { X } from 'lucide-vue-next'
 
 const emit = defineEmits<{
-  close: []
+  close: [],
+  'edit-task': [taskId: string]
 }>()
 
 const todoStore = useTodoStore()
@@ -70,6 +71,7 @@ const handleClose = () => {
             v-for="task in filteredTasks"
             :key="task.id"
             class="result-item"
+            @click="emit('edit-task', task.id)"
           >
             <div class="result-title">{{ task.title }}</div>
           </div>
@@ -194,7 +196,9 @@ const handleClose = () => {
 }
 
 .results-list {
-  space-y: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .result-item {
