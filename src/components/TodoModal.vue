@@ -2,7 +2,9 @@
 import { onMounted, ref, watch } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { X, Calendar } from 'lucide-vue-next'
+import { X, Calendar, Edit2, Clock } from 'lucide-vue-next'
+import SubtaskList from '@/components/SubtaskList.vue'
+
 
 const props = defineProps<{
   todoId?: string | null
@@ -23,6 +25,7 @@ const taskDeadline = ref<string>('')
 const isSubmitting = ref(false)
 
 const isEditMode = ref(false)
+const viewMode = ref(false)
 
 const loadTodoData = () => {
   if (props.todoId) {
@@ -37,12 +40,18 @@ const loadTodoData = () => {
       } else {
         taskDeadline.value = ''
       }
-      isEditMode.value = true
+      viewMode.value = true
+      isEditMode.value = true // Tracks if we are "editing existing" vs "creating new" for save logic
     }
   } else {
     resetForm()
+    viewMode.value = false
     isEditMode.value = false
   }
+}
+
+const toggleViewMode = () => {
+  viewMode.value = !viewMode.value
 }
 
 const resetForm = () => {
@@ -102,14 +111,47 @@ const handleSave = async () => {
   <div class="modal-overlay" @click="handleClose">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
-        <h2 class="modal-title">{{ isEditMode ? t('modal.editTask') : t('modal.newTask') }}</h2>
-        <button @click="handleClose" class="close-btn">
-          <X :size="20" />
-        </button>
+        <div class="header-left">
+           <h2 class="modal-title" v-if="!viewMode">{{ isEditMode ? t('modal.editTask') : t('modal.newTask') }}</h2>
+           <div v-else class="view-header">
+             <span class="category-badge" v-if="taskCategory !== 'none'" :style="{ backgroundColor: todoStore.categoriesById.get(taskCategory)?.color + '20', color: todoStore.categoriesById.get(taskCategory)?.color }">
+               {{ todoStore.categoriesById.get(taskCategory)?.title }}
+             </span>
+           </div>
+        </div>
+        <div class="header-actions">
+          <button v-if="viewMode" @click="toggleViewMode" class="action-btn" :title="t('common.edit')">
+            <Edit2 :size="18" />
+          </button>
+          <button @click="handleClose" class="close-btn">
+            <X :size="20" />
+          </button>
+        </div>
       </div>
 
       <div class="modal-body">
-        <div class="step-container">
+        <!-- View Mode -->
+        <div v-if="viewMode" class="view-container">
+          <h1 class="view-title">{{ taskTitle }}</h1>
+
+          <div class="view-meta">
+             <div class="meta-item" v-if="taskDeadline">
+               <Clock :size="16" />
+               <span>{{ new Date(taskDeadline).toLocaleDateString() }}</span>
+             </div>
+             <div class="meta-item priority-badge" :class="taskPriority">
+               {{ t(`tasks.priority.${taskPriority}`) }}
+             </div>
+          </div>
+
+          <p class="view-description" v-if="taskDescription">{{ taskDescription }}</p>
+          <p class="view-description empty" v-else>{{ t('modal.noDescription') }}</p>
+
+          <SubtaskList v-if="props.todoId" :todo-id="props.todoId" />
+        </div>
+
+        <!-- Edit/Create Mode -->
+        <div v-else class="step-container">
           <div class="form-group">
             <label class="label">{{ t('modal.whatTask') }}</label>
             <input
@@ -166,14 +208,32 @@ const handleSave = async () => {
              </div>
           </div>
 
+          <SubtaskList v-if="isEditMode && props.todoId" :todo-id="props.todoId" />
+
           <div class="footer-actions mt-2xl">
             <button
-              class="btn-primary flex-1"
-              :disabled="!taskTitle.trim() || isSubmitting"
-              @click="handleSave"
+                v-if="viewMode"
+                class="btn-secondary flex-1"
+                @click="toggleViewMode"
             >
-              {{ isSubmitting ? t('modal.saving') : (isEditMode ? t('modal.saveTask') : t('modal.createTask')) }}
+                {{ t('common.edit') }}
             </button>
+            <template v-else>
+               <button
+                  v-if="isEditMode"
+                  class="btn-secondary"
+                  @click="toggleViewMode"
+                >
+                  {{ t('common.cancel') }}
+                </button>
+                <button
+                  class="btn-primary flex-1"
+                  :disabled="!taskTitle.trim() || isSubmitting"
+                  @click="handleSave"
+                >
+                  {{ isSubmitting ? t('modal.saving') : (isEditMode ? t('modal.saveTask') : t('modal.createTask')) }}
+                </button>
+            </template>
           </div>
         </div>
       </div>
@@ -231,6 +291,90 @@ const handleSave = async () => {
   top: 0;
   background: inherit;
   z-index: 10;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  border-radius: var(--radius-md);
+}
+
+.action-btn:hover {
+  background: var(--color-bg-lavender);
+  color: var(--color-primary);
+}
+
+/* View Mode Styles */
+.view-container {
+  padding-bottom: var(--spacing-2xl);
+}
+
+.view-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+  line-height: 1.3;
+}
+
+.view-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.category-badge {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+}
+
+.priority-badge {
+  text-transform: capitalize;
+  font-weight: var(--font-weight-medium);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.priority-badge.high { color: #EF4444; background: rgba(239, 68, 68, 0.1); }
+.priority-badge.medium { color: #F59E0B; background: rgba(245, 158, 11, 0.1); }
+.priority-badge.low { color: #10B981; background: rgba(16, 185, 129, 0.1); }
+
+.view-description {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin-bottom: var(--spacing-2xl);
+}
+
+.view-description.empty {
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .modal-title {

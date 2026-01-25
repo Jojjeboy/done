@@ -86,7 +86,10 @@
     "createTask": "Create Task",
     "editTask": "Edit Task",
     "saveTask": "Save Changes",
-    "dueDate": "Due date"
+    "dueDate": "Due date",
+    "subtasks": "Subtasks",
+    "addSubtask": "Add subtask...",
+    "noDescription": "No description provided."
   },
   "pwa": {
     "readyOffline": "App ready to work offline",

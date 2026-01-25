@@ -86,7 +86,10 @@
     "createTask": "Skapa uppgift",
     "editTask": "Redigera uppgift",
     "saveTask": "Spara ändringar",
-    "dueDate": "Förfallodatum"
+    "dueDate": "Förfallodatum",
+    "subtasks": "Deluppgifter",
+    "addSubtask": "Lägg till deluppgift...",
+    "noDescription": "Ingen beskrivning."
   },
   "pwa": {
     "readyOffline": "Appen är redo att användas offline",
