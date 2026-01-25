@@ -1,30 +1,24 @@
 /**
- * TypeScript interfaces for the hierarchical data model
+ * TypeScript interfaces for the simplified todo list app
  */
 
-export interface Project {
+export interface Category {
   id: string
   title: string
-  color: string
-  createdAt: number
-}
-
-export interface TodoList {
-  id: string
-  projectId: string
-  title: string
+  icon?: string
+  color?: string
+  isDefault?: boolean
   createdAt: number
 }
 
 export interface TodoItem {
   id: string
-  listId: string
   title: string
   description: string
   status: 'pending' | 'in-progress' | 'completed'
   priority: 'low' | 'medium' | 'high'
   deadline: number | null
-  category: 'work' | 'lifestyle' | 'personal' | 'hobby' | 'none'
+  categoryId: string | null
   createdAt: number
   updatedAt: number
 }

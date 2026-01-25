@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { useThemeStore } from '@/stores/theme'
 import { setActivePinia, createPinia } from 'pinia'
 
@@ -61,8 +61,6 @@ describe('Theme Store', () => {
     const store = useThemeStore()
 
     try {
-      const initialDark = document.documentElement.classList.contains('dark')
-
       await store.toggleTheme()
 
       // Just verify theme state changed (DOM update might not happen in test)

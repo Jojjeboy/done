@@ -1,0 +1,116 @@
+/* New Design System - Purple Theme with Airy Feel */
+
+:root {
+  /* Primary Colors */
+  --color-primary: #6c5ce7;
+  --color-primary-light: #9b8ef7;
+  --color-primary-dark: #5849c7;
+
+  /* Background Colors */
+  --color-bg-light: #f5f3ff;
+  --color-bg-lighter: #fafafe;
+  --color-bg-white: #ffffff;
+  --color-bg-card: #ffffff;
+  --color-bg-purple-tint: #f0edff;
+  --color-bg-lavender: #e9e4ff;
+
+  /* Text Colors */
+  --color-text-primary: #1a1a2e;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-white: #ffffff;
+
+  /* Accent Colors */
+  --color-pink: #ff6b9d;
+  --color-pink-light: #ffe5f0;
+  --color-orange: #ff8a50;
+  --color-orange-light: #ffe8dc;
+  --color-blue: #5b8def;
+  --color-blue-light: #e3edff;
+  --color-purple-accent: #a78bfa;
+  --color-purple-accent-light: #e9e4ff;
+  --color-green: #4ade80;
+  --color-green-light: #d1fae5;
+
+  /* Status Colors */
+  --color-status-done: #4ade80;
+  --color-status-progress: #ff8a50;
+  --color-status-todo: #5b8def;
+
+  /* Border & Divider */
+  --color-border: #e5e7eb;
+  --color-border-light: #f3f4f6;
+  --color-divider: #f0f0f5;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-purple: 0 10px 20px -5px rgba(108, 92, 231, 0.25);
+
+  /* Border Radius */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-3xl: 48px;
+  --spacing-4xl: 64px;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-md: 1.125rem; /* 18px */
+  --font-size-lg: 1.25rem; /* 20px */
+  --font-size-xl: 1.5rem; /* 24px */
+  --font-size-2xl: 2rem; /* 32px */
+  --font-size-3xl: 2.5rem; /* 40px */
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.8;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Mode Refinement */
+.dark {
+  --color-bg-light: #0d0b21;
+  --color-bg-lighter: #12102b;
+  --color-bg-white: #1a1835;
+  --color-bg-card: #1a1835;
+  --color-bg-purple-tint: rgba(108, 92, 231, 0.1);
+  --color-bg-lavender: rgba(108, 92, 231, 0.15);
+
+  --color-text-primary: #f8f7ff;
+  --color-text-secondary: #b4b0d9;
+  --color-text-muted: #7e79af;
+
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-light: rgba(255, 255, 255, 0.04);
+  --color-divider: rgba(255, 255, 255, 0.06);
+
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
+}

@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { Bell } from 'lucide-vue-next'
+import { useThemeStore } from '@/stores/theme'
+import { useI18n } from 'vue-i18n'
+import { Sun, Moon } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
+const { t } = useI18n()
 
-const greeting = computed(() => {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+const greeting = computed(() => t('common.hello'))
+
+const userName = computed(() => {
+  if (!authStore.user?.displayName) return t('common.user')
+  return authStore.user.displayName.split(' ')[0]
 })
 
 const userInitials = computed(() => {
@@ -21,21 +25,32 @@ const userInitials = computed(() => {
     .toUpperCase()
     .slice(0, 2)
 })
+
+const userPhotoURL = computed(() => {
+  return authStore.user?.photoURL || null
+})
+
+const toggleTheme = () => {
+  themeStore.toggleTheme()
+}
 </script>
 
 <template>
   <header class="mobile-header">
-    <div class="header-top">
+    <div class="header-content">
       <div class="profile-section">
         <div class="profile-avatar">
-          {{ userInitials }}
+          <img v-if="userPhotoURL" :src="userPhotoURL" alt="Profile" class="avatar-image" />
+          <span v-else>{{ userInitials }}</span>
         </div>
         <div class="greeting-section">
-          <span class="greeting">{{ greeting }} 👋</span>
+          <span class="greeting">{{ greeting }}</span>
+          <span class="user-name">{{ userName }}</span>
         </div>
       </div>
-      <button class="bell-btn" aria-label="Notifications">
-        <Bell class="w-5 h-5" />
+      <button class="theme-toggle-btn" @click="toggleTheme" :aria-label="t('settings.theme')">
+        <Sun v-if="themeStore.theme === 'dark'" :size="20" />
+        <Moon v-else :size="20" />
       </button>
     </div>
   </header>
@@ -43,17 +58,23 @@ const userInitials = computed(() => {
 
 <style scoped>
 .mobile-header {
-  padding: 1rem;
-  background-color: #ffffff;
-  border-bottom: 1px solid #F3F4F6;
+  padding: var(--spacing-2xl) var(--spacing-2xl) var(--spacing-lg);
+  background: linear-gradient(to bottom, var(--color-bg-white) 0%, rgba(255, 255, 255, 0.95) 100%);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-border-light);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
 .dark .mobile-header {
-  background-color: #1A1A1A;
-  border-bottom-color: #374151;
+  background: linear-gradient(to bottom, var(--color-bg-card) 0%, rgba(26, 24, 53, 0.95) 100%);
+  border-bottom-color: var(--color-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.header-top {
+.header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -62,55 +83,73 @@ const userInitials = computed(() => {
 .profile-section {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--spacing-md);
 }
 
 .profile-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
-  color: #ffffff;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #6C5CE7 0%, #A78BFA 100%);
+  color: var(--color-text-white);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 0.875rem;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
   flex-shrink: 0;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .greeting-section {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .greeting {
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: #111827;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
 }
 
-.dark .greeting {
-  color: #F9FAFB;
+.user-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
 }
 
-.bell-btn {
+.dark .user-name {
+  color: var(--color-text-primary);
+}
+
+.theme-toggle-btn {
   background: transparent;
   border: none;
-  color: #6B7280;
+  color: var(--color-text-primary);
   cursor: pointer;
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
+  transition: all var(--transition-base);
+  border-radius: var(--radius-md);
 }
 
-.bell-btn:hover {
-  color: #111827;
+.theme-toggle-btn:hover {
+  background-color: var(--color-bg-lavender);
+  color: var(--color-primary);
 }
 
-.dark .bell-btn:hover {
-  color: #F9FAFB;
+.dark .theme-toggle-btn:hover {
+  background-color: rgba(108, 92, 231, 0.1);
 }
 </style>

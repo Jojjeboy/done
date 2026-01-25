@@ -10,25 +10,13 @@
     "back": "Back",
     "search": "Search",
     "settings": "Settings",
-    "close": "Close"
-  },
-  "projects": {
-    "title": "Projects",
-    "addProject": "Add Project",
-    "projectName": "Project name",
-    "noProjects": "No projects yet. Create your first project to get started!",
-    "deleteConfirm": "Are you sure you want to delete this project? All lists and tasks will be deleted.",
-    "deleteTaskConfirm": "Are you sure you want to delete this task?"
-  },
-  "lists": {
-    "addList": "Add List",
-    "listName": "List name",
-    "noLists": "No lists yet. Create your first list to get started!"
+    "close": "Close",
+    "hello": "Hello!",
+    "user": "User"
   },
   "tasks": {
     "addTask": "Add Task",
     "taskName": "Task name",
-    "selectList": "Select a list",
     "status": {
       "pending": "Pending",
       "inProgress": "In Progress",
@@ -38,6 +26,19 @@
       "low": "Low",
       "medium": "Medium",
       "high": "High"
+    },
+    "filters": {
+      "all": "All",
+      "todo": "To do",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "categories": {
+      "none": "No category",
+      "work": "Work",
+      "lifestyle": "Lifestyle",
+      "personal": "Personal",
+      "hobby": "Hobby"
     }
   },
   "settings": {
@@ -52,6 +53,30 @@
   },
   "auth": {
     "signIn": "Sign in with Google",
-    "welcome": "Your personal productivity oasis"
+    "signOut": "Log Out",
+    "welcome": "Your personal productivity oasis",
+    "confirmLogout": "Are you sure you want to log out?"
+  },
+  "search": {
+    "placeholder": "Search tasks...",
+    "noResults": "No tasks found"
+  },
+  "modal": {
+    "newTask": "New Task",
+    "whatTask": "What's the task?",
+    "taskPlaceholder": "e.g. Buy groceries",
+    "description": "Description (Optional)",
+    "descriptionPlaceholder": "Add more details...",
+    "priority": "Priority",
+    "category": "Category",
+    "categories": {
+      "none": "None",
+      "work": "Work",
+      "lifestyle": "Lifestyle",
+      "personal": "Personal",
+      "hobby": "Hobby"
+    },
+    "creating": "Creating...",
+    "createTask": "Create Task"
   }
 }

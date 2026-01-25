@@ -10,25 +10,13 @@
     "back": "Tillbaka",
     "search": "Sök",
     "settings": "Inställningar",
-    "close": "Stäng"
-  },
-  "projects": {
-    "title": "Projekt",
-    "addProject": "Lägg till projekt",
-    "projectName": "Projektnamn",
-    "noProjects": "Inga projekt ännu. Skapa ditt första projekt för att komma igång!",
-    "deleteConfirm": "Är du säker på att du vill radera detta projekt? Alla listor och uppgifter kommer att raderas.",
-    "deleteTaskConfirm": "Är du säker på att du vill radera denna uppgift?"
-  },
-  "lists": {
-    "addList": "Lägg till lista",
-    "listName": "Listnamn",
-    "noLists": "Inga listor ännu. Skapa din första lista för att komma igång!"
+    "close": "Stäng",
+    "hello": "Hej!",
+    "user": "Användare"
   },
   "tasks": {
     "addTask": "Lägg till uppgift",
     "taskName": "Uppgiftsnamn",
-    "selectList": "Välj en lista",
     "status": {
       "pending": "Väntande",
       "inProgress": "Pågående",
@@ -38,6 +26,19 @@
       "low": "Låg",
       "medium": "Medel",
       "high": "Hög"
+    },
+    "filters": {
+      "all": "Alla",
+      "todo": "Att göra",
+      "inProgress": "Pågående",
+      "completed": "Klara"
+    },
+    "categories": {
+      "none": "Ingen kategori",
+      "work": "Arbete",
+      "lifestyle": "Livsstil",
+      "personal": "Personligt",
+      "hobby": "Hobby"
     }
   },
   "settings": {
@@ -52,6 +53,30 @@
   },
   "auth": {
     "signIn": "Logga in med Google",
-    "welcome": "Din personliga produktivitetsoas"
+    "signOut": "Logga ut",
+    "welcome": "Din personliga produktivitetsoas",
+    "confirmLogout": "Är du säker på att du vill logga ut?"
+  },
+  "search": {
+    "placeholder": "Sök uppgifter...",
+    "noResults": "Inga uppgifter hittades"
+  },
+  "modal": {
+    "newTask": "Ny uppgift",
+    "whatTask": "Vad är uppgiften?",
+    "taskPlaceholder": "t.ex. Handla mat",
+    "description": "Beskrivning (Frivillig)",
+    "descriptionPlaceholder": "Lägg till fler detaljer...",
+    "priority": "Prioritet",
+    "category": "Kategori",
+    "categories": {
+      "none": "Ingen",
+      "work": "Arbete",
+      "lifestyle": "Livsstil",
+      "personal": "Personligt",
+      "hobby": "Hobby"
+    },
+    "creating": "Skapar...",
+    "createTask": "Skapa uppgift"
   }
 }

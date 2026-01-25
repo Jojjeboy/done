@@ -8,6 +8,7 @@ import { useAuthStore } from './stores/auth'
 import { useTodoStore } from './stores/todo'
 import { useThemeStore } from './stores/theme'
 import { useI18nStore } from './stores/i18n'
+import './assets/variables.css'
 import './assets/main.css'
 
 const app = createApp(App)
@@ -23,15 +24,15 @@ themeStore.initialize().then(async () => {
   // Initialize auth store, then i18n, then mount app
   const authStore = useAuthStore()
   await authStore.initAuth()
-  
+
   const i18nStore = useI18nStore()
   await i18nStore.initialize()
-  
+
   // Only initialize todo store if user is authenticated
   if (authStore.user) {
     const todoStore = useTodoStore()
     await todoStore.initialize()
   }
-  
+
   app.mount('#app')
 })

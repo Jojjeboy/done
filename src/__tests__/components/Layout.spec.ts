@@ -31,8 +31,6 @@ describe('LayoutWrapper Component', () => {
     const wrapper = mount(LayoutWrapper)
 
     const layoutDiv = wrapper.find('.layout-wrapper')
-    const styles = window.getComputedStyle(layoutDiv.element as Element)
-
     // Check that the component has the expected layout
     expect(layoutDiv.exists()).toBe(true)
   })

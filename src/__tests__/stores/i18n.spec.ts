@@ -29,7 +29,7 @@ describe('i18n Store', () => {
       // This may fail if database isn't available, but shouldn't throw
       await store.setLocale('en')
       expect(true).toBe(true)
-    } catch (error) {
+    } catch {
       // Database might not be available in test environment
       expect(true).toBe(true)
     }
@@ -42,7 +42,7 @@ describe('i18n Store', () => {
       // This may fail if database isn't available, but shouldn't throw
       await store.initialize()
       expect(true).toBe(true)
-    } catch (error) {
+    } catch {
       // Database might not be available in test environment
       expect(true).toBe(true)
     }

@@ -1,29 +1,46 @@
 <script setup lang="ts">
-import { Menu, Search, Plus } from 'lucide-vue-next'
+import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { Home, Plus, Settings } from 'lucide-vue-next'
 
-const showMenu = () => {
-  // TODO: Implement menu drawer
-}
+const router = useRouter()
+const route = useRoute()
+const { t } = useI18n()
 
-const showSearch = () => {
-  // TODO: Implement search
+const emit = defineEmits<{
+  openSearch: []
+  openAddTask: []
+}>()
+
+const isActive = (path: string) => {
+  return route.path === path
 }
 
 const addTask = () => {
-  // TODO: Implement add task modal
+  emit('openAddTask')
 }
 </script>
 
 <template>
   <nav class="bottom-nav">
-    <button @click="showMenu" class="nav-btn" aria-label="Menu">
-      <Menu class="w-6 h-6" />
+    <button
+      @click="router.push('/')"
+      class="nav-btn"
+      :class="{ active: isActive('/') }"
+      :aria-label="t('common.appName')"
+    >
+      <Home :size="24" />
     </button>
-    <button @click="showSearch" class="nav-btn" aria-label="Search">
-      <Search class="w-6 h-6" />
+    <button @click="addTask" class="nav-btn-add" :aria-label="t('tasks.addTask')">
+      <Plus :size="28" />
     </button>
-    <button @click="addTask" class="nav-btn-add" aria-label="Add task">
-      <Plus class="w-6 h-6" />
+    <button
+      @click="router.push('/settings')"
+      class="nav-btn"
+      :class="{ active: isActive('/settings') }"
+      :aria-label="t('settings.title')"
+    >
+      <Settings :size="24" />
     </button>
   </nav>
 </template>
@@ -37,54 +54,61 @@ const addTask = () => {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0.75rem 1rem;
-  background-color: #ffffff;
-  border-top: 1px solid #E5E7EB;
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-xl);
+  background: linear-gradient(to top, var(--color-bg-lavender) 0%, rgba(245, 243, 255, 0.95) 100%);
+  backdrop-filter: blur(10px);
   z-index: 50;
+  max-width: 768px;
+  margin: 0 auto;
 }
 
 .dark .bottom-nav {
-  background-color: #1A1A1A;
-  border-top-color: #374151;
+  background: linear-gradient(to top, rgba(108, 92, 231, 0.1) 0%, rgba(42, 42, 69, 0.95) 100%);
 }
 
 .nav-btn {
   background: transparent;
   border: none;
-  color: #6B7280;
+  color: var(--color-primary);
   cursor: pointer;
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
+  transition: all var(--transition-base);
+  border-radius: var(--radius-md);
+  opacity: 0.5;
 }
 
 .nav-btn:hover {
-  color: #111827;
+  opacity: 0.8;
+  background-color: rgba(108, 92, 231, 0.1);
 }
 
-.dark .nav-btn:hover {
-  color: #F9FAFB;
+.nav-btn.active {
+  opacity: 1;
+  background-color: rgba(108, 92, 231, 0.15);
 }
 
 .nav-btn-add {
-  background-color: #10B981;
+  background: var(--color-primary);
   border: none;
-  border-radius: 12px;
-  color: #ffffff;
+  border-radius: var(--radius-full);
+  color: var(--color-text-white);
   cursor: pointer;
-  padding: 0.75rem;
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-  transition: all 0.2s ease;
+  box-shadow: var(--shadow-purple);
+  transition: all var(--transition-base);
+  margin-top: -28px;
 }
 
 .nav-btn-add:hover {
-  background-color: #059669;
   transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.25);
 }
 
 .nav-btn-add:active {

@@ -1,48 +1,17 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { getDatabase } from '@/db'
-import type { Project, TodoList, TodoItem, Subtask } from '@/types/todo'
+import type { TodoItem, Subtask, Category } from '@/types/todo'
 
 export const useTodoStore = defineStore('todo', () => {
   // State
-  const projects = ref<Project[]>([])
-  const todoLists = ref<TodoList[]>([])
   const todoItems = ref<TodoItem[]>([])
   const subtasks = ref<Subtask[]>([])
+  const categories = ref<Category[]>([])
   const loading = ref(true)
   const initialized = ref(false)
 
   // Computed
-  const projectsByProjectId = computed(() => {
-    const map = new Map<string, Project>()
-    projects.value.forEach((project) => {
-      map.set(project.id, project)
-    })
-    return map
-  })
-
-  const listsByProjectId = computed(() => {
-    const map = new Map<string, TodoList[]>()
-    todoLists.value.forEach((list) => {
-      if (!map.has(list.projectId)) {
-        map.set(list.projectId, [])
-      }
-      map.get(list.projectId)!.push(list)
-    })
-    return map
-  })
-
-  const itemsByListId = computed(() => {
-    const map = new Map<string, TodoItem[]>()
-    todoItems.value.forEach((item) => {
-      if (!map.has(item.listId)) {
-        map.set(item.listId, [])
-      }
-      map.get(item.listId)!.push(item)
-    })
-    return map
-  })
-
   const subtasksByTodoId = computed(() => {
     const map = new Map<string, Subtask[]>()
     subtasks.value.forEach((subtask) => {
@@ -50,6 +19,18 @@ export const useTodoStore = defineStore('todo', () => {
         map.set(subtask.todoId, [])
       }
       map.get(subtask.todoId)!.push(subtask)
+    })
+    return map
+  })
+
+  const allItems = computed(() => {
+    return todoItems.value
+  })
+
+  const categoriesById = computed(() => {
+    const map = new Map<string, Category>()
+    categories.value.forEach((category) => {
+      map.set(category.id, category)
     })
     return map
   })
@@ -70,42 +51,79 @@ export const useTodoStore = defineStore('todo', () => {
       const db = getDatabase()
 
       // Load all data from IndexedDB
-      const [dbProjects, dbLists, dbItems, dbSubtasks] = await Promise.all([
-        db.projects.toArray(),
-        db.todoLists.toArray(),
-        db.todoItems.toArray(),
-        db.subtasks.toArray(),
+      const [dbItems, dbSubtasks, dbCategories] = await Promise.all([
+        db.table('todoItems').toArray(),
+        db.table('subtasks').toArray(),
+        db.table('categories').toArray(),
       ])
 
-      // Migrate old tasks without category field
-      const migratedItems: TodoItem[] = dbItems.map((item: unknown) => {
-        const itemData = item as Record<string, unknown>
-        if (!('category' in itemData)) {
-          return {
-            id: itemData.id,
-            listId: itemData.listId,
-            title: itemData.title,
-            description: itemData.description || '',
-            status: itemData.status,
-            priority: itemData.priority,
-            deadline: itemData.deadline,
-            category: 'none' as TodoItem['category'],
-            createdAt: itemData.createdAt,
-            updatedAt: itemData.updatedAt,
-          } as TodoItem
-        }
-        return itemData as unknown as TodoItem
-      })
+      let finalCategories = dbCategories
+      const itemsToUpdate: TodoItem[] = []
+      const categoriesToAdd: Category[] = []
 
-      // Update database if migration was needed
-      if (migratedItems.length !== dbItems.length || migratedItems.some((item, i) => item !== dbItems[i])) {
-        await db.todoItems.bulkPut(migratedItems)
+      // Initialize default categories if none exist
+      if (finalCategories.length === 0) {
+        const defaults = [
+          { id: generateId(), title: 'Work', color: '#ffbd2e', isDefault: true, createdAt: Date.now() },
+          { id: generateId(), title: 'Lifestyle', color: '#ff5c5c', isDefault: true, createdAt: Date.now() },
+          { id: generateId(), title: 'Personal', color: '#2ecc71', isDefault: true, createdAt: Date.now() },
+          { id: generateId(), title: 'Hobby', color: '#3498db', isDefault: true, createdAt: Date.now() },
+        ]
+        categoriesToAdd.push(...defaults)
+        finalCategories = [...defaults]
       }
 
-      projects.value = dbProjects
-      todoLists.value = dbLists
+      // Safe Access for mapping
+      const getCategoryId = (oldCategory: string): string | null => {
+        const titleMap: Record<string, string> = {
+            'work': 'Work',
+            'lifestyle': 'Lifestyle',
+            'personal': 'Personal',
+            'hobby': 'Hobby'
+        }
+        const targetTitle = titleMap[oldCategory]
+        if (!targetTitle) return null
+        return finalCategories.find(c => c.title === targetTitle)?.id || null
+      }
+
+      // Migrate items (handle both "category" string and missing "categoryId")
+      const migratedItems: TodoItem[] = dbItems.map((item: unknown) => {
+        let needsUpdate = false
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const newItem = { ...(item as any) }
+
+        // Migration from string category to categoryId
+        if ('category' in newItem && typeof newItem.category === 'string') {
+          const newId = getCategoryId(newItem.category)
+          newItem.categoryId = newId
+          delete newItem.category
+          needsUpdate = true
+        } else if (!('categoryId' in newItem)) {
+           // Ensure categoryId exists
+           newItem.categoryId = null
+           needsUpdate = true
+        }
+
+        if (needsUpdate) {
+            itemsToUpdate.push(newItem as TodoItem)
+        }
+
+        return newItem as TodoItem
+      })
+
+
+      // Persist changes
+      if (categoriesToAdd.length > 0) {
+        await db.table('categories').bulkAdd(categoriesToAdd)
+      }
+
+      if (itemsToUpdate.length > 0) {
+        await db.table('todoItems').bulkPut(itemsToUpdate)
+      }
+
       todoItems.value = migratedItems
       subtasks.value = dbSubtasks
+      categories.value = finalCategories
 
       initialized.value = true
     } catch (error) {
@@ -116,180 +134,83 @@ export const useTodoStore = defineStore('todo', () => {
     }
   }
 
-  // Project CRUD
-  const addProject = async (title: string, color: string = '#6366f1') => {
-    const project: Project = {
-      id: generateId(),
-      title,
-      color,
-      createdAt: Date.now(),
-    }
-
-    projects.value.push(project)
-
-    try {
-      const db = getDatabase()
-      await db.projects.add(project)
-    } catch (error) {
-      console.error('Failed to persist project:', error)
-      // Rollback on error
-      const index = projects.value.findIndex((p) => p.id === project.id)
-      if (index !== -1) {
-        projects.value.splice(index, 1)
+  // Category CRUD
+  const addCategory = async (title: string, color?: string, icon?: string) => {
+      const category: Category = {
+          id: generateId(),
+          title,
+          color,
+          icon,
+          createdAt: Date.now()
       }
-      throw error
-    }
-
-    return project
-  }
-
-  const updateProject = async (id: string, updates: Partial<Project>) => {
-    const index = projects.value.findIndex((p) => p.id === id)
-    if (index === -1) {
-      throw new Error(`Project with id ${id} not found`)
-    }
-
-    const original = projects.value[index]!
-    const updated: Project = { ...original, ...updates } as Project
-    projects.value[index] = updated
-
-    try {
-      const db = getDatabase()
-      await db.projects.update(id, updates)
-    } catch (error) {
-      console.error('Failed to update project:', error)
-      // Rollback on error
-      projects.value[index] = original
-      throw error
-    }
-  }
-
-  const deleteProject = async (id: string) => {
-    const index = projects.value.findIndex((p) => p.id === id)
-    if (index === -1) {
-      throw new Error(`Project with id ${id} not found`)
-    }
-
-    // Remove project and all related data
-    const projectLists = todoLists.value.filter((list) => list.projectId === id)
-    const listIds = projectLists.map((list) => list.id)
-    const projectItems = todoItems.value.filter((item) => listIds.includes(item.listId))
-    const itemIds = projectItems.map((item) => item.id)
-    const projectSubtasks = subtasks.value.filter((subtask) => itemIds.includes(subtask.todoId))
-
-    // Remove from state
-    projects.value.splice(index, 1)
-    todoLists.value = todoLists.value.filter((list) => list.projectId !== id)
-    todoItems.value = todoItems.value.filter((item) => !listIds.includes(item.listId))
-    subtasks.value = subtasks.value.filter((subtask) => !itemIds.includes(subtask.todoId))
-
-    try {
-      const db = getDatabase()
-      await db.transaction('rw', db.projects, db.todoLists, db.todoItems, db.subtasks, async () => {
-        await db.projects.delete(id)
-        await db.todoLists.bulkDelete(listIds)
-        await db.todoItems.bulkDelete(itemIds)
-        await db.subtasks.bulkDelete(projectSubtasks.map((s) => s.id))
-      })
-    } catch (error) {
-      console.error('Failed to delete project:', error)
-      // Note: Rollback would be complex here, so we'll just log the error
-      throw error
-    }
-  }
-
-  // TodoList CRUD
-  const addTodoList = async (projectId: string, title: string) => {
-    const list: TodoList = {
-      id: generateId(),
-      projectId,
-      title,
-      createdAt: Date.now(),
-    }
-
-    todoLists.value.push(list)
-
-    try {
-      const db = getDatabase()
-      await db.todoLists.add(list)
-    } catch (error) {
-      console.error('Failed to persist todo list:', error)
-      const index = todoLists.value.findIndex((l) => l.id === list.id)
-      if (index !== -1) {
-        todoLists.value.splice(index, 1)
+      categories.value.push(category)
+      try {
+          await getDatabase().table('categories').add(category)
+      } catch (e) {
+          console.error('Failed to add category', e)
+          categories.value = categories.value.filter(c => c.id !== category.id)
+          throw e
       }
-      throw error
-    }
-
-    return list
+      return category
   }
 
-  const updateTodoList = async (id: string, updates: Partial<TodoList>) => {
-    const index = todoLists.value.findIndex((l) => l.id === id)
-    if (index === -1) {
-      throw new Error(`TodoList with id ${id} not found`)
-    }
+  const updateCategory = async (id: string, updates: Partial<Category>) => {
+    const index = categories.value.findIndex((c) => c.id === id)
+    if (index === -1) throw new Error('Category not found')
 
-    const original = todoLists.value[index]!
-    const updated: TodoList = { ...original, ...updates } as TodoList
-    todoLists.value[index] = updated
+    const original = categories.value[index]!
+    const updated: Category = { ...original, ...updates }
+    categories.value[index] = updated
 
     try {
-      const db = getDatabase()
-      await db.todoLists.update(id, updates)
-    } catch (error) {
-      console.error('Failed to update todo list:', error)
-      todoLists.value[index] = original
-      throw error
+      await getDatabase().table('categories').update(id, updates)
+    } catch (e) {
+      console.error('Failed to update category', e)
+      categories.value[index] = original
+      throw e
     }
   }
 
-  const deleteTodoList = async (id: string) => {
-    const index = todoLists.value.findIndex((l) => l.id === id)
-    if (index === -1) {
-      throw new Error(`TodoList with id ${id} not found`)
-    }
+  const deleteCategory = async (id: string) => {
+      const index = categories.value.findIndex(c => c.id === id)
+      if (index === -1) throw new Error('Category not found')
 
-    const listItems = todoItems.value.filter((item) => item.listId === id)
-    const itemIds = listItems.map((item) => item.id)
-    const listSubtasks = subtasks.value.filter((subtask) => itemIds.includes(subtask.todoId))
+      categories.value.splice(index, 1)
 
-    todoLists.value.splice(index, 1)
-    todoItems.value = todoItems.value.filter((item) => item.listId !== id)
-    subtasks.value = subtasks.value.filter((subtask) => !itemIds.includes(subtask.todoId))
+      // Also update tasks to remove this category
+      const tasksToUpdate = todoItems.value.filter(i => i.categoryId === id)
+      tasksToUpdate.forEach(t => t.categoryId = null)
 
-    try {
-      const db = getDatabase()
-      await db.transaction('rw', db.todoLists, db.todoItems, db.subtasks, async () => {
-        await db.todoLists.delete(id)
-        await db.todoItems.bulkDelete(itemIds)
-        await db.subtasks.bulkDelete(listSubtasks.map((s) => s.id))
-      })
-    } catch (error) {
-      console.error('Failed to delete todo list:', error)
-      throw error
-    }
+      try {
+          const db = getDatabase()
+          await db.transaction('rw', db.table('categories'), db.table('todoItems'), async () => {
+              await db.table('categories').delete(id)
+              await db.table('todoItems').bulkPut(tasksToUpdate.map(t => ({...t}))) // Persist the nullified categoryId
+          })
+      } catch (e) {
+          console.error('Failed to delete category', e)
+          throw e
+      }
   }
+
 
   // TodoItem CRUD
   const addTodoItem = async (
-    listId: string,
     title: string,
     description: string = '',
     priority: TodoItem['priority'] = 'medium',
     deadline: number | null = null,
-    category: TodoItem['category'] = 'none'
+    categoryId: string | null = null
   ) => {
     const now = Date.now()
     const item: TodoItem = {
       id: generateId(),
-      listId,
       title,
       description,
       status: 'pending',
       priority,
       deadline,
-      category,
+      categoryId,
       createdAt: now,
       updatedAt: now,
     }
@@ -298,7 +219,7 @@ export const useTodoStore = defineStore('todo', () => {
 
     try {
       const db = getDatabase()
-      await db.todoItems.add(item)
+      await db.table('todoItems').add(item)
     } catch (error) {
       console.error('Failed to persist todo item:', error)
       const index = todoItems.value.findIndex((i) => i.id === item.id)
@@ -327,7 +248,7 @@ export const useTodoStore = defineStore('todo', () => {
 
     try {
       const db = getDatabase()
-      await db.todoItems.update(id, updatedItem)
+      await db.table('todoItems').update(id, updatedItem)
     } catch (error) {
       console.error('Failed to update todo item:', error)
       todoItems.value[index] = original
@@ -348,9 +269,9 @@ export const useTodoStore = defineStore('todo', () => {
 
     try {
       const db = getDatabase()
-      await db.transaction('rw', db.todoItems, db.subtasks, async () => {
-        await db.todoItems.delete(id)
-        await db.subtasks.bulkDelete(itemSubtasks.map((s) => s.id))
+      await db.transaction('rw', db.table('todoItems'), db.table('subtasks'), async () => {
+        await db.table('todoItems').delete(id)
+        await db.table('subtasks').bulkDelete(itemSubtasks.map((s) => s.id))
       })
     } catch (error) {
       console.error('Failed to delete todo item:', error)
@@ -371,7 +292,7 @@ export const useTodoStore = defineStore('todo', () => {
 
     try {
       const db = getDatabase()
-      await db.subtasks.add(subtask)
+      await db.table('subtasks').add(subtask)
     } catch (error) {
       console.error('Failed to persist subtask:', error)
       const index = subtasks.value.findIndex((s) => s.id === subtask.id)
@@ -396,7 +317,7 @@ export const useTodoStore = defineStore('todo', () => {
 
     try {
       const db = getDatabase()
-      await db.subtasks.update(id, updates)
+      await db.table('subtasks').update(id, updates)
     } catch (error) {
       console.error('Failed to update subtask:', error)
       subtasks.value[index] = original
@@ -414,7 +335,7 @@ export const useTodoStore = defineStore('todo', () => {
 
     try {
       const db = getDatabase()
-      await db.subtasks.delete(id)
+      await db.table('subtasks').delete(id)
     } catch (error) {
       console.error('Failed to delete subtask:', error)
       throw error
@@ -423,25 +344,20 @@ export const useTodoStore = defineStore('todo', () => {
 
   return {
     // State
-    projects,
-    todoLists,
     todoItems,
     subtasks,
+    categories,
     loading,
     initialized,
     // Computed
-    projectsByProjectId,
-    listsByProjectId,
-    itemsByListId,
     subtasksByTodoId,
+    allItems,
+    categoriesById,
     // Methods
     initialize,
-    addProject,
-    updateProject,
-    deleteProject,
-    addTodoList,
-    updateTodoList,
-    deleteTodoList,
+    addCategory,
+    updateCategory,
+    deleteCategory,
     addTodoItem,
     updateTodoItem,
     deleteTodoItem,
