@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTodoStore } from '@/stores/todo'
+import { useSettingsStore } from '@/stores/settings'
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -37,13 +38,13 @@ router.beforeEach(async (to, from, next) => {
   // Initialize todo store if user is authenticated and accessing protected route
   if (isAuthenticated && !isPublic) {
     const todoStore = useTodoStore()
-    if (!todoStore.initialized) {
-      try {
-        await todoStore.initialize()
-      } catch (error) {
-        console.error('Failed to initialize todo store:', error)
-        // Don't block navigation, but log the error
-      }
+    try {
+      await Promise.all([
+        todoStore.initialize(),
+        useSettingsStore().initialize()
+      ])
+    } catch (error) {
+      console.error('Failed to initialize stores:', error)
     }
   }
 

@@ -31,7 +31,8 @@
       "all": "Alla",
       "todo": "Att göra",
       "inProgress": "Pågående",
-      "completed": "Klara"
+      "completed": "Klara",
+      "starred": "Stjärnmärkta"
     },
     "categories": {
       "none": "Ingen kategori",
@@ -49,7 +50,11 @@
     "dark": "Mörk",
     "selectLanguage": "Välj språk",
     "english": "Engelska",
-    "swedish": "Svenska"
+    "swedish": "Svenska",
+    "enabled": "Aktiverad",
+    "disabled": "Inaktiverad",
+    "threeStepProcess": "Trestegsprocess",
+    "threeStepDesc": "Växla mellan Att göra, Pågående och Klart"
   },
   "auth": {
     "signIn": "Logga in med Google",
@@ -78,5 +83,14 @@
     },
     "creating": "Skapar...",
     "createTask": "Skapa uppgift"
+  },
+  "pwa": {
+    "readyOffline": "Appen är redo att användas offline",
+    "newContent": "Nytt innehåll tillgängligt, klicka på ladda om för att uppdatera.",
+    "reload": "Ladda om",
+    "updateCheck": "Söker efter uppdateringar...",
+    "noUpdate": "Du har redan den senaste versionen",
+    "updateFound": "Uppdatering hittad! Laddar om...",
+    "checkForUpdate": "Sök efter uppdateringar"
   }
 }

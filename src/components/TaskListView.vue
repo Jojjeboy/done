@@ -3,14 +3,16 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { Check, Square, Clock } from 'lucide-vue-next'
+import { useSettingsStore } from '@/stores/settings'
+import { Check, Clock, Star } from 'lucide-vue-next'
 import type { TodoItem } from '@/types/todo'
 
 const todoStore = useTodoStore()
+const settingsStore = useSettingsStore()
 const { t } = useI18n()
 const route = useRoute()
 
-type FilterType = 'all' | 'todo' | 'in-progress' | 'completed'
+type FilterType = 'all' | 'todo' | 'in-progress' | 'completed' | 'starred'
 const activeFilter = ref<FilterType>('all')
 
 const activeCategoryId = computed(() => route.query.category as string | undefined)
@@ -32,6 +34,7 @@ const filteredTasks = computed(() => {
   if (activeFilter.value === 'todo') return allTasks.value.filter(t => t.status === 'pending')
   if (activeFilter.value === 'in-progress') return allTasks.value.filter(t => t.status === 'in-progress')
   if (activeFilter.value === 'completed') return allTasks.value.filter(t => t.status === 'completed')
+  if (activeFilter.value === 'starred') return allTasks.value.filter(t => t.priority === 'high')
   return allTasks.value
 })
 
@@ -110,7 +113,16 @@ const tasksByDate = computed(() => {
 })
 
 const toggleTask = async (task: TodoItem) => {
-  const newStatus = task.status === 'completed' ? 'pending' : 'completed'
+  let newStatus: TodoItem['status']
+
+  if (settingsStore.isThreeStepEnabled) {
+    if (task.status === 'pending') newStatus = 'in-progress'
+    else if (task.status === 'in-progress') newStatus = 'completed'
+    else newStatus = 'pending'
+  } else {
+    newStatus = task.status === 'completed' ? 'pending' : 'completed'
+  }
+
   try {
     await todoStore.updateTodoItem(task.id, { status: newStatus })
   } catch (error) {
@@ -118,17 +130,16 @@ const toggleTask = async (task: TodoItem) => {
   }
 }
 
-const getStatusBadgeText = (status: TodoItem['status']) => {
-  if (status === 'completed') return 'Done'
-  if (status === 'in-progress') return 'In Progress'
-  return 'To-do'
+const togglePriority = async (task: TodoItem) => {
+  const newPriority = task.priority === 'high' ? 'medium' : 'high'
+  try {
+    await todoStore.updateTodoItem(task.id, { priority: newPriority })
+  } catch (error) {
+    console.error('Failed to toggle priority:', error)
+  }
 }
 
-const getStatusBadgeColor = (status: TodoItem['status']) => {
-  if (status === 'completed') return 'var(--color-status-done)'
-  if (status === 'in-progress') return 'var(--color-status-progress)'
-  return 'var(--color-status-todo)'
-}
+
 
 const formatTime = (deadline: number | null) => {
   if (!deadline) return ''
@@ -178,6 +189,13 @@ onMounted(async () => {
       >
         {{ t('tasks.filters.completed') }}
       </button>
+      <button
+        class="filter-tab"
+        :class="{ active: activeFilter === 'starred' }"
+        @click="activeFilter = 'starred'"
+      >
+        {{ t('tasks.filters.starred') }}
+      </button>
     </div>
 
     <TransitionGroup
@@ -200,48 +218,42 @@ onMounted(async () => {
             v-for="task in group.tasks"
             :key="task.id"
             class="task-card"
+            :class="{ completed: task.status === 'completed' }"
           >
-            <div class="task-content">
-              <div class="task-header" v-if="task.categoryId">
-                <span class="task-category">{{ todoStore.categoriesById.get(task.categoryId)?.title }}</span>
-                <div
-                  class="category-icon"
-                  :style="{
-                    backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color || '#eee'
-                  }"
-                >
-                  📁
-                </div>
-              </div>
-              <h4 class="task-title">{{ task.title }}</h4>
-              <div class="task-footer">
-                <div class="task-time" v-if="task.deadline">
-                  <Clock :size="14" />
-                  <span>{{ formatTime(task.deadline) }}</span>
-                </div>
-                <span
-                  class="status-badge"
-                  :style="{ color: getStatusBadgeColor(task.status) }"
-                >
-                  {{ getStatusBadgeText(task.status) }}
-                </span>
-              </div>
-            </div>
             <button
               @click="toggleTask(task)"
               class="task-checkbox-btn"
-              :aria-label="task.status === 'completed' ? 'Mark as incomplete' : 'Mark as complete'"
+              :title="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'"
+              :aria-label="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'"
             >
-              <Check
-                v-if="task.status === 'completed'"
-                :size="20"
-                class="check-icon"
-              />
-              <Square
-                v-else
-                :size="20"
-                class="square-icon"
-              />
+              <div v-if="task.status === 'completed'" class="check-circle-wrapper">
+                <Check :size="14" class="check-icon-inner" />
+              </div>
+              <div v-else-if="task.status === 'in-progress'" class="progress-circle-wrapper">
+                <div class="inner-dot"></div>
+              </div>
+              <div v-else class="empty-circle"></div>
+            </button>
+
+            <div class="task-content">
+              <div class="task-main-info">
+                <h4 class="task-title">{{ task.title }}</h4>
+                <div class="task-meta">
+                  <span v-if="task.categoryId" class="task-category-dot" :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span>
+                  <div class="task-time" v-if="task.deadline">
+                    <Clock :size="12" />
+                    <span>{{ formatTime(task.deadline) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              class="task-star-btn"
+              @click.stop="togglePriority(task)"
+              :class="{ active: task.priority === 'high' }"
+            >
+              <Star :size="20" :class="{ 'star-filled': task.priority === 'high' }" />
             </button>
           </div>
         </TransitionGroup>
@@ -326,16 +338,17 @@ onMounted(async () => {
 .task-card {
   background: var(--color-bg-white);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--spacing-md);
   transition: all var(--transition-base);
+  border: 1px solid var(--color-border-light);
 }
 
 .task-card:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
@@ -343,61 +356,9 @@ onMounted(async () => {
   background: var(--color-bg-card);
 }
 
-.task-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.task-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.task-category {
-  font-size: var(--font-size-xs);
+.task-card.completed .task-title {
+  text-decoration: line-through;
   color: var(--color-text-muted);
-  font-weight: var(--font-weight-medium);
-}
-
-.category-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-base);
-}
-
-.task-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  line-height: var(--line-height-normal);
-}
-
-.task-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: var(--spacing-xs);
-}
-
-.task-time {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  color: var(--color-primary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-}
-
-.status-badge {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
 }
 
 .task-checkbox-btn {
@@ -409,15 +370,116 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: var(--spacing-xs);
 }
 
-.check-icon {
-  color: var(--color-status-done);
+.empty-circle {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 50%;
+  transition: all var(--transition-base);
 }
 
-.square-icon {
+.empty-circle:hover {
+  border-color: var(--color-primary);
+}
+
+.check-circle-wrapper {
+  width: 20px;
+  height: 20px;
+  background-color: var(--color-status-todo);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.check-icon-inner {
+  color: white;
+}
+
+.progress-circle-wrapper {
+  width: 20px;
+  height: 20px;
+  border: 4px solid var(--color-status-progress);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+}
+
+.inner-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--color-status-progress);
+  border-radius: 50%;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-main-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.task-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.task-category-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.task-time {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.task-star-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+}
+
+.task-star-btn:hover {
+  color: var(--color-primary);
+}
+
+.task-star-btn.active {
+  color: var(--color-primary);
+}
+
+.star-filled {
+  fill: currentColor;
 }
 
 .empty-state {

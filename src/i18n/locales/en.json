@@ -31,7 +31,8 @@
       "all": "All",
       "todo": "To do",
       "inProgress": "In Progress",
-      "completed": "Completed"
+      "completed": "Completed",
+      "starred": "Starred"
     },
     "categories": {
       "none": "No category",
@@ -49,7 +50,11 @@
     "dark": "Dark",
     "selectLanguage": "Select Language",
     "english": "English",
-    "swedish": "Swedish"
+    "swedish": "Swedish",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "threeStepProcess": "Three-step process",
+    "threeStepDesc": "Toggle between To do, In progress, and Done"
   },
   "auth": {
     "signIn": "Sign in with Google",
@@ -78,5 +83,14 @@
     },
     "creating": "Creating...",
     "createTask": "Create Task"
+  },
+  "pwa": {
+    "readyOffline": "App ready to work offline",
+    "newContent": "New content available, click on reload button to update.",
+    "reload": "Reload",
+    "updateCheck": "Checking for updates...",
+    "noUpdate": "Already on the latest version",
+    "updateFound": "Update found! Reloading...",
+    "checkForUpdate": "Check for Updates"
   }
 }

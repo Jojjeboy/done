@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['logo.png', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'Done',
