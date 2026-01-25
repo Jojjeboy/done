@@ -164,10 +164,10 @@ const formatTime = (deadline: number | null) => {
   } else if (taskDate.getTime() === tomorrow.getTime()) {
     datePrefix = t('tasks.tomorrow') + ' '
   } else {
-    datePrefix = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' '
+    datePrefix = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
   }
 
-  return datePrefix + date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  return datePrefix
 }
 
 onMounted(async () => {

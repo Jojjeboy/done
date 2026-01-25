@@ -8,6 +8,7 @@ import SubtaskList from '@/components/SubtaskList.vue'
 
 const props = defineProps<{
   todoId?: string | null
+  initialCategoryId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -58,7 +59,7 @@ const resetForm = () => {
   taskTitle.value = ''
   taskDescription.value = ''
   taskPriority.value = 'medium'
-  taskCategory.value = 'none'
+  taskCategory.value = props.initialCategoryId || 'none'
   taskDeadline.value = ''
 }
 

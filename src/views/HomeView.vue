@@ -6,13 +6,17 @@ import BottomNavigation from '@/components/BottomNavigation.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import SearchModal from '@/components/SearchModal.vue'
 import TodoModal from '@/components/TodoModal.vue'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const showSearchModal = ref(false)
 const showTodoModal = ref(false)
 const editingTodoId = ref<string | null>(null)
+const initialCategoryId = ref<string | null>(null)
 
 const openAddTask = () => {
     editingTodoId.value = null
+    initialCategoryId.value = route.query.category as string || null
     showTodoModal.value = true
 }
 
@@ -24,6 +28,7 @@ const openEditTask = (taskId: string) => {
 const handleModalClose = () => {
     showTodoModal.value = false
     editingTodoId.value = null
+    initialCategoryId.value = null
 }
 </script>
 
@@ -59,7 +64,12 @@ const handleModalClose = () => {
       @close="showSearchModal = false"
       @edit-task="(id) => { showSearchModal = false; openEditTask(id); }"
     />
-    <TodoModal v-if="showTodoModal" :todo-id="editingTodoId" @close="handleModalClose" />
+    <TodoModal
+      v-if="showTodoModal"
+      :todo-id="editingTodoId"
+      :initial-category-id="initialCategoryId"
+      @close="handleModalClose"
+    />
 
     <!-- Desktop Add Task FAB -->
      <button class="desktop-fab" @click="openAddTask">

@@ -294,6 +294,14 @@ const addCategory = async () => {
     border: 1px solid var(--color-border);
     border-radius: 4px;
     font-size: 0.9rem;
+    background: var(--color-bg-white);
+    color: var(--color-text-primary);
+}
+
+.dark .edit-input {
+    background: var(--color-bg-lighter);
+    color: var(--color-text-primary);
+    border-color: var(--color-border);
 }
 
 .icon-btn {
