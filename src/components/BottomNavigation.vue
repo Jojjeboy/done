@@ -31,7 +31,12 @@ const addTask = () => {
     >
       <Home :size="24" />
     </button>
-    <button @click="addTask" class="nav-btn-add" :aria-label="t('tasks.addTask')">
+    <button
+      v-if="!isActive('/settings')"
+      @click="addTask"
+      class="nav-btn-add"
+      :aria-label="t('tasks.addTask')"
+    >
       <Plus :size="28" />
     </button>
     <button

@@ -2,6 +2,8 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { getDatabase } from '@/db'
 import { useSettingsStore } from '@/stores/settings'
+import { useAuthStore } from '@/stores/auth'
+import { syncService } from '@/services/sync'
 import type { TodoItem, Subtask, Category } from '@/types/todo'
 
 export const useTodoStore = defineStore('todo', () => {
@@ -164,7 +166,15 @@ export const useTodoStore = defineStore('todo', () => {
       subtasks.value = dbSubtasks
       categories.value = finalCategories
 
+      categories.value = finalCategories
+
       initialized.value = true
+
+      // Initialize Sync
+      const authStore = useAuthStore()
+      if (authStore.user) {
+          syncService.init(authStore.user.uid)
+      }
     } catch (error) {
       console.error('Failed to initialize todo store:', error)
       throw error
@@ -174,6 +184,7 @@ export const useTodoStore = defineStore('todo', () => {
   }
 
   // Category CRUD
+
   const addCategory = async (title: string, color?: string, icon?: string) => {
       const category: Category = {
           id: generateId(),
@@ -185,6 +196,7 @@ export const useTodoStore = defineStore('todo', () => {
       categories.value.push(category)
       try {
           await getDatabase().table('categories').add(category)
+          await syncService.pushCategory(category)
       } catch (e) {
           console.error('Failed to add category', e)
           categories.value = categories.value.filter(c => c.id !== category.id)
@@ -203,6 +215,7 @@ export const useTodoStore = defineStore('todo', () => {
 
     try {
       await getDatabase().table('categories').update(id, updates)
+      await syncService.pushCategory(updated)
     } catch (e) {
       console.error('Failed to update category', e)
       categories.value[index] = original
@@ -226,6 +239,11 @@ export const useTodoStore = defineStore('todo', () => {
               await db.table('categories').delete(id)
               await db.table('todoItems').bulkPut(tasksToUpdate.map(t => ({...t}))) // Persist the nullified categoryId
           })
+          await syncService.deleteCategory(id)
+          // Also sync the tasks updates (category stripped)
+          for (const task of tasksToUpdate) {
+              await syncService.pushTodo(task)
+          }
       } catch (e) {
           console.error('Failed to delete category', e)
           throw e
@@ -261,6 +279,7 @@ export const useTodoStore = defineStore('todo', () => {
     try {
       const db = getDatabase()
       await db.table('todoItems').add(item)
+      await syncService.pushTodo(item)
     } catch (error) {
       console.error('Failed to persist todo item:', error)
       const index = todoItems.value.findIndex((i) => i.id === item.id)
@@ -290,6 +309,7 @@ export const useTodoStore = defineStore('todo', () => {
     try {
       const db = getDatabase()
       await db.table('todoItems').update(id, updatedItem)
+      await syncService.pushTodo(updatedItem)
     } catch (error) {
       console.error('Failed to update todo item:', error)
       todoItems.value[index] = original
@@ -314,6 +334,10 @@ export const useTodoStore = defineStore('todo', () => {
         await db.table('todoItems').delete(id)
         await db.table('subtasks').bulkDelete(itemSubtasks.map((s) => s.id))
       })
+      await syncService.deleteTodo(id)
+      for (const sub of itemSubtasks) {
+          await syncService.deleteSubtask(sub.id)
+      }
     } catch (error) {
       console.error('Failed to delete todo item:', error)
       throw error
@@ -334,6 +358,7 @@ export const useTodoStore = defineStore('todo', () => {
     try {
       const db = getDatabase()
       await db.table('subtasks').add(subtask)
+      await syncService.pushSubtask(subtask)
     } catch (error) {
       console.error('Failed to persist subtask:', error)
       const index = subtasks.value.findIndex((s) => s.id === subtask.id)
@@ -359,6 +384,7 @@ export const useTodoStore = defineStore('todo', () => {
     try {
       const db = getDatabase()
       await db.table('subtasks').update(id, updates)
+      await syncService.pushSubtask(updated)
     } catch (error) {
       console.error('Failed to update subtask:', error)
       subtasks.value[index] = original
@@ -377,6 +403,7 @@ export const useTodoStore = defineStore('todo', () => {
     try {
       const db = getDatabase()
       await db.table('subtasks').delete(id)
+      await syncService.deleteSubtask(id)
     } catch (error) {
       console.error('Failed to delete subtask:', error)
       throw error
@@ -424,7 +451,8 @@ export const useTodoStore = defineStore('todo', () => {
           item.description,
           item.priority,
           newDate.getTime(),
-          item.categoryId || null
+          item.categoryId || null,
+          item.recurrence
       )
       // We also update the new item to have the same recurrence!
       // But addTodoItem doesn't accept recurrence arg yet. We need to update it or update item after.
