@@ -50,7 +50,10 @@ class SyncService {
                 // Then update Store
                 const index = todoStore.todoItems.findIndex(i => i.id === data.id)
                 if (index !== -1) {
-                    todoStore.todoItems[index] = data
+                    const existing = todoStore.todoItems[index]
+                    if (existing) {
+                        todoStore.todoItems[index] = data
+                    }
                 } else {
                     todoStore.todoItems.push(data)
                 }
@@ -77,7 +80,10 @@ class SyncService {
                     await dexieDb.table('categories').put(data)
                     const index = todoStore.categories.findIndex(c => c.id === data.id)
                     if (index !== -1) {
-                        todoStore.categories[index] = data
+                        const existing = todoStore.categories[index]
+                        if (existing) {
+                            todoStore.categories[index] = data
+                        }
                     } else {
                         todoStore.categories.push(data)
                     }
@@ -104,8 +110,10 @@ class SyncService {
                      await dexieDb.table('subtasks').put(data)
                      const index = todoStore.subtasks.findIndex(s => s.id === data.id)
                      if (index !== -1) {
-                         // Update existing
-                         Object.assign(todoStore.subtasks[index], data)
+                         const existing = todoStore.subtasks[index]
+                         if (existing) {
+                             Object.assign(existing, data)
+                         }
                      } else {
                          todoStore.subtasks.push(data)
                      }
