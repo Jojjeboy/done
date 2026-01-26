@@ -348,7 +348,7 @@ onMounted(async () => {
 .task-list-view {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-lg) var(--spacing-2xl) 5rem;
+  padding: var(--spacing-lg) var(--spacing-xs) 5rem;
 }
 
 .task-header {
