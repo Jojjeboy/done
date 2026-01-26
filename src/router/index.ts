@@ -27,6 +27,11 @@ const router = createRouter({
       name: 'changelog',
       component: () => import('../views/ChangelogView.vue'),
     },
+    {
+      path: '/task/:id',
+      name: 'task-detail',
+      component: () => import('../views/TaskDetailView.vue'),
+    },
   ],
 })
 

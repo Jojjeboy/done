@@ -20,6 +20,7 @@ export interface TodoItem {
   deadline: number | null
   recurrence?: 'daily' | 'weekly' | 'monthly' | null
   categoryId: string | null
+  location?: { lat: number; lng: number } | null
   createdAt: number
   updatedAt: number
 }
@@ -29,4 +30,12 @@ export interface Subtask {
   todoId: string
   title: string
   completed: boolean
+}
+
+export interface Comment {
+  id: string
+  todoId: string
+  text: string
+  createdAt: number
+  userId: string
 }

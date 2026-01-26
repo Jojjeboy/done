@@ -31,6 +31,9 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    chunkSizeWarningLimit: 1000,
+  },
   base: '/done/',
   resolve: {
     alias: {

@@ -4,12 +4,13 @@ import { getDatabase } from '@/db'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
 import { syncService } from '@/services/sync'
-import type { TodoItem, Subtask, Category } from '@/types/todo'
+import type { TodoItem, Subtask, Category, Comment } from '@/types/todo'
 
 export const useTodoStore = defineStore('todo', () => {
   // State
   const todoItems = ref<TodoItem[]>([])
   const subtasks = ref<Subtask[]>([])
+  const comments = ref<Comment[]>([])
   const categories = ref<Category[]>([])
   const loading = ref(true)
   const initialized = ref(false)
@@ -24,6 +25,19 @@ export const useTodoStore = defineStore('todo', () => {
       }
       map.get(subtask.todoId)!.push(subtask)
     })
+    return map
+  })
+
+  const commentsByTodoId = computed(() => {
+    const map = new Map<string, Comment[]>()
+    comments.value.forEach((comment) => {
+      if (!map.has(comment.todoId)) {
+        map.set(comment.todoId, [])
+      }
+      map.get(comment.todoId)!.push(comment)
+    })
+    // Sort by date asc
+    map.forEach((list) => list.sort((a, b) => a.createdAt - b.createdAt))
     return map
   })
 
@@ -93,10 +107,11 @@ export const useTodoStore = defineStore('todo', () => {
       const db = getDatabase()
 
       // Load all data from IndexedDB
-      const [dbItems, dbSubtasks, dbCategories] = await Promise.all([
+      const [dbItems, dbSubtasks, dbCategories, dbComments] = await Promise.all([
         db.table('todoItems').toArray(),
         db.table('subtasks').toArray(),
         db.table('categories').toArray(),
+        db.table('comments').toArray(),
       ])
 
       let finalCategories = dbCategories
@@ -165,8 +180,7 @@ export const useTodoStore = defineStore('todo', () => {
 
       todoItems.value = migratedItems
       subtasks.value = dbSubtasks
-      categories.value = finalCategories
-
+      comments.value = dbComments || []
       categories.value = finalCategories
 
       initialized.value = true
@@ -259,7 +273,8 @@ export const useTodoStore = defineStore('todo', () => {
     priority: TodoItem['priority'] = 'medium',
     deadline: number | null = null,
     categoryId: string | null = null,
-    recurrence: TodoItem['recurrence'] = null
+    recurrence: TodoItem['recurrence'] = null,
+    location: TodoItem['location'] = null
   ) => {
     const now = Date.now()
     const item: TodoItem = {
@@ -271,6 +286,7 @@ export const useTodoStore = defineStore('todo', () => {
       deadline,
       recurrence,
       categoryId,
+      location,
       createdAt: now,
       updatedAt: now,
     }
@@ -461,6 +477,45 @@ export const useTodoStore = defineStore('todo', () => {
       // Updating addTodoItem signature is better.
   }
 
+  // Comment CRUD
+  const addComment = async (todoId: string, text: string) => {
+    const authStore = useAuthStore()
+    const comment: Comment = {
+      id: generateId(),
+      todoId,
+      text,
+      createdAt: Date.now(),
+      userId: authStore.user?.uid || 'anonymous',
+    }
+
+    comments.value.push(comment)
+
+    try {
+      const db = getDatabase()
+      await db.table('comments').add(comment)
+    } catch (error) {
+      console.error('Failed to persist comment:', error)
+      const index = comments.value.findIndex((c) => c.id === comment.id)
+      if (index !== -1) comments.value.splice(index, 1)
+      throw error
+    }
+    return comment
+  }
+
+  const deleteComment = async (id: string) => {
+    const index = comments.value.findIndex((c) => c.id === id)
+    if (index === -1) return
+
+    comments.value.splice(index, 1)
+
+    try {
+      const db = getDatabase()
+      await db.table('comments').delete(id)
+    } catch (error) {
+      console.error('Failed to delete comment:', error)
+    }
+  }
+
   return {
     // State
     todoItems,
@@ -485,6 +540,12 @@ export const useTodoStore = defineStore('todo', () => {
     addSubtask,
     updateSubtask,
     deleteSubtask,
+    // Comments
+    comments,
+    commentsByTodoId,
+    addComment,
+    deleteComment,
+
     searchQuery,
   }
 })

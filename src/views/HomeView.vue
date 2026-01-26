@@ -1,49 +1,37 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import MobileHeader from '@/components/MobileHeader.vue'
 import TaskListView from '@/components/TaskListView.vue'
 import BottomNavigation from '@/components/BottomNavigation.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import SearchModal from '@/components/SearchModal.vue'
-import TodoModal from '@/components/TodoModal.vue'
-import { useRoute } from 'vue-router'
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
-import { computed } from 'vue'
 import { Trash2, AlertTriangle } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
+const router = useRouter()
 const todoStore = useTodoStore()
+const { t } = useI18n()
+
 const showSearchModal = ref(false)
-const showTodoModal = ref(false)
-const editingTodoId = ref<string | null>(null)
-const initialCategoryId = ref<string | null>(null)
+const showStaleConfirm = ref(false)
 
 const openAddTask = () => {
-    editingTodoId.value = null
-    initialCategoryId.value = route.query.category as string || null
-    showTodoModal.value = true
-}
-
-const openEditTask = (taskId: string) => {
-    editingTodoId.value = taskId
-    showTodoModal.value = true
-}
-
-const handleModalClose = () => {
-    showTodoModal.value = false
-    editingTodoId.value = null
-    initialCategoryId.value = null
+  const category = route.query.category as string
+  if (category) {
+    router.push(`/task/new?category=${category}`)
+  } else {
+    router.push('/task/new')
+  }
 }
 
 const staleTasks = computed(() => {
   const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000)
   return todoStore.todoItems.filter(t => t.status === 'pending' && t.updatedAt < thirtyDaysAgo)
 })
-
-import ConfirmationModal from '@/components/ConfirmationModal.vue'
-
-// ... existing code ...
-const showStaleConfirm = ref(false)
 
 const cleanupStaleTasks = () => {
   showStaleConfirm.value = true
@@ -55,11 +43,21 @@ const confirmCleanup = async () => {
       await todoStore.deleteTodoItem(task.id)
     }
   } catch (error) {
-      console.error(error)
+    console.error('Failed to cleanup tasks:', error)
   } finally {
     showStaleConfirm.value = false
   }
 }
+
+onMounted(async () => {
+  if (!todoStore.initialized) {
+    try {
+      await todoStore.initialize()
+    } catch (error) {
+      console.error('Failed to initialize todo store:', error)
+    }
+  }
+})
 </script>
 
 <template>
@@ -80,53 +78,34 @@ const confirmCleanup = async () => {
         <div v-if="staleTasks.length > 0" class="stale-banner">
           <div class="stale-content">
             <AlertTriangle :size="20" class="stale-icon" />
-            <span>You have {{ staleTasks.length }} tasks untouched for 30 days. Clean up?</span>
+            <span>{{ t('home.staleTasksMessage', { count: staleTasks.length }) }}</span>
           </div>
           <button @click="cleanupStaleTasks" class="cleanup-btn">
             <Trash2 :size="16" />
-            <span>Clean</span>
+            <span>{{ t('home.clean') }}</span>
           </button>
         </div>
 
-        <TaskListView @edit-task="openEditTask" />
+        <TaskListView />
       </div>
 
       <!-- Mobile Bottom Nav -->
       <div class="mobile-only">
-        <BottomNavigation
-          @open-search="showSearchModal = true"
-          @open-add-task="openAddTask"
-        />
+        <BottomNavigation @open-search="showSearchModal = true" @open-add-task="openAddTask" />
       </div>
     </main>
 
     <!-- Modals -->
-    <SearchModal
-      v-if="showSearchModal"
-      @close="showSearchModal = false"
-      @edit-task="(id) => { showSearchModal = false; openEditTask(id); }"
-    />
-    <TodoModal
-      v-if="showTodoModal"
-      :todo-id="editingTodoId"
-      :initial-category-id="initialCategoryId"
-      @close="handleModalClose"
-    />
+    <SearchModal v-if="showSearchModal" @close="showSearchModal = false" />
 
     <!-- Desktop Add Task FAB -->
-     <button class="desktop-fab" @click="openAddTask">
-        <span class="plus-icon">+</span>
-     </button>
+    <button class="desktop-fab" @click="openAddTask">
+      <span class="plus-icon">+</span>
+    </button>
 
-     <ConfirmationModal
-        :isOpen="showStaleConfirm"
-        title="Clean up Stale Tasks"
-        :message="`Are you sure you want to delete ${staleTasks.length} tasks that haven't been touched in 30 days?`"
-        confirmText="Clean Up"
-        type="neutral"
-        @confirm="confirmCleanup"
-        @cancel="showStaleConfirm = false"
-     />
+    <ConfirmationModal :isOpen="showStaleConfirm" :title="t('home.cleanupTitle')"
+      :message="t('home.cleanupMessage', { count: staleTasks.length })" :confirmText="t('home.cleanUp')" type="neutral"
+      @confirm="confirmCleanup" @cancel="showStaleConfirm = false" />
   </div>
 </template>
 
@@ -168,7 +147,7 @@ const confirmCleanup = async () => {
 }
 
 .desktop-fab {
-    display: none;
+  display: none;
 }
 
 @media (min-width: 769px) {
@@ -182,36 +161,36 @@ const confirmCleanup = async () => {
   }
 
   .content-wrapper {
-      padding: var(--spacing-2xl);
+    padding: var(--spacing-2xl);
   }
 
   .desktop-fab {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      bottom: 2rem;
-      right: 2rem;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background-color: var(--color-primary);
-      color: white;
-      border: none;
-      box-shadow: var(--shadow-lg);
-      cursor: pointer;
-      z-index: 10;
-      transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.2s;
   }
 
   .plus-icon {
-      font-size: 2rem;
-      line-height: 1;
-      margin-top: -4px;
+    font-size: 2rem;
+    line-height: 1;
+    margin-top: -4px;
   }
 
   .desktop-fab:hover {
-      transform: scale(1.1);
+    transform: scale(1.1);
   }
 }
 

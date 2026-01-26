@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import type { TodoItem, Subtask, Category } from '@/types/todo'
+import type { TodoItem, Subtask, Category, Comment } from '@/types/todo'
 import { useAuthStore } from '@/stores/auth'
 
 /**
@@ -14,6 +14,7 @@ class TodoDatabase extends Dexie {
   todoItems!: Table<TodoItem>
   subtasks!: Table<Subtask>
   categories!: Table<Category>
+  comments!: Table<Comment>
   settings!: Table<Setting>
 
   constructor() {
@@ -53,6 +54,14 @@ class TodoDatabase extends Dexie {
       subtasks: 'id, todoId',
       categories: 'id, createdAt',
       settings: 'key',
+    })
+
+    this.version(6).stores({
+      todoItems: 'id, createdAt, updatedAt, deadline, categoryId',
+      subtasks: 'id, todoId',
+      categories: 'id, createdAt',
+      settings: 'key',
+      comments: 'id, todoId',
     })
   }
 }

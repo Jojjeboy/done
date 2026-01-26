@@ -14,9 +14,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const emit = defineEmits<{
-  'edit-task': [taskId: string]
-}>()
+
 
 type FilterType = 'all' | 'todo' | 'in-progress' | 'completed' | 'starred'
 const activeFilter = ref<FilterType>('all')
@@ -26,15 +24,15 @@ const activeCategoryId = computed(() => route.query.category as string | undefin
 const showFilterModal = ref(false)
 
 const resetFilters = () => {
-    activeFilter.value = 'all'
-    router.replace({ query: {} })
+  activeFilter.value = 'all'
+  router.replace({ query: {} })
 }
 
 const currentViewLabel = computed(() => {
-    if (activeCategoryId.value) {
-        return todoStore.categoriesById.get(activeCategoryId.value)?.title || 'Category'
-    }
-    return t(`tasks.filters.${activeFilter.value}`)
+  if (activeCategoryId.value) {
+    return todoStore.categoriesById.get(activeCategoryId.value)?.title || 'Category'
+  }
+  return t(`tasks.filters.${activeFilter.value}`)
 })
 
 // Get all tasks from all lists, filtered by category if active
@@ -69,13 +67,13 @@ const filteredTasks = computed(() => {
 
   // Search Filter (from Store)
   if (todoStore.searchQuery && todoStore.searchQuery.trim()) {
-      const query = todoStore.searchQuery.toLowerCase()
-      tasks = tasks.filter(t => t.title.toLowerCase().includes(query))
+    const query = todoStore.searchQuery.toLowerCase()
+    tasks = tasks.filter(t => t.title.toLowerCase().includes(query))
   }
 
   if (activeFilter.value === 'all') {
-      // In 'all' view, we show pending/in-progress here, completed go to accordion
-      return tasks.filter(t => t.status !== 'completed')
+    // In 'all' view, we show pending/in-progress here, completed go to accordion
+    return tasks.filter(t => t.status !== 'completed')
   }
   if (activeFilter.value === 'todo') return tasks.filter(t => t.status === 'pending')
   if (activeFilter.value === 'in-progress') return tasks.filter(t => t.status === 'in-progress')
@@ -124,7 +122,7 @@ const tasksByDate = computed(() => {
   // Add today first
   const todayTasks = groups.get('today')
   if (todayTasks) {
-    sortedGroups.set('today', { label: `Today ${today.toLocaleDateString('en-US', { weekday: 'long' })}`, tasks: todayTasks })
+    sortedGroups.set('today', { label: `${t('tasks.today')} ${today.toLocaleDateString(undefined, { weekday: 'long' })}`, tasks: todayTasks })
   }
 
   // Add tomorrow
@@ -132,7 +130,7 @@ const tasksByDate = computed(() => {
   if (tomorrowTasks) {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
-    sortedGroups.set('tomorrow', { label: `Tomorrow ${tomorrow.toLocaleDateString('en-US', { weekday: 'long' })}`, tasks: tomorrowTasks })
+    sortedGroups.set('tomorrow', { label: `${t('tasks.tomorrow')} ${tomorrow.toLocaleDateString(undefined, { weekday: 'long' })}`, tasks: tomorrowTasks })
   }
 
   // Add other dates
@@ -206,69 +204,37 @@ onMounted(async () => {
 <template>
   <div class="task-list-view">
     <div class="task-header">
-       <div class="view-group">
-           <div class="view-selector" @click="showFilterModal = true">
-              <h2 class="view-title">{{ currentViewLabel }}</h2>
-              <ChevronRight :size="20" class="rotate-90" />
-           </div>
-           <button
-              v-if="activeFilter !== 'all' || activeCategoryId"
-              class="reset-btn"
-              @click="resetFilters"
-              title="Clear all filters"
-           >
-              <X :size="14" />
-           </button>
-       </div>
+      <div class="view-group">
+        <div class="view-selector" @click="showFilterModal = true">
+          <h2 class="view-title">{{ currentViewLabel }}</h2>
+          <ChevronRight :size="20" class="rotate-90" />
+        </div>
+        <button v-if="activeFilter !== 'all' || activeCategoryId" class="reset-btn" @click="resetFilters"
+          :title="t('tasks.clearFilters')">
+          <X :size="14" />
+        </button>
+      </div>
 
-       <div class="search-container">
-           <Search :size="18" class="search-icon" />
-           <input
-              v-model="todoStore.searchQuery"
-              type="text"
-              class="search-input"
-              :placeholder="t('search.placeholder')"
-           />
-           <button
-              v-if="todoStore.searchQuery"
-              class="search-clear-btn"
-              @click="todoStore.searchQuery = ''"
-              title="Clear search"
-           >
-              <X :size="14" />
-           </button>
-       </div>
+      <div class="search-container">
+        <Search :size="18" class="search-icon" />
+        <input v-model="todoStore.searchQuery" type="text" class="search-input"
+          :placeholder="t('search.placeholder')" />
+        <button v-if="todoStore.searchQuery" class="search-clear-btn" @click="todoStore.searchQuery = ''"
+          :title="t('search.clear')">
+          <X :size="14" />
+        </button>
+      </div>
     </div>
 
-    <TransitionGroup
-      name="list"
-      tag="div"
-      class="task-sections"
-    >
-      <div
-        v-for="[dateKey, group] in tasksByDate"
-        :key="dateKey"
-        class="task-section"
-      >
+    <TransitionGroup name="list" tag="div" class="task-sections">
+      <div v-for="[dateKey, group] in tasksByDate" :key="dateKey" class="task-section">
         <h3 class="section-title">{{ group.label }}</h3>
-        <TransitionGroup
-          name="list"
-          tag="div"
-          class="tasks"
-        >
-          <div
-            v-for="task in group.tasks"
-            :key="task.id"
-            class="task-card"
-            :class="{ completed: task.status === 'completed' }"
-            @click="emit('edit-task', task.id)"
-          >
-            <button
-              @click.stop="todoStore.toggleTodoCompletion(task.id)"
-              class="task-checkbox-btn"
+        <TransitionGroup name="list" tag="div" class="tasks">
+          <div v-for="task in group.tasks" :key="task.id" class="task-card"
+            :class="{ completed: task.status === 'completed' }" @click="router.push(`/task/${task.id}`)">
+            <button @click.stop="todoStore.toggleTodoCompletion(task.id)" class="task-checkbox-btn"
               :title="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'"
-              :aria-label="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'"
-            >
+              :aria-label="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'">
               <div v-if="task.status === 'completed'" class="check-circle-wrapper">
                 <Check :size="14" class="check-icon-inner" />
               </div>
@@ -282,7 +248,8 @@ onMounted(async () => {
               <div class="task-main-info">
                 <h4 class="task-title">{{ task.title }}</h4>
                 <div class="task-meta">
-                  <span v-if="task.categoryId" class="task-category-dot" :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span>
+                  <span v-if="task.categoryId" class="task-category-dot"
+                    :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span>
                   <div class="task-time" v-if="task.deadline">
                     <Clock :size="12" />
                     <span>{{ formatTime(task.deadline) }}</span>
@@ -290,18 +257,16 @@ onMounted(async () => {
                   <div class="task-subtasks" v-if="(todoStore.subtasksByTodoId.get(task.id)?.length || 0) > 0">
                     <List :size="12" />
                     <span>
-                      {{ todoStore.subtasksByTodoId.get(task.id)?.filter(s => s.completed).length }}/{{ todoStore.subtasksByTodoId.get(task.id)?.length }}
+                      {{todoStore.subtasksByTodoId.get(task.id)?.filter(s => s.completed).length}}/{{
+                        todoStore.subtasksByTodoId.get(task.id)?.length }}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <button
-              class="task-star-btn"
-              @click.stop="togglePriority(task)"
-              :class="{ active: task.priority === 'high' }"
-            >
+            <button class="task-star-btn" @click.stop="togglePriority(task)"
+              :class="{ active: task.priority === 'high' }">
               <Star :size="20" :class="{ 'star-filled': task.priority === 'high' }" />
             </button>
           </div>
@@ -314,55 +279,40 @@ onMounted(async () => {
       <button class="accordion-header" @click="isCompletedOpen = !isCompletedOpen">
         <span class="accordion-title">{{ t('tasks.filters.completed') }} ({{ completedTasks.length }})</span>
         <div class="accordion-icon" :class="{ open: isCompletedOpen }">
-             <ChevronRight :size="16" />
+          <ChevronRight :size="16" />
         </div>
       </button>
 
       <div v-if="isCompletedOpen" class="accordion-content">
-          <div
-            v-for="task in completedTasks"
-            :key="task.id"
-            class="task-card completed"
-            @click="emit('edit-task', task.id)"
-          >
-            <button
-              @click.stop="todoStore.toggleTodoCompletion(task.id)"
-              class="task-checkbox-btn"
-            >
-              <div class="check-circle-wrapper">
-                <Check :size="14" class="check-icon-inner" />
-              </div>
-            </button>
-
-            <div class="task-content">
-              <div class="task-main-info">
-                <h4 class="task-title">{{ task.title }}</h4>
-              </div>
+        <div v-for="task in completedTasks" :key="task.id" class="task-card completed"
+          @click="router.push(`/task/${task.id}`)">
+          <button @click.stop="todoStore.toggleTodoCompletion(task.id)" class="task-checkbox-btn">
+            <div class="check-circle-wrapper">
+              <Check :size="14" class="check-icon-inner" />
             </div>
+          </button>
 
-            <button
-              class="task-star-btn"
-              @click.stop="togglePriority(task)"
-              :class="{ active: task.priority === 'high' }"
-            >
-              <Star :size="20" :class="{ 'star-filled': task.priority === 'high' }" />
-            </button>
+          <div class="task-content">
+            <div class="task-main-info">
+              <h4 class="task-title">{{ task.title }}</h4>
+            </div>
           </div>
+
+          <button class="task-star-btn" @click.stop="togglePriority(task)"
+            :class="{ active: task.priority === 'high' }">
+            <Star :size="20" :class="{ 'star-filled': task.priority === 'high' }" />
+          </button>
+        </div>
       </div>
     </div>
 
-    <FilterModal
-        :isOpen="showFilterModal"
-        :active-filter="activeFilter"
-        :active-category="activeCategoryId || null"
-        @update:filter="activeFilter = $event as any"
-        @update:category="(id) => router.replace({ query: { category: id } })"
-        @close="showFilterModal = false"
-    />
+    <FilterModal :isOpen="showFilterModal" :active-filter="activeFilter" :active-category="activeCategoryId || null"
+      @update:filter="activeFilter = $event as any"
+      @update:category="(id) => router.replace({ query: { category: id } })" @close="showFilterModal = false" />
 
     <div v-if="filteredTasks.length === 0 && completedTasks.length === 0" class="empty-state">
-      <p v-if="todoStore.searchQuery">No search results</p>
-      <p v-else>No tasks to show</p>
+      <p v-if="todoStore.searchQuery">{{ t('tasks.noResults') }}</p>
+      <p v-else>{{ t('tasks.noTasks') }}</p>
     </div>
   </div>
 </template>
@@ -375,167 +325,174 @@ onMounted(async () => {
 }
 
 .task-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--spacing-xl);
-    gap: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-lg);
 }
 
 .view-group {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .view-selector {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    cursor: pointer;
-    padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
-    border-radius: var(--radius-md);
-    transition: background 0.2s;
-    flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
+  border-radius: var(--radius-md);
+  transition: background 0.2s;
+  flex-shrink: 0;
 }
 
 .reset-btn {
-    background: var(--color-bg-lavender);
-    border: none;
-    color: var(--color-primary);
-    padding: 2px;
-    border-radius: var(--radius-full);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
+  background: var(--color-bg-lavender);
+  border: none;
+  color: var(--color-primary);
+  padding: 2px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
 .reset-btn:hover {
-    background: var(--color-primary);
-    color: white;
+  background: var(--color-primary);
+  color: white;
 }
 
 .view-selector:hover {
-    background: var(--color-bg-lavender);
+  background: var(--color-bg-lavender);
 }
 
 .view-title {
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--color-text-primary);
-    margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
 }
 
 .rotate-90 {
-    transform: rotate(90deg);
-    color: var(--color-text-secondary);
+  transform: rotate(90deg);
+  color: var(--color-text-secondary);
 }
 
 .search-container {
-    position: relative;
-    flex: 1;
-    max-width: 240px;
+  position: relative;
+  flex: 1;
+  max-width: 240px;
 }
 
 .search-icon {
-    position: absolute;
-    left: var(--spacing-md);
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--color-text-muted);
-    pointer-events: none;
+  position: absolute;
+  left: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
 }
 
 .search-input {
-    width: 100%;
-    padding: var(--spacing-sm) calc(var(--spacing-md) * 2 + 14px) var(--spacing-sm) calc(var(--spacing-md) * 2 + 18px);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-sm);
-    background: var(--color-bg-white);
-    color: var(--color-text-primary);
-    transition: all 0.2s;
+  width: 100%;
+  padding: var(--spacing-sm) calc(var(--spacing-md) * 2 + 14px) var(--spacing-sm) calc(var(--spacing-md) * 2 + 18px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  background: var(--color-bg-white);
+  color: var(--color-text-primary);
+  transition: all 0.2s;
 }
 
 .search-clear-btn {
-    position: absolute;
-    right: var(--spacing-md);
-    top: 50%;
-    transform: translateY(-50%);
-    background: var(--color-bg-lavender);
-    border: none;
-    color: var(--color-primary);
-    padding: 2px;
-    border-radius: var(--radius-full);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
+  position: absolute;
+  right: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-bg-lavender);
+  border: none;
+  color: var(--color-primary);
+  padding: 2px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
 .search-clear-btn:hover {
-    background: var(--color-primary);
-    color: white;
+  background: var(--color-primary);
+  color: white;
 }
 
 .search-input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.1);
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.1);
 }
 
 .dark .search-input {
-    background: var(--color-bg-lighter);
+  background: var(--color-bg-lighter);
 }
 
 /* Added styles for accordion */
 .completed-accordion {
-    margin-top: var(--spacing-2xl);
-    border-top: 1px solid var(--color-border-light);
-    padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-2xl);
+  border-top: 1px solid var(--color-border-light);
+  padding-top: var(--spacing-lg);
 }
 
 .accordion-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    background: transparent;
-    border: none;
-    padding: var(--spacing-sm) 0;
-    cursor: pointer;
-    color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: var(--spacing-sm) 0;
+  cursor: pointer;
+  color: var(--color-text-secondary);
 }
 
 .accordion-title {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .accordion-icon {
-    transition: transform 0.2s ease;
+  transition: transform 0.2s ease;
 }
 
 .accordion-icon.open {
-    transform: rotate(90deg);
+  transform: rotate(90deg);
 }
 
 .accordion-content {
-    margin-top: var(--spacing-md);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    animation: slideDown 0.2s ease-out;
+  margin-top: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  animation: slideDown 0.2s ease-out;
 }
 
 @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .task-sections {

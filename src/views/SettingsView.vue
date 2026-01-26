@@ -12,6 +12,8 @@ import { ArrowLeft, LogOut, Moon, Sun, Globe, ListChecks, RotateCcw, FileText } 
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import type { SupportedLocale } from '@/i18n'
 import { ref as vueRef } from 'vue'
+
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import type { CommitData } from '@/types/commit-info'
 import commitData from '@/generated/commit-info.json'
 
@@ -25,6 +27,7 @@ const { t, locale } = useI18n()
 const { updateServiceWorker } = useRegisterSW()
 const isCheckingForUpdate = vueRef(false)
 const updateStatusMessage = vueRef('')
+const showLogoutConfirm = vueRef(false)
 
 const latestCommit = computed<CommitData>(() => commitData as CommitData)
 
@@ -44,14 +47,18 @@ const handleThemeChange = async (newTheme: 'light' | 'dark') => {
   await themeStore.setTheme(newTheme)
 }
 
-const handleLogout = async () => {
-  if (confirm(t('auth.confirmLogout') || 'Are you sure you want to log out?')) {
-    try {
-      await authStore.logout()
-      router.push('/login')
-    } catch (error) {
-      console.error('Logout failed:', error)
-    }
+const handleLogoutClick = () => {
+  showLogoutConfirm.value = true
+}
+
+const confirmLogout = async () => {
+  try {
+    await authStore.logout()
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout failed:', error)
+  } finally {
+    showLogoutConfirm.value = false
   }
 }
 
@@ -68,7 +75,7 @@ const handleCheckForUpdates = async () => {
   } catch (error) {
     console.error('Update check failed:', error)
     isCheckingForUpdate.value = false
-    updateStatusMessage.value = 'Update check failed'
+    updateStatusMessage.value = t('pwa.updateError')
   }
 }
 </script>
@@ -201,7 +208,7 @@ const handleCheckForUpdates = async () => {
               <h3 class="setting-title">{{ t('auth.signOut') }}</h3>
             </div>
 
-            <button @click="handleLogout" class="logout-button">
+            <button @click="handleLogoutClick" class="logout-button">
               <LogOut :size="18" />
               <span>{{ t('auth.signOut') || 'Log Out' }}</span>
             </button>
@@ -215,6 +222,9 @@ const handleCheckForUpdates = async () => {
         <BottomNavigation />
       </div>
     </main>
+
+    <ConfirmationModal :isOpen="showLogoutConfirm" :title="t('auth.signOut')" :message="t('auth.confirmLogout')"
+      :confirmText="t('auth.signOut')" type="danger" @confirm="confirmLogout" @cancel="showLogoutConfirm = false" />
   </div>
 </template>
 

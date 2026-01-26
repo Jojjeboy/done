@@ -4,13 +4,15 @@ import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
 import { X } from 'lucide-vue-next'
 
+import { useRouter } from 'vue-router'
+
 const emit = defineEmits<{
-  close: [],
-  'edit-task': [taskId: string]
+  close: []
 }>()
 
 const todoStore = useTodoStore()
 const { t } = useI18n()
+const router = useRouter()
 const searchQuery = ref('')
 
 const filteredTasks = computed(() => {
@@ -45,19 +47,9 @@ const handleClose = () => {
   <div class="search-modal-overlay" @click="handleClose">
     <div class="search-modal-content" @click.stop>
       <div class="search-header">
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="t('search.placeholder')"
-          class="search-input"
-          autofocus
-          @keyup.esc="handleClose"
-        />
-        <button
-          @click="handleClose"
-          class="close-btn"
-          :aria-label="t('common.close')"
-        >
+        <input v-model="searchQuery" type="text" :placeholder="t('search.placeholder')" class="search-input" autofocus
+          @keyup.esc="handleClose" />
+        <button @click="handleClose" class="close-btn" :aria-label="t('common.close')">
           <X class="w-5 h-5" />
         </button>
       </div>
@@ -67,12 +59,8 @@ const handleClose = () => {
           {{ t('search.noResults') }}
         </div>
         <div v-else class="results-list">
-          <div
-            v-for="task in filteredTasks"
-            :key="task.id"
-            class="result-item"
-            @click="emit('edit-task', task.id)"
-          >
+          <div v-for="task in filteredTasks" :key="task.id" class="result-item"
+            @click="router.push(`/task/${task.id}`); handleClose()">
             <div class="result-title">{{ task.title }}</div>
           </div>
         </div>
@@ -99,6 +87,7 @@ const handleClose = () => {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -120,6 +109,7 @@ const handleClose = () => {
   from {
     transform: translateY(100%);
   }
+
   to {
     transform: translateY(0);
   }

@@ -1,24 +1,15 @@
 {
   "common": {
-    "appName": "Done",
     "logout": "Logout",
     "save": "Save",
     "cancel": "Cancel",
-    "delete": "Delete",
     "edit": "Edit",
-    "add": "Add",
+    "delete": "Delete",
     "back": "Back",
-    "search": "Search",
-    "settings": "Settings",
     "close": "Close",
-    "hello": "Hello!",
-    "goodMorning": "Good morning",
-    "goodDay": "Good day",
-    "goodAfternoon": "Good afternoon",
-    "goodEvening": "Good evening",
-    "goodNight": "Good night",
-    "user": "User",
-    "viewOptions": "View Options"
+    "deleteTask": "Delete Task",
+    "deleteConfirm": "Are you sure you want to delete this task? This cannot be undone.",
+    "addToGoogleCalendar": "Add to Google Calendar"
   },
   "stats": {
     "title": "Productivity Insights",
@@ -50,14 +41,33 @@
       "starred": "Starred"
     },
     "statusTitle": "Status",
+    "today": "Today",
     "tomorrow": "Tomorrow",
+    "noDate": "No date",
+    "repeat": "Repeat",
+    "clearFilters": "Clear all filters",
+    "noResults": "No search results",
+    "noTasks": "No tasks to show",
+    "dueDate": "Due date",
+    "subtasks": "Subtasks",
+    "recurrence": {
+      "none": "Never",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
     "categories": {
       "none": "No category",
       "work": "Work",
       "lifestyle": "Lifestyle",
       "personal": "Personal",
       "hobby": "Hobby"
-    }
+    },
+    "addTag": "Add tags",
+    "addReminder": "Add reminders",
+    "addLocation": "Add location",
+    "comments": "Comments",
+    "writeComment": "Write a comment..."
   },
   "settings": {
     "title": "Settings",
@@ -81,7 +91,8 @@
   },
   "search": {
     "placeholder": "Search tasks...",
-    "noResults": "No tasks found"
+    "noResults": "No matching tasks found",
+    "clear": "Clear search"
   },
   "modal": {
     "newTask": "New Task",
@@ -123,7 +134,14 @@
     "commitHistory": "Recent Updates",
     "committedBy": "by",
     "viewOnGitHub": "View on GitHub",
-    "noCommitData": "No commit information available"
+    "noCommitData": "No commit information available",
+    "updateError": "Update check failed"
+  },
+  "home": {
+    "staleTasksMessage": "You have {count} tasks untouched for 30 days. Clean up?",
+    "clean": "Clean",
+    "cleanupTitle": "Clean up Stale Tasks",
+    "cleanupMessage": "Are you sure you want to delete {count} tasks that haven't been touched in 30 days?",
+    "cleanUp": "Clean Up"
   }
-
 }

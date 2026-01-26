@@ -1,24 +1,15 @@
 {
   "common": {
-    "appName": "Klar",
     "logout": "Logga ut",
     "save": "Spara",
     "cancel": "Avbryt",
-    "delete": "Radera",
     "edit": "Redigera",
-    "add": "Lägg till",
-    "back": "Tillbaka",
-    "search": "Sök",
-    "settings": "Inställningar",
+    "delete": "Ta bort",
+    "back": "Bakåt",
     "close": "Stäng",
-    "hello": "Hej!",
-    "goodMorning": "God morgon",
-    "goodDay": "God dag",
-    "goodAfternoon": "God eftermiddag",
-    "goodEvening": "God kväll",
-    "goodNight": "God natt",
-    "user": "Användare",
-    "viewOptions": "Visningsalternativ"
+    "deleteTask": "Ta bort uppgift",
+    "deleteConfirm": "Är du säker på att du vill ta bort den här uppgiften? Detta går inte att ångra.",
+    "addToGoogleCalendar": "Lägg till i Google Calendar"
   },
   "stats": {
     "title": "Produktivitetsinsikter",
@@ -50,14 +41,33 @@
       "starred": "Stjärnmärkta"
     },
     "statusTitle": "Status",
+    "today": "Idag",
     "tomorrow": "Imorgon",
+    "noDate": "Inget datum",
+    "repeat": "Upprepa",
+    "clearFilters": "Rensa alla filter",
+    "noResults": "Inga sökresultat",
+    "noTasks": "Inga uppgifter att visa",
+    "dueDate": "Förfallodatum",
+    "subtasks": "Deluppgifter",
+    "recurrence": {
+      "none": "Aldrig",
+      "daily": "Dagligen",
+      "weekly": "Veckovis",
+      "monthly": "Månadsvis"
+    },
     "categories": {
       "none": "Ingen kategori",
       "work": "Arbete",
       "lifestyle": "Livsstil",
       "personal": "Personligt",
       "hobby": "Hobby"
-    }
+    },
+    "addTag": "Lägg till etiketter",
+    "addReminder": "Lägg till påminnelser",
+    "addLocation": "Lägg till plats",
+    "comments": "Kommentarer",
+    "writeComment": "Skriv en kommentar..."
   },
   "settings": {
     "title": "Inställningar",
@@ -81,14 +91,15 @@
   },
   "search": {
     "placeholder": "Sök uppgifter...",
-    "noResults": "Inga uppgifter hittades"
+    "noResults": "Inga matchande uppgifter hittades",
+    "clear": "Rensa sökning"
   },
   "modal": {
     "newTask": "Ny uppgift",
     "whatTask": "Vad är uppgiften?",
     "taskPlaceholder": "t.ex. Handla mat",
     "description": "Beskrivning (Frivillig)",
-    "descriptionPlaceholder": "Lägg till fler detaljer (valfritt))",
+    "descriptionPlaceholder": "Lägg till fler detaljer...",
     "priority": "Prioritet",
     "category": "Kategori",
     "categories": {
@@ -123,7 +134,14 @@
     "commitHistory": "Senaste Uppdateringar",
     "committedBy": "av",
     "viewOnGitHub": "Visa på GitHub",
-    "noCommitData": "Ingen commit-information tillgänglig"
+    "noCommitData": "Ingen commit-information tillgänglig",
+    "updateError": "Misslyckades att söka efter uppdateringar"
+  },
+  "home": {
+    "staleTasksMessage": "Du har {count} uppgifter som inte rörts på 30 dagar. Rensa?",
+    "clean": "Rensa",
+    "cleanupTitle": "Rensa gamla uppgifter",
+    "cleanupMessage": "Är du säker på att du vill ta bort {count} uppgifter som inte rörts på 30 dagar?",
+    "cleanUp": "Rensa"
   }
-
 }

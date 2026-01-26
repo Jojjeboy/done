@@ -27,7 +27,7 @@ const handleLogin = async () => {
             <span class="logo-icon">✓</span>
           </div>
           <h1 class="app-title">
-            {{ t('common.appName') }}
+            Done
           </h1>
           <p class="app-subtitle">
             Task Management & To-Do List
@@ -41,10 +41,7 @@ const handleLogin = async () => {
           </p>
         </div>
 
-        <button
-          @click="handleLogin"
-          class="login-button"
-        >
+        <button @click="handleLogin" class="login-button">
           <LogIn :size="20" />
           <span>{{ t('auth.signIn') }}</span>
         </button>
