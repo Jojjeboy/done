@@ -20,6 +20,8 @@ A modern, offline-first Progressive Web App (PWA) for managing personal tasks, b
 - **Dark Mode**: Fully supported dark theme for all components.
 - **Mobile First**: Horizontal category chips and bottom navigation optimized for mobile use.
 - **Internationalization (i18n)**: Full support for English and Swedish.
+- **Changelog**: View recent development updates with commit history, timestamps, and direct links to GitHub commits.
+- **Version Tracking**: Latest commit information displayed in settings for transparency.
 
 ### 🛠 Technical Highlights
 

@@ -8,10 +8,12 @@ import { useThemeStore } from '@/stores/theme'
 import { useI18nStore } from '@/stores/i18n'
 import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
-import { ArrowLeft, LogOut, Moon, Sun, Globe, ListChecks, RotateCcw } from 'lucide-vue-next'
+import { ArrowLeft, LogOut, Moon, Sun, Globe, ListChecks, RotateCcw, FileText } from 'lucide-vue-next'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import type { SupportedLocale } from '@/i18n'
 import { ref as vueRef } from 'vue'
+import type { CommitData } from '@/types/commit-info'
+import commitData from '@/generated/commit-info.json'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -23,6 +25,8 @@ const { t, locale } = useI18n()
 const { updateServiceWorker } = useRegisterSW()
 const isCheckingForUpdate = vueRef(false)
 const updateStatusMessage = vueRef('')
+
+const latestCommit = computed<CommitData>(() => commitData as CommitData)
 
 const currentLocale = computed(() => locale.value as SupportedLocale)
 
@@ -169,10 +173,25 @@ const handleCheckForUpdates = async () => {
               <h3 class="setting-title">{{ t('pwa.titleCheckForUpdate') }}</h3>
             </div>
 
-            <button @click="handleCheckForUpdates" :disabled="isCheckingForUpdate" class="option-button full-width">
-              <RotateCcw :size="16" :class="{ 'spinning': isCheckingForUpdate }" />
-              <span>{{ updateStatusMessage || t('pwa.checkForUpdate') }}</span>
-            </button>
+            <!-- Latest Commit Info -->
+            <div v-if="latestCommit.latest" class="commit-info">
+              <p class="commit-label">{{ t('pwa.latestCommit') }}:</p>
+              <p class="commit-text">
+                <code class="commit-hash">{{ latestCommit.latest.hash }}</code>
+                <span class="commit-message">{{ latestCommit.latest.message }}</span>
+              </p>
+            </div>
+
+            <div class="button-group">
+              <button @click="handleCheckForUpdates" :disabled="isCheckingForUpdate" class="option-button">
+                <RotateCcw :size="16" />
+                <span>{{ updateStatusMessage || t('pwa.checkForUpdate') }}</span>
+              </button>
+              <button @click="router.push('/changelog')" class="option-button">
+                <FileText :size="16" />
+                <span>{{ t('pwa.viewChangelog') }}</span>
+              </button>
+            </div>
           </div>
 
           <!-- Signout -->
@@ -454,8 +473,55 @@ const handleCheckForUpdates = async () => {
   background: rgba(239, 68, 68, 0.1);
 }
 
+.commit-info {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-lighter);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--color-primary);
+}
+
+.dark .commit-info {
+  background: var(--color-bg-light);
+}
+
+.commit-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.commit-text {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.commit-hash {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: var(--font-size-xs);
+  background: var(--color-bg-white);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dark .commit-hash {
+  background: var(--color-bg-card);
+}
+
+.commit-message {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
 
 @keyframes spin {
+
   from {
     transform: rotate(0deg);
   }

@@ -116,6 +116,14 @@
     "noUpdate": "Already on the latest version",
     "updateFound": "Update found! Reloading...",
     "titleCheckForUpdate": "Updates",
-    "checkForUpdate": "Check for Updates"
+    "checkForUpdate": "Check for Updates",
+    "viewChangelog": "View Changelog",
+    "latestCommit": "Latest Commit",
+    "changelog": "Changelog",
+    "commitHistory": "Recent Updates",
+    "committedBy": "by",
+    "viewOnGitHub": "View on GitHub",
+    "noCommitData": "No commit information available"
   }
+
 }

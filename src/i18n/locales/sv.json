@@ -116,6 +116,14 @@
     "noUpdate": "Du har redan den senaste versionen",
     "updateFound": "Uppdatering hittad! Laddar om...",
     "titleCheckForUpdate": "Uppdateringar",
-    "checkForUpdate": "Sök efter uppdateringar"
+    "checkForUpdate": "Sök efter uppdateringar",
+    "viewChangelog": "Visa Ändringslogg",
+    "latestCommit": "Senaste Commit",
+    "changelog": "Ändringslogg",
+    "commitHistory": "Senaste Uppdateringar",
+    "committedBy": "av",
+    "viewOnGitHub": "Visa på GitHub",
+    "noCommitData": "Ingen commit-information tillgänglig"
   }
+
 }
