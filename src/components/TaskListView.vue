@@ -229,6 +229,14 @@ onMounted(async () => {
               class="search-input"
               :placeholder="t('search.placeholder')"
            />
+           <button
+              v-if="todoStore.searchQuery"
+              class="search-clear-btn"
+              @click="todoStore.searchQuery = ''"
+              title="Clear search"
+           >
+              <X :size="14" />
+           </button>
        </div>
     </div>
 
@@ -442,13 +450,35 @@ onMounted(async () => {
 
 .search-input {
     width: 100%;
-    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) calc(var(--spacing-md) * 2 + 18px);
+    padding: var(--spacing-sm) calc(var(--spacing-md) * 2 + 14px) var(--spacing-sm) calc(var(--spacing-md) * 2 + 18px);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-full);
     font-size: var(--font-size-sm);
     background: var(--color-bg-white);
     color: var(--color-text-primary);
     transition: all 0.2s;
+}
+
+.search-clear-btn {
+    position: absolute;
+    right: var(--spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--color-bg-lavender);
+    border: none;
+    color: var(--color-primary);
+    padding: 2px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.search-clear-btn:hover {
+    background: var(--color-primary);
+    color: white;
 }
 
 .search-input:focus {
