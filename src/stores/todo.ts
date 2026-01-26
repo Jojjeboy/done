@@ -13,6 +13,7 @@ export const useTodoStore = defineStore('todo', () => {
   const categories = ref<Category[]>([])
   const loading = ref(true)
   const initialized = ref(false)
+  const searchQuery = ref('')
 
   // Computed
   const subtasksByTodoId = computed(() => {
@@ -484,5 +485,6 @@ export const useTodoStore = defineStore('todo', () => {
     addSubtask,
     updateSubtask,
     deleteSubtask,
+    searchQuery,
   }
 })

@@ -40,10 +40,23 @@ const saveCategory = async (id: string) => {
   isEditingCategory.value = null
 }
 
-const deleteCategory = async (id: string) => {
-  if (confirm(t('common.deleteConfirm'))) {
-    await todoStore.deleteCategory(id)
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
+
+// ... existing code ...
+const showDeleteCategoryConfirm = ref(false)
+const categoryToDelete = ref<string | null>(null)
+
+const deleteCategory = (id: string) => {
+  categoryToDelete.value = id
+  showDeleteCategoryConfirm.value = true
+}
+
+const confirmDeleteCategory = async () => {
+  if (categoryToDelete.value) {
+      await todoStore.deleteCategory(categoryToDelete.value)
+      categoryToDelete.value = null
   }
+  showDeleteCategoryConfirm.value = false
 }
 
 const addCategory = async () => {
@@ -139,6 +152,16 @@ const addCategory = async () => {
         <span>{{ t('settings.title') }}</span>
       </button>
     </div>
+
+    <ConfirmationModal
+        :isOpen="showDeleteCategoryConfirm"
+        title="Delete Category"
+        message="Are you sure you want to delete this category? All tasks within it will be uncategorized."
+        confirmText="Delete"
+        type="danger"
+        @confirm="confirmDeleteCategory"
+        @cancel="showDeleteCategoryConfirm = false"
+    />
   </aside>
 </template>
 

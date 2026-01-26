@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
 import { Plus, Trash2, Check } from 'lucide-vue-next'
+import type { Subtask } from '@/types/todo'
 
 const props = defineProps<{
-  todoId: string
+  todoId?: string | null
+  modelValue?: { title: string; completed: boolean; id: string }[]
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: { title: string; completed: boolean; id: string }[]]
 }>()
 
 const todoStore = useTodoStore()
@@ -13,9 +19,18 @@ const { t } = useI18n()
 
 const newSubtaskTitle = ref('')
 const isAdding = ref(false)
+const editingId = ref<string | null>(null)
+const editingTitle = ref('')
+const editInputRef = ref<HTMLInputElement | null>(null)
+
+// If todoId is present, we use store. If not, we use modelValue (local state)
+const isLocalMode = computed(() => !props.todoId)
 
 const subtasks = computed(() => {
-  return todoStore.subtasksByTodoId.get(props.todoId) || []
+  if (isLocalMode.value) {
+    return props.modelValue || []
+  }
+  return todoStore.subtasksByTodoId.get(props.todoId!) || []
 })
 
 const handleAddSubtask = async () => {
@@ -23,7 +38,19 @@ const handleAddSubtask = async () => {
 
   try {
     isAdding.value = true
-    await todoStore.addSubtask(props.todoId, newSubtaskTitle.value.trim())
+    const title = newSubtaskTitle.value.trim()
+
+    if (isLocalMode.value) {
+      const newSubtask = {
+        id: crypto.randomUUID(), // Temp ID
+        title,
+        completed: false
+      }
+      emit('update:modelValue', [...(props.modelValue || []), newSubtask])
+    } else {
+      await todoStore.addSubtask(props.todoId!, title)
+    }
+
     newSubtaskTitle.value = ''
   } catch (error) {
     console.error('Failed to add subtask:', error)
@@ -32,9 +59,16 @@ const handleAddSubtask = async () => {
   }
 }
 
-const toggleSubtask = async (subtaskId: string, completed: boolean) => {
+const toggleSubtask = async (subtask: Subtask | { id: string; title: string; completed: boolean }) => {
   try {
-    await todoStore.updateSubtask(subtaskId, { completed: !completed })
+    if (isLocalMode.value) {
+      const updated = (props.modelValue || []).map(s =>
+        s.id === subtask.id ? { ...s, completed: !s.completed } : s
+      )
+      emit('update:modelValue', updated)
+    } else {
+      await todoStore.updateSubtask(subtask.id, { completed: !subtask.completed })
+    }
   } catch (error) {
     console.error('Failed to toggle subtask:', error)
   }
@@ -42,9 +76,48 @@ const toggleSubtask = async (subtaskId: string, completed: boolean) => {
 
 const deleteSubtask = async (subtaskId: string) => {
   try {
-    await todoStore.deleteSubtask(subtaskId)
+    if (isLocalMode.value) {
+       const updated = (props.modelValue || []).filter(s => s.id !== subtaskId)
+       emit('update:modelValue', updated)
+    } else {
+      await todoStore.deleteSubtask(subtaskId)
+    }
   } catch (error) {
     console.error('Failed to delete subtask:', error)
+  }
+}
+
+const startEditing = (subtask: { id: string; title: string }) => {
+  editingId.value = subtask.id
+  editingTitle.value = subtask.title
+  nextTick(() => {
+    editInputRef.value?.focus()
+  })
+}
+
+const cancelEditing = () => {
+  editingId.value = null
+  editingTitle.value = ''
+}
+
+const saveEditing = async () => {
+  if (!editingId.value || !editingTitle.value.trim()) {
+      cancelEditing()
+      return
+  }
+
+  try {
+    if (isLocalMode.value) {
+        const updated = (props.modelValue || []).map(s =>
+            s.id === editingId.value ? { ...s, title: editingTitle.value.trim() } : s
+        )
+        emit('update:modelValue', updated)
+    } else {
+        await todoStore.updateSubtask(editingId.value, { title: editingTitle.value.trim() })
+    }
+    cancelEditing()
+  } catch (error) {
+    console.error('Failed to update subtask:', error)
   }
 }
 </script>
@@ -63,7 +136,7 @@ const deleteSubtask = async (subtaskId: string) => {
         :class="{ completed: subtask.completed }"
       >
         <button
-          @click="toggleSubtask(subtask.id, subtask.completed)"
+          @click="toggleSubtask(subtask)"
           class="subtask-checkbox"
         >
           <div v-if="subtask.completed" class="check-circle-wrapper">
@@ -71,7 +144,25 @@ const deleteSubtask = async (subtaskId: string) => {
           </div>
           <div v-else class="empty-circle"></div>
         </button>
-        <span class="subtask-text">{{ subtask.title }}</span>
+
+        <div v-if="editingId === subtask.id" class="edit-wrapper">
+            <input
+                ref="editInputRef"
+                v-model="editingTitle"
+                class="edit-input"
+                @blur="saveEditing"
+                @keyup.enter="saveEditing"
+                @keyup.escape="cancelEditing"
+            />
+        </div>
+        <span
+            v-else
+            class="subtask-text"
+            @click="startEditing(subtask)"
+        >
+            {{ subtask.title }}
+        </span>
+
         <button @click="deleteSubtask(subtask.id)" class="delete-btn">
           <Trash2 :size="14" />
         </button>
@@ -113,7 +204,7 @@ const deleteSubtask = async (subtaskId: string) => {
 }
 
 .subtask-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-secondary);
   text-transform: uppercase;
@@ -124,7 +215,7 @@ const deleteSubtask = async (subtaskId: string) => {
 .subtask-items {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   margin-bottom: var(--spacing-md);
 }
 
@@ -134,6 +225,7 @@ const deleteSubtask = async (subtaskId: string) => {
   gap: var(--spacing-md);
   padding: var(--spacing-sm) 0;
   transition: all var(--transition-base);
+  min-height: 32px;
 }
 
 .subtask-checkbox {
@@ -148,8 +240,8 @@ const deleteSubtask = async (subtaskId: string) => {
 }
 
 .empty-circle {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border: 2px solid currentColor;
   border-radius: 50%;
   transition: all var(--transition-base);
@@ -160,8 +252,8 @@ const deleteSubtask = async (subtaskId: string) => {
 }
 
 .check-circle-wrapper {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   background-color: var(--color-primary);
   border-radius: 50%;
   display: flex;
@@ -178,6 +270,26 @@ const deleteSubtask = async (subtaskId: string) => {
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   transition: all var(--transition-base);
+  cursor: text;
+}
+
+.edit-wrapper {
+    flex: 1;
+}
+
+.edit-input {
+    width: 100%;
+    font-size: var(--font-size-sm);
+    padding: 2px 4px;
+    border: 1px solid var(--color-primary);
+    border-radius: 4px;
+    background: var(--color-bg-white);
+    color: var(--color-text-primary);
+    margin: -3px 0;
+}
+
+.edit-input:focus {
+    outline: none;
 }
 
 .subtask-item.completed .subtask-text {
@@ -193,6 +305,8 @@ const deleteSubtask = async (subtaskId: string) => {
   opacity: 0;
   transition: all var(--transition-base);
   padding: var(--spacing-xs);
+  display: flex;
+  align-items: center;
 }
 
 .subtask-item:hover .delete-btn {
@@ -225,7 +339,7 @@ const deleteSubtask = async (subtaskId: string) => {
 
 .subtask-input {
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) calc(var(--spacing-lg) + 12px);
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) calc(var(--spacing-lg) + 8px);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: var(--color-bg-lavender);

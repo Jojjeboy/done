@@ -2,11 +2,14 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
+import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
-import { Check, Clock, Star, List } from 'lucide-vue-next'
+import { Check, Clock, Star, List, ChevronRight } from 'lucide-vue-next'
 import type { TodoItem } from '@/types/todo'
+import FilterModal from '@/components/FilterModal.vue'
 
 const todoStore = useTodoStore()
+const settingsStore = useSettingsStore()
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +23,15 @@ const activeFilter = ref<FilterType>('all')
 
 const activeCategoryId = computed(() => route.query.category as string | undefined)
 
+const showFilterModal = ref(false)
+
+const currentViewLabel = computed(() => {
+    if (activeCategoryId.value) {
+        return todoStore.categoriesById.get(activeCategoryId.value)?.title || 'Category'
+    }
+    return t(`tasks.filters.${activeFilter.value}`)
+})
+
 // Get all tasks from all lists, filtered by category if active
 const allTasks = computed(() => {
   let tasks = todoStore.todoItems
@@ -28,20 +40,45 @@ const allTasks = computed(() => {
     tasks = tasks.filter(t => t.categoryId === activeCategoryId.value)
   }
 
+  // Filter out completed if setting is enabled, ONLY if not explicitly viewing 'completed' tab
+  if (settingsStore.hideCompleted && activeFilter.value !== 'completed') {
+    tasks = tasks.filter(t => t.status !== 'completed')
+  }
+
   return tasks
 })
 
-// Filter tasks based on active filter
-const filteredTasks = computed(() => {
-  if (activeFilter.value === 'all') return allTasks.value
-  if (activeFilter.value === 'todo') return allTasks.value.filter(t => t.status === 'pending')
-  if (activeFilter.value === 'in-progress') return allTasks.value.filter(t => t.status === 'in-progress')
-  if (activeFilter.value === 'completed') return allTasks.value.filter(t => t.status === 'completed')
-  if (activeFilter.value === 'starred') return allTasks.value.filter(t => t.priority === 'high')
-  return allTasks.value
+const completedTasks = computed(() => {
+  // Only show separate completed list if we are in 'all' filter and not hiding completed globally
+  if (activeFilter.value === 'all' && !settingsStore.hideCompleted) {
+    return allTasks.value.filter(t => t.status === 'completed')
+  }
+  return []
 })
 
-// Group tasks by date
+const isCompletedOpen = ref(false)
+
+// Filter tasks based on active filter AND search
+const filteredTasks = computed(() => {
+  let tasks = allTasks.value
+
+  // Search Filter (from Store)
+  if (todoStore.searchQuery && todoStore.searchQuery.trim()) {
+      const query = todoStore.searchQuery.toLowerCase()
+      tasks = tasks.filter(t => t.title.toLowerCase().includes(query))
+  }
+
+  if (activeFilter.value === 'all') {
+      // In 'all' view, we show pending/in-progress here, completed go to accordion
+      return tasks.filter(t => t.status !== 'completed')
+  }
+  if (activeFilter.value === 'todo') return tasks.filter(t => t.status === 'pending')
+  if (activeFilter.value === 'in-progress') return tasks.filter(t => t.status === 'in-progress')
+  if (activeFilter.value === 'completed') return tasks.filter(t => t.status === 'completed')
+  if (activeFilter.value === 'starred') return tasks.filter(t => t.priority === 'high')
+  return tasks
+})
+
 const tasksByDate = computed(() => {
   const groups = new Map<string, TodoItem[]>()
 
@@ -163,63 +200,11 @@ onMounted(async () => {
 
 <template>
   <div class="task-list-view">
-    <div class="filter-tabs">
-      <button
-        class="filter-tab"
-        :class="{ active: activeFilter === 'all' }"
-        @click="activeFilter = 'all'"
-      >
-        {{ t('tasks.filters.all') }}
-      </button>
-      <button
-        class="filter-tab"
-        :class="{ active: activeFilter === 'todo' }"
-        @click="activeFilter = 'todo'"
-      >
-        {{ t('tasks.filters.todo') }}
-      </button>
-      <button
-        class="filter-tab"
-        :class="{ active: activeFilter === 'in-progress' }"
-        @click="activeFilter = 'in-progress'"
-      >
-        {{ t('tasks.filters.inProgress') }}
-      </button>
-      <button
-        class="filter-tab"
-        :class="{ active: activeFilter === 'completed' }"
-        @click="activeFilter = 'completed'"
-      >
-        {{ t('tasks.filters.completed') }}
-      </button>
-      <button
-        class="filter-tab"
-        :class="{ active: activeFilter === 'starred' }"
-        @click="activeFilter = 'starred'"
-      >
-        {{ t('tasks.filters.starred') }}
-      </button>
-    </div>
-
-    <!-- Mobile Category Chips -->
-    <div class="category-scroll mobile-only">
-      <button
-        class="category-chip"
-        :class="{ active: !activeCategoryId }"
-        @click="router.push({ path: '/' })"
-      >
-        <span>{{ t('tasks.filters.all') }}</span>
-      </button>
-      <button
-        v-for="category in todoStore.categoriesSortedByActivity"
-        :key="category.id"
-        class="category-chip"
-        :class="{ active: activeCategoryId === category.id }"
-        @click="router.push({ path: '/', query: { category: category.id } })"
-      >
-        <span class="chip-dot" :style="{ backgroundColor: category.color || '#ccc' }"></span>
-        <span>{{ category.title }}</span>
-      </button>
+    <div class="task-header">
+       <div class="view-selector" @click="showFilterModal = true">
+          <h2 class="view-title">{{ currentViewLabel }}</h2>
+          <ChevronRight :size="20" class="rotate-90" />
+       </div>
     </div>
 
     <TransitionGroup
@@ -291,8 +276,60 @@ onMounted(async () => {
       </div>
     </TransitionGroup>
 
-    <div v-if="filteredTasks.length === 0" class="empty-state">
-      <p>No tasks to show</p>
+    <!-- Completed Tasks Accordion -->
+    <div v-if="completedTasks.length > 0" class="completed-accordion">
+      <button class="accordion-header" @click="isCompletedOpen = !isCompletedOpen">
+        <span class="accordion-title">{{ t('tasks.filters.completed') }} ({{ completedTasks.length }})</span>
+        <div class="accordion-icon" :class="{ open: isCompletedOpen }">
+             <ChevronRight :size="16" />
+        </div>
+      </button>
+
+      <div v-if="isCompletedOpen" class="accordion-content">
+          <div
+            v-for="task in completedTasks"
+            :key="task.id"
+            class="task-card completed"
+            @click="emit('edit-task', task.id)"
+          >
+            <button
+              @click.stop="todoStore.toggleTodoCompletion(task.id)"
+              class="task-checkbox-btn"
+            >
+              <div class="check-circle-wrapper">
+                <Check :size="14" class="check-icon-inner" />
+              </div>
+            </button>
+
+            <div class="task-content">
+              <div class="task-main-info">
+                <h4 class="task-title">{{ task.title }}</h4>
+              </div>
+            </div>
+
+            <button
+              class="task-star-btn"
+              @click.stop="togglePriority(task)"
+              :class="{ active: task.priority === 'high' }"
+            >
+              <Star :size="20" :class="{ 'star-filled': task.priority === 'high' }" />
+            </button>
+          </div>
+      </div>
+    </div>
+
+    <FilterModal
+        :isOpen="showFilterModal"
+        :active-filter="activeFilter"
+        :active-category="activeCategoryId || null"
+        @update:filter="activeFilter = $event as any"
+        @update:category="(id) => router.replace({ query: { category: id } })"
+        @close="showFilterModal = false"
+    />
+
+    <div v-if="filteredTasks.length === 0 && completedTasks.length === 0" class="empty-state">
+      <p v-if="todoStore.searchQuery">No search results</p>
+      <p v-else>No tasks to show</p>
     </div>
   </div>
 </template>
@@ -301,94 +338,93 @@ onMounted(async () => {
 .task-list-view {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 5rem;
+  padding: var(--spacing-lg) var(--spacing-2xl) 5rem;
 }
 
-.filter-tabs {
-  display: flex;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-lg) 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+.task-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xl);
 }
 
-.filter-tabs::-webkit-scrollbar {
-  display: none;
+.view-selector {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
+    border-radius: var(--radius-md);
+    transition: background 0.2s;
 }
 
-.filter-tab {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--radius-full);
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  white-space: nowrap;
+.view-selector:hover {
+    background: var(--color-bg-lavender);
 }
 
-.filter-tab:hover {
-  background: var(--color-bg-lavender);
+.view-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin: 0;
 }
 
-.filter-tab.active {
-  background: var(--color-primary);
-  color: var(--color-text-white);
-  box-shadow: var(--shadow-purple);
+.rotate-90 {
+    transform: rotate(90deg);
+    color: var(--color-text-secondary);
 }
 
-.category-scroll {
-  display: flex;
-  gap: var(--spacing-sm);
-  padding: 0 0 var(--spacing-lg);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+/* Added styles for accordion */
+.completed-accordion {
+    margin-top: var(--spacing-2xl);
+    border-top: 1px solid var(--color-border-light);
+    padding-top: var(--spacing-lg);
 }
 
-.category-scroll::-webkit-scrollbar {
-  display: none;
+.accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: var(--spacing-sm) 0;
+    cursor: pointer;
+    color: var(--color-text-secondary);
 }
 
-.category-chip {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-md);
-  background: var(--color-bg-white);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-full);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--transition-base);
+.accordion-title {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.dark .category-chip {
-  background: var(--color-bg-card);
+.accordion-icon {
+    transition: transform 0.2s ease;
 }
 
-.category-chip.active {
-  background: var(--color-bg-purple-tint);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+.accordion-icon.open {
+    transform: rotate(90deg);
 }
 
-.chip-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.accordion-content {
+    margin-top: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .task-sections {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2xl);
-  padding: 0 0 var(--spacing-lg);
 }
 
 .task-section {
@@ -398,11 +434,11 @@ onMounted(async () => {
 }
 
 .section-title {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: capitalize;
-  padding: 0;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .tasks {

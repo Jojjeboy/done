@@ -40,11 +40,24 @@ const staleTasks = computed(() => {
   return todoStore.todoItems.filter(t => t.status === 'pending' && t.updatedAt < thirtyDaysAgo)
 })
 
-const cleanupStaleTasks = async () => {
-  if (confirm(`Delete ${staleTasks.value.length} stale tasks?`)) {
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
+
+// ... existing code ...
+const showStaleConfirm = ref(false)
+
+const cleanupStaleTasks = () => {
+  showStaleConfirm.value = true
+}
+
+const confirmCleanup = async () => {
+  try {
     for (const task of staleTasks.value) {
       await todoStore.deleteTodoItem(task.id)
     }
+  } catch (error) {
+      console.error(error)
+  } finally {
+    showStaleConfirm.value = false
   }
 }
 </script>
@@ -104,6 +117,16 @@ const cleanupStaleTasks = async () => {
      <button class="desktop-fab" @click="openAddTask">
         <span class="plus-icon">+</span>
      </button>
+
+     <ConfirmationModal
+        :isOpen="showStaleConfirm"
+        title="Clean up Stale Tasks"
+        :message="`Are you sure you want to delete ${staleTasks.length} tasks that haven't been touched in 30 days?`"
+        confirmText="Clean Up"
+        type="neutral"
+        @confirm="confirmCleanup"
+        @cancel="showStaleConfirm = false"
+     />
   </div>
 </template>
 

@@ -1,13 +1,29 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import { useTodoStore } from '@/stores/todo'
+import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
-import { Sun, Moon } from 'lucide-vue-next'
+import { Sun, Moon, Eye, EyeOff, Search, X } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
+const todoStore = useTodoStore()
+const settingsStore = useSettingsStore()
 const { t } = useI18n()
+
+const isSearchExpanded = ref(false)
+const searchInputRef = ref<HTMLInputElement | null>(null)
+
+const toggleSearch = () => {
+  isSearchExpanded.value = !isSearchExpanded.value
+  if (isSearchExpanded.value) {
+    nextTick(() => searchInputRef.value?.focus())
+  } else {
+    todoStore.searchQuery = ''
+  }
+}
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
@@ -45,7 +61,7 @@ const toggleTheme = () => {
 <template>
   <header class="mobile-header">
     <div class="header-content">
-      <div class="profile-section">
+      <div class="profile-section" v-if="!isSearchExpanded">
         <div class="profile-avatar">
           <img v-if="userPhotoURL" :src="userPhotoURL" alt="Profile" class="avatar-image" />
           <span v-else>{{ userInitials }}</span>
@@ -55,10 +71,31 @@ const toggleTheme = () => {
           <span class="user-name">{{ userName }}</span>
         </div>
       </div>
-      <button class="theme-toggle-btn" @click="toggleTheme" :aria-label="t('settings.theme')">
-        <Sun v-if="themeStore.theme === 'dark'" :size="20" />
-        <Moon v-else :size="20" />
-      </button>
+
+      <div class="search-section" v-else>
+         <input
+            ref="searchInputRef"
+            v-model="todoStore.searchQuery"
+            type="text"
+            class="search-input"
+            :placeholder="t('search.placeholder')"
+         />
+      </div>
+
+      <div class="header-actions">
+        <button class="action-btn" @click="toggleSearch">
+          <X v-if="isSearchExpanded" :size="20" />
+          <Search v-else :size="20" />
+        </button>
+        <button class="action-btn" @click="settingsStore.setHideCompleted(!settingsStore.hideCompleted)" :aria-label="settingsStore.hideCompleted ? 'Show completed' : 'Hide completed'">
+          <EyeOff v-if="settingsStore.hideCompleted" :size="20" />
+          <Eye v-else :size="20" />
+        </button>
+        <button class="theme-toggle-btn" @click="toggleTheme" :aria-label="t('settings.theme')">
+          <Sun v-if="themeStore.theme === 'dark'" :size="20" />
+          <Moon v-else :size="20" />
+        </button>
+      </div>
     </div>
   </header>
 </template>
@@ -138,7 +175,13 @@ const toggleTheme = () => {
   color: var(--color-text-primary);
 }
 
-.theme-toggle-btn {
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.theme-toggle-btn, .action-btn {
   background: transparent;
   border: none;
   color: var(--color-text-primary);
@@ -151,12 +194,38 @@ const toggleTheme = () => {
   border-radius: var(--radius-md);
 }
 
-.theme-toggle-btn:hover {
+.theme-toggle-btn:hover, .action-btn:hover {
   background-color: var(--color-bg-lavender);
   color: var(--color-primary);
 }
 
-.dark .theme-toggle-btn:hover {
+.dark .theme-toggle-btn:hover, .dark .action-btn:hover {
   background-color: rgba(108, 92, 231, 0.1);
+}
+
+.search-section {
+    flex: 1;
+    margin-right: var(--spacing-md);
+}
+
+.search-input {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-base);
+    background: var(--color-bg-white);
+    color: var(--color-text-primary);
+    transition: all 0.2s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.1);
+}
+
+.dark .search-input {
+    background: var(--color-bg-lighter);
 }
 </style>

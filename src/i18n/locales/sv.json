@@ -85,7 +85,7 @@
     "whatTask": "Vad är uppgiften?",
     "taskPlaceholder": "t.ex. Handla mat",
     "description": "Beskrivning (Frivillig)",
-    "descriptionPlaceholder": "Lägg till fler detaljer...",
+    "descriptionPlaceholder": "Lägg till fler detaljer (valfritt))",
     "priority": "Prioritet",
     "category": "Kategori",
     "categories": {

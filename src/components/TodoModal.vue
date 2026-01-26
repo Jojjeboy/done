@@ -2,8 +2,9 @@
 import { onMounted, ref, watch, computed } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { X, Calendar, Edit2, Clock, Sparkles, Repeat, CalendarPlus } from 'lucide-vue-next'
+import { X, Calendar, Edit2, Clock, Sparkles, Repeat, CalendarPlus, Trash2 } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
 
 
@@ -30,6 +31,7 @@ const isSubmitting = ref(false)
 
 const isEditMode = ref(false)
 const viewMode = ref(false)
+const showDeleteConfirm = ref(false)
 
 const loadTodoData = () => {
   if (props.todoId) {
@@ -59,6 +61,8 @@ const toggleViewMode = () => {
   viewMode.value = !viewMode.value
 }
 
+const localSubtasks = ref<{ title: string; completed: boolean; id: string }[]>([])
+
 const resetForm = () => {
   taskTitle.value = ''
   taskDescription.value = ''
@@ -67,6 +71,7 @@ const resetForm = () => {
   taskDeadline.value = ''
   taskRecurrence.value = 'none'
   parsedIntent.value = null
+  localSubtasks.value = []
 }
 
 onMounted(() => {
@@ -85,7 +90,7 @@ watch(taskTitle, (newVal) => {
   }
 
   const result = parseDateFromText(newVal)
-  // Only suggest if date found matches something useful and is not just the original text
+  // Only suggest if  date found matches something useful and is not just the original text
   if (result && result.date) {
     parsedIntent.value = result
   } else {
@@ -114,7 +119,7 @@ const handleSave = async () => {
         recurrence: taskRecurrence.value === 'none' ? null : taskRecurrence.value
       })
     } else {
-      await todoStore.addTodoItem(
+      const newItem = await todoStore.addTodoItem(
         parsedIntent.value ? parsedIntent.value.text : taskTitle.value.trim(),
         taskDescription.value.trim(),
         taskPriority.value,
@@ -122,6 +127,13 @@ const handleSave = async () => {
         taskCategory.value === 'none' ? null : taskCategory.value,
         taskRecurrence.value === 'none' ? null : taskRecurrence.value
       )
+
+      // Add Subtasks
+      if (localSubtasks.value.length > 0) {
+          for (const sub of localSubtasks.value) {
+              await todoStore.addSubtask(newItem.id, sub.title)
+          }
+      }
     }
     handleClose()
   } catch (error) {
@@ -144,6 +156,25 @@ const googleCalendarLink = computed(() => {
 
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}`
 })
+
+
+const handleDelete = () => {
+    if (!props.todoId) return
+    showDeleteConfirm.value = true
+}
+
+const confirmDelete = async () => {
+    try {
+        isSubmitting.value = true
+        await todoStore.deleteTodoItem(props.todoId!)
+        handleClose()
+    } catch (error) {
+        console.error('Failed to delete task:', error)
+    } finally {
+        isSubmitting.value = false
+        showDeleteConfirm.value = false
+    }
+}
 </script>
 
 <template>
@@ -168,6 +199,9 @@ const googleCalendarLink = computed(() => {
           >
             <CalendarPlus :size="18" />
           </a>
+          <button v-if="viewMode" @click="handleDelete" class="action-btn delete-btn" :title="t('common.delete')">
+            <Trash2 :size="18" />
+          </button>
           <button v-if="viewMode" @click="toggleViewMode" class="action-btn" :title="t('common.edit')">
             <Edit2 :size="18" />
           </button>
@@ -280,7 +314,10 @@ const googleCalendarLink = computed(() => {
              </div>
           </div>
 
-          <SubtaskList v-if="isEditMode && props.todoId" :todo-id="props.todoId" />
+          <SubtaskList
+            :todo-id="props.todoId"
+            v-model="localSubtasks"
+          />
 
           <div class="footer-actions mt-2xl">
             <button
@@ -310,6 +347,17 @@ const googleCalendarLink = computed(() => {
         </div>
       </div>
     </div>
+
+    <ConfirmationModal
+      :isOpen="showDeleteConfirm"
+      title="Delete Task"
+      message="Are you sure you want to delete this task? This cannot be undone."
+      confirmText="Delete"
+      cancelText="Cancel"
+      type="danger"
+      @confirm="confirmDelete"
+      @cancel="showDeleteConfirm = false"
+    />
   </div>
 </template>
 
@@ -387,6 +435,11 @@ const googleCalendarLink = computed(() => {
 .action-btn:hover {
   background: var(--color-bg-lavender);
   color: var(--color-primary);
+}
+
+.delete-btn:hover {
+  background: #FEE2E2;
+  color: #EF4444;
 }
 
 /* View Mode Styles */
@@ -486,82 +539,6 @@ const googleCalendarLink = computed(() => {
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
   margin-bottom: var(--spacing-sm);
-}
-
-.project-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.project-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  width: 100%;
-  text-align: left;
-}
-
-.project-item:hover {
-  background: var(--color-bg-lavender);
-  border-color: var(--color-primary-light);
-}
-
-.project-item.active {
-  background: var(--color-bg-purple-tint);
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
-}
-
-.project-color {
-  width: 12px;
-  height: 12px;
-  border-radius: var(--radius-full);
-}
-
-.project-name {
-  flex: 1;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.check-icon {
-  color: var(--color-primary);
-}
-
-.list-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-}
-
-.list-item {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--radius-full);
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.list-item:hover {
-  border-color: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-.list-item.active {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
 }
 
 .form-input, .form-textarea, .form-select {
