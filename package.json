@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "test:unit": "vitest",
     "test:ci": "vitest run",
-    "generate-commit-info": "ts-node scripts/generate-commit-info.ts",
+    "generate-commit-info": "tsx scripts/generate-commit-info.ts",
     "build-only": "npm run generate-commit-info && vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix --cache",
