@@ -55,15 +55,7 @@ const handleCheckForUpdates = async () => {
   try {
     isCheckingForUpdate.value = true
     updateStatusMessage.value = t('pwa.updateCheck')
-
-    // Force check for updates by calling updateServiceWorker(true)
-    // The virtue:pwa-register hook's updateServiceWorker(true) implementation
-    // often handles the check and prompt.
-    // However, some versions might need a specific reload or check mechanism.
-    // Given the 'prompt' config, this should trigger the standard update flow.
     await updateServiceWorker(true)
-
-    // If it doesn't reload immediately, wait a bit and show message
     setTimeout(() => {
         isCheckingForUpdate.value = false
         updateStatusMessage.value = t('pwa.noUpdate')
@@ -94,7 +86,7 @@ const handleCheckForUpdates = async () => {
               class="back-button mobile-only"
               :aria-label="t('common.back')"
             >
-              <ArrowLeft :size="20" />
+              <ArrowLeft :size="18" />
             </button>
             <h2 class="page-title">
               {{ t('settings.title') }}
@@ -118,7 +110,7 @@ const handleCheckForUpdates = async () => {
           <!-- App Behavior -->
           <div class="settings-card">
             <div class="setting-header">
-              <ListChecks :size="20" class="setting-icon" />
+              <ListChecks :size="18" class="setting-icon" />
               <div class="setting-title-group">
                 <h3 class="setting-title">{{ t('settings.threeStepProcess') }}</h3>
                 <p class="setting-desc-inline">{{ t('settings.threeStepDesc') }}</p>
@@ -143,7 +135,7 @@ const handleCheckForUpdates = async () => {
           <!-- Theme Selection -->
           <div class="settings-card">
             <div class="setting-header">
-              <Moon :size="20" class="setting-icon" />
+              <Moon :size="18" class="setting-icon" />
               <h3 class="setting-title">{{ t('settings.theme') }}</h3>
             </div>
             <div class="button-group">
@@ -151,14 +143,14 @@ const handleCheckForUpdates = async () => {
                 @click="handleThemeChange('light')"
                 :class="['option-button', { active: themeStore.theme === 'light' }]"
               >
-                <Sun :size="18" />
+                <Sun :size="16" />
                 <span>{{ t('settings.light') }}</span>
               </button>
               <button
                 @click="handleThemeChange('dark')"
                 :class="['option-button', { active: themeStore.theme === 'dark' }]"
               >
-                <Moon :size="18" />
+                <Moon :size="16" />
                 <span>{{ t('settings.dark') }}</span>
               </button>
             </div>
@@ -167,7 +159,7 @@ const handleCheckForUpdates = async () => {
           <!-- Language Selection -->
           <div class="settings-card">
             <div class="setting-header">
-              <Globe :size="20" class="setting-icon" />
+              <Globe :size="18" class="setting-icon" />
               <h3 class="setting-title">{{ t('settings.language') }}</h3>
             </div>
             <div class="button-group">
@@ -175,14 +167,12 @@ const handleCheckForUpdates = async () => {
                 @click="handleLanguageChange('en')"
                 :class="['option-button', { active: currentLocale === 'en' }]"
               >
-                <span>🇬🇧</span>
                 <span>{{ t('settings.english') }}</span>
               </button>
               <button
                 @click="handleLanguageChange('sv')"
                 :class="['option-button', { active: currentLocale === 'sv' }]"
               >
-                <span>🇸🇪</span>
                 <span>{{ t('settings.swedish') }}</span>
               </button>
             </div>
@@ -191,7 +181,7 @@ const handleCheckForUpdates = async () => {
           <!-- Logout Section -->
           <div class="settings-card logout-section">
             <button @click="handleLogout" class="logout-button">
-              <LogOut :size="20" />
+              <LogOut :size="18" />
               <span>{{ t('auth.signOut') || 'Log Out' }}</span>
             </button>
           </div>
@@ -246,7 +236,7 @@ const handleCheckForUpdates = async () => {
 .content-wrapper {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   width: 100%;
 }
 
@@ -255,7 +245,7 @@ const handleCheckForUpdates = async () => {
 }
 
 .settings-view {
-  max-width: 600px;
+  max-width: 500px;
   margin: 0 auto;
   padding-bottom: 5rem;
 }
@@ -263,14 +253,14 @@ const handleCheckForUpdates = async () => {
 .settings-header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-2xl);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
 }
 
 .back-button {
   background: var(--color-bg-white);
   border-radius: var(--radius-md);
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   box-shadow: var(--shadow-md);
   transition: all var(--transition-base);
   cursor: pointer;
@@ -291,7 +281,7 @@ const handleCheckForUpdates = async () => {
 }
 
 .page-title {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
@@ -307,21 +297,21 @@ const handleCheckForUpdates = async () => {
   }
 
   .content-wrapper {
-      padding: var(--spacing-2xl);
+      padding: var(--spacing-xl);
   }
 
   .settings-view {
-    margin-top: var(--spacing-4xl);
+    margin-top: var(--spacing-2xl);
   }
 }
 
 
 .settings-card {
   background: var(--color-bg-white);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-2xl);
-  margin-bottom: var(--spacing-lg);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .dark .settings-card {
@@ -331,12 +321,12 @@ const handleCheckForUpdates = async () => {
 .profile-info {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 .profile-avatar-large {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, #6C5CE7 0%, #A78BFA 100%);
   display: flex;
@@ -355,7 +345,7 @@ const handleCheckForUpdates = async () => {
 
 .avatar-initials {
   color: var(--color-text-white);
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
 }
 
@@ -364,22 +354,22 @@ const handleCheckForUpdates = async () => {
 }
 
 .profile-name {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 2px;
 }
 
 .profile-email {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
 .setting-header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
 }
 
 .setting-icon {
@@ -387,7 +377,7 @@ const handleCheckForUpdates = async () => {
 }
 
 .setting-title {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
@@ -395,20 +385,20 @@ const handleCheckForUpdates = async () => {
 .button-group {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .option-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-lg);
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition: all var(--transition-base);
@@ -423,10 +413,8 @@ const handleCheckForUpdates = async () => {
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: var(--color-text-white);
-  box-shadow: var(--shadow-purple);
+  box-shadow: var(--shadow-sm);
 }
-
-
 
 .setting-title-group {
   display: flex;
@@ -435,7 +423,7 @@ const handleCheckForUpdates = async () => {
 
 .setting-desc-inline {
   font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
 }
 
 .logout-section {
@@ -449,13 +437,13 @@ const handleCheckForUpdates = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
   border: 2px solid #EF4444;
   border-radius: var(--radius-md);
   background: transparent;
   color: #EF4444;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition: all var(--transition-base);
@@ -474,19 +462,19 @@ const handleCheckForUpdates = async () => {
 .update-section {
   display: flex;
   justify-content: center;
-  margin-top: var(--spacing-xl);
+  margin-top: var(--spacing-lg);
 }
 
 .check-update-btn {
   background: transparent;
   border: none;
   color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   cursor: pointer;
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--radius-md);
   transition: all var(--transition-base);
 }

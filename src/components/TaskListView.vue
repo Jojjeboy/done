@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
-import { Check, Clock, Star, List, ChevronRight } from 'lucide-vue-next'
+import { Check, Clock, Star, List, ChevronRight, Search } from 'lucide-vue-next'
 import type { TodoItem } from '@/types/todo'
 import FilterModal from '@/components/FilterModal.vue'
 
@@ -205,6 +205,16 @@ onMounted(async () => {
           <h2 class="view-title">{{ currentViewLabel }}</h2>
           <ChevronRight :size="20" class="rotate-90" />
        </div>
+
+       <div class="search-container">
+           <Search :size="18" class="search-icon" />
+           <input
+              v-model="todoStore.searchQuery"
+              type="text"
+              class="search-input"
+              :placeholder="t('search.placeholder')"
+           />
+       </div>
     </div>
 
     <TransitionGroup
@@ -346,6 +356,7 @@ onMounted(async () => {
     align-items: center;
     justify-content: space-between;
     margin-bottom: var(--spacing-xl);
+    gap: var(--spacing-lg);
 }
 
 .view-selector {
@@ -356,6 +367,7 @@ onMounted(async () => {
     padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
     border-radius: var(--radius-md);
     transition: background 0.2s;
+    flex-shrink: 0;
 }
 
 .view-selector:hover {
@@ -372,6 +384,42 @@ onMounted(async () => {
 .rotate-90 {
     transform: rotate(90deg);
     color: var(--color-text-secondary);
+}
+
+.search-container {
+    position: relative;
+    flex: 1;
+    max-width: 240px;
+}
+
+.search-icon {
+    position: absolute;
+    left: var(--spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) calc(var(--spacing-md) * 2 + 18px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    background: var(--color-bg-white);
+    color: var(--color-text-primary);
+    transition: all 0.2s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.1);
+}
+
+.dark .search-input {
+    background: var(--color-bg-lighter);
 }
 
 /* Added styles for accordion */
