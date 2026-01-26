@@ -115,6 +115,7 @@
     "updateCheck": "Söker efter uppdateringar...",
     "noUpdate": "Du har redan den senaste versionen",
     "updateFound": "Uppdatering hittad! Laddar om...",
+    "titleCheckForUpdate": "Uppdateringar",
     "checkForUpdate": "Sök efter uppdateringar"
   }
 }

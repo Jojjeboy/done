@@ -57,9 +57,9 @@ const handleCheckForUpdates = async () => {
     updateStatusMessage.value = t('pwa.updateCheck')
     await updateServiceWorker(true)
     setTimeout(() => {
-        isCheckingForUpdate.value = false
-        updateStatusMessage.value = t('pwa.noUpdate')
-        setTimeout(() => { updateStatusMessage.value = '' }, 3000)
+      isCheckingForUpdate.value = false
+      updateStatusMessage.value = t('pwa.noUpdate')
+      setTimeout(() => { updateStatusMessage.value = '' }, 3000)
     }, 2000)
   } catch (error) {
     console.error('Update check failed:', error)
@@ -81,11 +81,7 @@ const handleCheckForUpdates = async () => {
       <div class="content-wrapper">
         <div class="settings-view">
           <div class="settings-header">
-            <button
-              @click="router.push('/')"
-              class="back-button mobile-only"
-              :aria-label="t('common.back')"
-            >
+            <button @click="router.push('/')" class="back-button mobile-only" :aria-label="t('common.back')">
               <ArrowLeft :size="18" />
             </button>
             <h2 class="page-title">
@@ -117,16 +113,12 @@ const handleCheckForUpdates = async () => {
               </div>
             </div>
             <div class="button-group">
-              <button
-                @click="settingsStore.setThreeStepEnabled(false)"
-                :class="['option-button', { active: !settingsStore.isThreeStepEnabled }]"
-              >
+              <button @click="settingsStore.setThreeStepEnabled(false)"
+                :class="['option-button', { active: !settingsStore.isThreeStepEnabled }]">
                 <span>{{ t('settings.disabled') }}</span>
               </button>
-              <button
-                @click="settingsStore.setThreeStepEnabled(true)"
-                :class="['option-button', { active: settingsStore.isThreeStepEnabled }]"
-              >
+              <button @click="settingsStore.setThreeStepEnabled(true)"
+                :class="['option-button', { active: settingsStore.isThreeStepEnabled }]">
                 <span>{{ t('settings.enabled') }}</span>
               </button>
             </div>
@@ -139,17 +131,13 @@ const handleCheckForUpdates = async () => {
               <h3 class="setting-title">{{ t('settings.theme') }}</h3>
             </div>
             <div class="button-group">
-              <button
-                @click="handleThemeChange('light')"
-                :class="['option-button', { active: themeStore.theme === 'light' }]"
-              >
+              <button @click="handleThemeChange('light')"
+                :class="['option-button', { active: themeStore.theme === 'light' }]">
                 <Sun :size="16" />
                 <span>{{ t('settings.light') }}</span>
               </button>
-              <button
-                @click="handleThemeChange('dark')"
-                :class="['option-button', { active: themeStore.theme === 'dark' }]"
-              >
+              <button @click="handleThemeChange('dark')"
+                :class="['option-button', { active: themeStore.theme === 'dark' }]">
                 <Moon :size="16" />
                 <span>{{ t('settings.dark') }}</span>
               </button>
@@ -163,38 +151,40 @@ const handleCheckForUpdates = async () => {
               <h3 class="setting-title">{{ t('settings.language') }}</h3>
             </div>
             <div class="button-group">
-              <button
-                @click="handleLanguageChange('en')"
-                :class="['option-button', { active: currentLocale === 'en' }]"
-              >
+              <button @click="handleLanguageChange('en')"
+                :class="['option-button', { active: currentLocale === 'en' }]">
                 <span>{{ t('settings.english') }}</span>
               </button>
-              <button
-                @click="handleLanguageChange('sv')"
-                :class="['option-button', { active: currentLocale === 'sv' }]"
-              >
+              <button @click="handleLanguageChange('sv')"
+                :class="['option-button', { active: currentLocale === 'sv' }]">
                 <span>{{ t('settings.swedish') }}</span>
               </button>
             </div>
           </div>
 
-          <!-- Logout Section -->
-          <div class="settings-card logout-section">
-            <button @click="handleLogout" class="logout-button">
-              <LogOut :size="18" />
-              <span>{{ t('auth.signOut') || 'Log Out' }}</span>
+          <!-- Update Section -->
+          <div class="settings-card">
+            <div class="setting-header">
+              <RotateCcw :size="18" class="setting-icon" />
+              <h3 class="setting-title">{{ t('pwa.titleCheckForUpdate') }}</h3>
+            </div>
+
+            <button @click="handleCheckForUpdates" :disabled="isCheckingForUpdate" class="option-button full-width">
+              <RotateCcw :size="16" :class="{ 'spinning': isCheckingForUpdate }" />
+              <span>{{ updateStatusMessage || t('pwa.checkForUpdate') }}</span>
             </button>
           </div>
 
-          <!-- Update Section (Subtle) -->
-          <div class="update-section">
-            <button
-              class="check-update-btn"
-              @click="handleCheckForUpdates"
-              :disabled="isCheckingForUpdate"
-            >
-              <RotateCcw :size="14" :class="{ 'spinning': isCheckingForUpdate }" />
-              <span>{{ updateStatusMessage || t('pwa.checkForUpdate') }}</span>
+          <!-- Signout -->
+          <div class="settings-card">
+            <div class="setting-header">
+              <LogOut :size="18" class="setting-icon" />
+              <h3 class="setting-title">{{ t('auth.signOut') }}</h3>
+            </div>
+
+            <button @click="handleLogout" class="logout-button">
+              <LogOut :size="18" />
+              <span>{{ t('auth.signOut') || 'Log Out' }}</span>
             </button>
           </div>
         </div>
@@ -297,7 +287,7 @@ const handleCheckForUpdates = async () => {
   }
 
   .content-wrapper {
-      padding: var(--spacing-xl);
+    padding: var(--spacing-xl);
   }
 
   .settings-view {
@@ -416,6 +406,11 @@ const handleCheckForUpdates = async () => {
   box-shadow: var(--shadow-sm);
 }
 
+.option-button.full-width {
+  grid-column: span 2;
+  width: 100%;
+}
+
 .setting-title-group {
   display: flex;
   flex-direction: column;
@@ -459,42 +454,14 @@ const handleCheckForUpdates = async () => {
   background: rgba(239, 68, 68, 0.1);
 }
 
-.update-section {
-  display: flex;
-  justify-content: center;
-  margin-top: var(--spacing-lg);
-}
-
-.check-update-btn {
-  background: transparent;
-  border: none;
-  color: var(--color-text-muted);
-  font-size: 10px;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  cursor: pointer;
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
-  transition: all var(--transition-base);
-}
-
-.check-update-btn:hover:not(:disabled) {
-  background: var(--color-bg-purple-tint);
-  color: var(--color-primary);
-}
-
-.check-update-btn:disabled {
-  cursor: default;
-  opacity: 0.7;
-}
-
-.spinning {
-  animation: spin 1s linear infinite;
-}
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

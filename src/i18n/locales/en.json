@@ -115,6 +115,7 @@
     "updateCheck": "Checking for updates...",
     "noUpdate": "Already on the latest version",
     "updateFound": "Update found! Reloading...",
+    "titleCheckForUpdate": "Updates",
     "checkForUpdate": "Check for Updates"
   }
 }
