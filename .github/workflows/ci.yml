@@ -25,6 +25,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Generate Commit Info
+        run: npm run generate-commit-info
+
       - name: Type Check
         run: npm run type-check
 
