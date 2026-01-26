@@ -17,7 +17,8 @@
     "goodAfternoon": "God eftermiddag",
     "goodEvening": "God kväll",
     "goodNight": "God natt",
-    "user": "Användare"
+    "user": "Användare",
+    "viewOptions": "Visningsalternativ"
   },
   "stats": {
     "title": "Produktivitetsinsikter",
@@ -48,6 +49,8 @@
       "completed": "Klara",
       "starred": "Stjärnmärkta"
     },
+    "statusTitle": "Status",
+    "tomorrow": "Imorgon",
     "categories": {
       "none": "Ingen kategori",
       "work": "Arbete",

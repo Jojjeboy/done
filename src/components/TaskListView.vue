@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
-import { Check, Clock, Star, List, ChevronRight, Search } from 'lucide-vue-next'
+import { Check, Clock, Star, List, ChevronRight, Search, X } from 'lucide-vue-next'
 import type { TodoItem } from '@/types/todo'
 import FilterModal from '@/components/FilterModal.vue'
 
@@ -24,6 +24,11 @@ const activeFilter = ref<FilterType>('all')
 const activeCategoryId = computed(() => route.query.category as string | undefined)
 
 const showFilterModal = ref(false)
+
+const resetFilters = () => {
+    activeFilter.value = 'all'
+    router.replace({ query: {} })
+}
 
 const currentViewLabel = computed(() => {
     if (activeCategoryId.value) {
@@ -201,9 +206,19 @@ onMounted(async () => {
 <template>
   <div class="task-list-view">
     <div class="task-header">
-       <div class="view-selector" @click="showFilterModal = true">
-          <h2 class="view-title">{{ currentViewLabel }}</h2>
-          <ChevronRight :size="20" class="rotate-90" />
+       <div class="view-group">
+           <div class="view-selector" @click="showFilterModal = true">
+              <h2 class="view-title">{{ currentViewLabel }}</h2>
+              <ChevronRight :size="20" class="rotate-90" />
+           </div>
+           <button
+              v-if="activeFilter !== 'all' || activeCategoryId"
+              class="reset-btn"
+              @click="resetFilters"
+              title="Clear all filters"
+           >
+              <X :size="14" />
+           </button>
        </div>
 
        <div class="search-container">
@@ -359,6 +374,12 @@ onMounted(async () => {
     gap: var(--spacing-lg);
 }
 
+.view-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
 .view-selector {
     display: flex;
     align-items: center;
@@ -368,6 +389,24 @@ onMounted(async () => {
     border-radius: var(--radius-md);
     transition: background 0.2s;
     flex-shrink: 0;
+}
+
+.reset-btn {
+    background: var(--color-bg-lavender);
+    border: none;
+    color: var(--color-primary);
+    padding: 2px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.reset-btn:hover {
+    background: var(--color-primary);
+    color: white;
 }
 
 .view-selector:hover {

@@ -34,12 +34,12 @@ const selectCategory = (categoryId: string | null) => {
   <div v-if="isOpen" class="modal-overlay" @click="emit('close')">
     <div class="modal-content" @click.stop>
        <div class="modal-header">
-           <h3 class="title">View Options</h3>
+           <h3 class="title">{{ t('common.viewOptions') }}</h3>
            <button class="close-btn" @click="emit('close')"><X :size="20" /></button>
        </div>
 
        <div class="section">
-           <label class="label">{{ t('tasks.status.*') || 'Status' }}</label>
+           <label class="label">{{ t('tasks.statusTitle') }}</label>
            <div class="filter-options">
                <button
                   v-for="filter in filters"
@@ -48,7 +48,7 @@ const selectCategory = (categoryId: string | null) => {
                   :class="{ active: activeFilter === filter }"
                   @click="selectFilter(filter)"
                >
-                   {{ t(`tasks.filters.${filter}`) }}
+                   {{ t(`tasks.filters.${filter === 'in-progress' ? 'inProgress' : filter}`) }}
                    <Check v-if="activeFilter === filter" :size="14" />
                </button>
            </div>
@@ -63,7 +63,7 @@ const selectCategory = (categoryId: string | null) => {
                   @click="selectCategory(null)"
                >
                    <div class="dot" style="background-color: #9CA3AF"></div>
-                   <span>All Categories</span>
+                   <span>{{ t('tasks.filters.all') }} {{ t('modal.category').toLowerCase() }}</span>
                </button>
                <button
                   v-for="category in todoStore.categories"
@@ -79,7 +79,7 @@ const selectCategory = (categoryId: string | null) => {
        </div>
 
        <div class="footer">
-           <button class="btn-full" @click="emit('close')">Done</button>
+           <button class="btn-full" @click="emit('close')">{{ t('common.close') }}</button>
        </div>
     </div>
   </div>

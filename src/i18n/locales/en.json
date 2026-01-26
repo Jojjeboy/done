@@ -17,7 +17,8 @@
     "goodAfternoon": "Good afternoon",
     "goodEvening": "Good evening",
     "goodNight": "Good night",
-    "user": "User"
+    "user": "User",
+    "viewOptions": "View Options"
   },
   "stats": {
     "title": "Productivity Insights",
@@ -48,6 +49,8 @@
       "completed": "Completed",
       "starred": "Starred"
     },
+    "statusTitle": "Status",
+    "tomorrow": "Tomorrow",
     "categories": {
       "none": "No category",
       "work": "Work",
