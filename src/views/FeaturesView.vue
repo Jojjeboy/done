@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ArrowLeft, CheckCircle, Globe, Smartphone, Shield, Search } from 'lucide-vue-next'
+import {
+  ArrowLeft, CheckCircle, Globe, Smartphone, Shield, Search,
+  PlusCircle, Eye, ListTree, Calendar, Tag,
+  Download, SunMoon, MousePointer2, Pin, Database
+} from 'lucide-vue-next'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -11,11 +15,11 @@ const features = [
     category: 'Task Management',
     icon: CheckCircle,
     items: [
-      { title: 'Create & Edit', description: 'Easily add tasks with titles, descriptions, priorities, and deadlines.' },
-      { title: 'Read/Edit Modes', description: 'Distraction-free reading view with a seamless toggle to edit mode.' },
-      { title: 'Subtasks', description: 'Break down complex tasks into smaller, manageable subtasks. Supports one level of nesting.' },
-      { title: 'Deadlines', description: 'Set due dates with a built-in datepicker.' },
-      { title: 'Categories', description: 'Organize tasks into color-coded categories (Work, Personal, Hobby, Lifestyle).' },
+      { title: 'Create & Edit', description: 'Easily add tasks with titles, descriptions, priorities, and deadlines.', icon: PlusCircle },
+      { title: 'Read/Edit Modes', description: 'Distraction-free reading view with a seamless toggle to edit mode.', icon: Eye },
+      { title: 'Subtasks', description: 'Break down complex tasks into smaller, manageable subtasks. Supports one level of nesting.', icon: ListTree },
+      { title: 'Deadlines', description: 'Set due dates with a built-in datepicker.', icon: Calendar },
+      { title: 'Categories', description: 'Organize tasks into color-coded categories (Work, Personal, Hobby, Lifestyle).', icon: Tag },
       { title: 'Search', description: 'Fast, responsive search to find any task instantly.', icon: Search }
     ]
   },
@@ -23,18 +27,18 @@ const features = [
     category: 'User Experience',
     icon: Smartphone,
     items: [
-      { title: 'PWA Support', description: 'Installable on mobile and desktop. Works fully offline.' },
-      { title: 'Dynamic Greetings', description: 'Welcomes you based on your local time.' },
-      { title: 'Dark Mode', description: 'Fully supported dark theme for all components.' },
-      { title: 'Mobile First', description: 'Optimized for mobile use with bottom navigation.' }
+      { title: 'PWA Support', description: 'Installable on mobile and desktop. Works fully offline.', icon: Download },
+      { title: 'Dynamic Greetings', description: 'Welcomes you based on your local time.', icon: Smartphone },
+      { title: 'Dark Mode', description: 'Fully supported dark theme for all components.', icon: SunMoon },
+      { title: 'Mobile First', description: 'Optimized for mobile use with bottom navigation.', icon: MousePointer2 }
     ]
   },
   {
     category: 'Technical',
     icon: Shield,
     items: [
-      { title: 'State Management', description: 'Robust state handling with Pinia.' },
-      { title: 'Persistence', description: 'IndexedDB integration for reliable offline storage.' },
+      { title: 'State Management', description: 'Robust state handling with Pinia.', icon: Pin },
+      { title: 'Persistence', description: 'IndexedDB integration for reliable offline storage.', icon: Database },
       { title: 'Internationalization', description: 'Full support for English and Swedish.', icon: Globe }
     ]
   }
