@@ -163,6 +163,8 @@
     "dueDate": "Förfallodatum",
     "subtasks": "Deluppgifter",
     "addSubtask": "Lägg till deluppgift...",
+    "moveSubtask": "Flytta deluppgift",
+    "movingSubtask": "Flyttar",
     "noDescription": "Ingen beskrivning.",
     "repeat": "Upprepa",
     "deleteCategory": "Ta bort kategori",

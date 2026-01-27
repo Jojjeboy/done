@@ -444,6 +444,46 @@ export const useTodoStore = defineStore('todo', () => {
     }
   }
 
+  const reparentSubtask = async (subtaskId: string, targetTodoId: string) => {
+    const subtask = subtasks.value.find((s) => s.id === subtaskId)
+    if (!subtask) throw new Error(`Subtask with id ${subtaskId} not found`)
+
+    const subtasksToUpdate: Subtask[] = []
+
+    // Helper to recursively gather and update all descendants
+    const collectDescendants = (parentId: string) => {
+      const children = subtasks.value.filter((s) => s.parentId === parentId)
+      children.forEach((child) => {
+        child.todoId = targetTodoId
+        subtasksToUpdate.push({ ...child })
+        collectDescendants(child.id)
+      })
+    }
+
+    // Update the main subtask
+    subtask.todoId = targetTodoId
+    subtask.parentId = null // Becomes top-level in the new task
+    subtasksToUpdate.push({ ...subtask })
+
+    // Recursively update all descendants
+    collectDescendants(subtaskId)
+
+    try {
+      const db = getDatabase()
+      await db.transaction('rw', db.table('subtasks'), async () => {
+        await db.table('subtasks').bulkPut(subtasksToUpdate)
+      })
+
+      // Sync changes
+      for (const updated of subtasksToUpdate) {
+        await syncService.pushSubtask(updated)
+      }
+    } catch (error) {
+      console.error('Failed to reparent subtask:', error)
+      throw error
+    }
+  }
+
   const toggleTodoCompletion = async (id: string) => {
     const item = todoItems.value.find(i => i.id === id)
     if (!item) return
@@ -625,6 +665,7 @@ export const useTodoStore = defineStore('todo', () => {
     updateSubtask,
     deleteSubtask,
     toggleSubtask,
+    reparentSubtask,
     // Comments
     comments,
     commentsByTodoId,

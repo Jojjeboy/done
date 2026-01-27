@@ -2,7 +2,8 @@
 import { ref, computed, nextTick } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { Plus, Trash2, Check, ChevronRight, CornerDownRight } from 'lucide-vue-next'
+import { Plus, Trash2, Check, ChevronRight, CornerDownRight, ArrowRightLeft } from 'lucide-vue-next'
+import MoveSubtaskModal from './MoveSubtaskModal.vue'
 
 const props = defineProps<{
   todoId?: string | null
@@ -67,6 +68,27 @@ const toggleExpand = (id: string) => {
 
 const isExpanded = (id: string) => expandedParents.value.has(id)
 
+// Moving
+const isMoveModalOpen = ref(false)
+const subtaskToMove = ref<{ id: string, title: string } | null>(null)
+
+const openMoveModal = (subtask: { id: string, title: string }) => {
+  subtaskToMove.value = subtask
+  isMoveModalOpen.value = true
+}
+
+const handleMove = async (targetTodoId: string) => {
+  if (!subtaskToMove.value) return
+
+  try {
+    await todoStore.reparentSubtask(subtaskToMove.value.id, targetTodoId)
+    isMoveModalOpen.value = false
+    subtaskToMove.value = null
+  } catch (e) {
+    console.error('Failed to move subtask', e)
+  }
+}
+
 // Actions
 const handleAddSubtask = async (parentId: string | null = null) => {
   const title = parentId ? newSubSubtaskTitle.value.trim() : newSubtaskTitle.value.trim()
@@ -74,9 +96,9 @@ const handleAddSubtask = async (parentId: string | null = null) => {
 
   try {
     if (parentId) {
-        // Adding sub-subtask
+      // Adding sub-subtask
     } else {
-        isAddingKey.value = true
+      isAddingKey.value = true
     }
 
     if (isLocalMode.value) {
@@ -116,81 +138,81 @@ const startAddingSubSubtask = (parentId: string) => {
 }
 
 const toggleSubtask = async (subtask: { id: string; completed: boolean; parentId?: string | null }) => {
-    try {
-        if (isLocalMode.value) {
-            let updated = [...(props.modelValue || [])]
-            const sIndex = updated.findIndex(s => s.id === subtask.id)
-            if (sIndex === -1) return
+  try {
+    if (isLocalMode.value) {
+      let updated = [...(props.modelValue || [])]
+      const sIndex = updated.findIndex(s => s.id === subtask.id)
+      if (sIndex === -1) return
 
-            const item = updated[sIndex]
-            if (!item) return
+      const item = updated[sIndex]
+      if (!item) return
 
-            const newCompleted = !item.completed
-            updated[sIndex] = {
-                title: item.title,
-                completed: newCompleted,
-                id: item.id,
-                parentId: item.parentId
+      const newCompleted = !item.completed
+      updated[sIndex] = {
+        title: item.title,
+        completed: newCompleted,
+        id: item.id,
+        parentId: item.parentId
+      }
+
+      // Cascade down
+      if (!subtask.parentId) {
+        updated = updated.map(s => {
+          if (s.parentId === subtask.id) {
+            return {
+              title: s.title,
+              completed: newCompleted,
+              id: s.id,
+              parentId: s.parentId
             }
-
-            // Cascade down
-             if (!subtask.parentId) {
-                updated = updated.map(s => {
-                    if (s.parentId === subtask.id) {
-                        return {
-                            title: s.title,
-                            completed: newCompleted,
-                            id: s.id,
-                            parentId: s.parentId
-                        }
-                    }
-                    return s
-                })
-             }
-             // Cascade up
-             else if (subtask.parentId) {
-                 if (!newCompleted) {
-                     const pIndex = updated.findIndex(s => s.id === subtask.parentId)
-                     if (pIndex !== -1) {
-                         const p = updated[pIndex]
-                         if(p) updated[pIndex] = { title: p.title, completed: false, id: p.id, parentId: p.parentId }
-                     }
-                 } else {
-                     const siblings = updated.filter(s => s.parentId === subtask.parentId && s.id !== subtask.id)
-                     if (siblings.every(s => s.completed)) {
-                         const pIndex = updated.findIndex(s => s.id === subtask.parentId)
-                         if (pIndex !== -1) {
-                              const p = updated[pIndex]
-                              if(p) updated[pIndex] = { title: p.title, completed: true, id: p.id, parentId: p.parentId }
-                         }
-                     }
-                 }
-             }
-
-            emit('update:modelValue', updated)
+          }
+          return s
+        })
+      }
+      // Cascade up
+      else if (subtask.parentId) {
+        if (!newCompleted) {
+          const pIndex = updated.findIndex(s => s.id === subtask.parentId)
+          if (pIndex !== -1) {
+            const p = updated[pIndex]
+            if (p) updated[pIndex] = { title: p.title, completed: false, id: p.id, parentId: p.parentId }
+          }
         } else {
-            // Store handles logic
-            await todoStore.toggleSubtask(subtask.id)
+          const siblings = updated.filter(s => s.parentId === subtask.parentId && s.id !== subtask.id)
+          if (siblings.every(s => s.completed)) {
+            const pIndex = updated.findIndex(s => s.id === subtask.parentId)
+            if (pIndex !== -1) {
+              const p = updated[pIndex]
+              if (p) updated[pIndex] = { title: p.title, completed: true, id: p.id, parentId: p.parentId }
+            }
+          }
         }
-    } catch (error) {
-        console.error('Failed to toggle subtask:', error)
+      }
+
+      emit('update:modelValue', updated)
+    } else {
+      // Store handles logic
+      await todoStore.toggleSubtask(subtask.id)
     }
+  } catch (error) {
+    console.error('Failed to toggle subtask:', error)
+  }
 }
 
 const deleteSubtask = async (subtaskId: string) => {
-    try {
-        if (isLocalMode.value) {
-            // Cascade delete
-            const children = (props.modelValue || []).filter(s => s.parentId === subtaskId)
-            const idsToDelete = [subtaskId, ...children.map(c => c.id)]
-            const updated = (props.modelValue || []).filter(s => !idsToDelete.includes(s.id))
-            emit('update:modelValue', updated)
-        } else {
-            await todoStore.deleteSubtask(subtaskId)
-        }
-    } catch (error) {
-        console.error('Failed to delete subtask:', error)
+  try {
+    if (isLocalMode.value) {
+      // Cascade delete
+      const children = (props.modelValue || []).filter(s => s.parentId === subtaskId)
+      const idsToDelete = [subtaskId, ...children.map(c => c.id)]
+      const updated = (props.modelValue || []).filter(s => !idsToDelete.includes(s.id))
+      emit('update:modelValue', updated)
+    } else {
+      await todoStore.deleteSubtask(subtaskId)
     }
+  } catch (error) {
+    console.error('Failed to delete subtask:', error)
+  }
 }
 
 const startEditing = (subtask: { id: string; title: string }) => {
@@ -207,22 +229,22 @@ const cancelEditing = () => {
 }
 
 const saveEditing = async () => {
-    if (!editingId.value || !editingTitle.value.trim()) {
-        cancelEditing()
-        return
-    }
+  if (!editingId.value || !editingTitle.value.trim()) {
+    cancelEditing()
+    return
+  }
 
-    try {
-        if (isLocalMode.value) {
-             const updated = (props.modelValue || []).map(s => s.id === editingId.value ? { ...s, title: editingTitle.value.trim() } : s)
-             emit('update:modelValue', updated)
-        } else {
-            await todoStore.updateSubtask(editingId.value, { title: editingTitle.value.trim() })
-        }
-        cancelEditing()
-    } catch (e) {
-        console.error('Failed to update subtask', e)
+  try {
+    if (isLocalMode.value) {
+      const updated = (props.modelValue || []).map(s => s.id === editingId.value ? { ...s, title: editingTitle.value.trim() } : s)
+      emit('update:modelValue', updated)
+    } else {
+      await todoStore.updateSubtask(editingId.value, { title: editingTitle.value.trim() })
     }
+    cancelEditing()
+  } catch (e) {
+    console.error('Failed to update subtask', e)
+  }
 }
 </script>
 
@@ -237,25 +259,31 @@ const saveEditing = async () => {
       <div v-for="parent in incompleteParents" :key="parent.id" class="parent-group">
         <!-- Parent Row -->
         <div class="subtask-item parent-item">
-           <!-- Expand/Collapse for Parents with children -->
-           <button class="expand-btn"
-                   :class="{ invisible: getChildren(parent.id).length === 0 }"
-                   @click="toggleExpand(parent.id)">
-               <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
-           </button>
+          <!-- Expand/Collapse for Parents with children -->
+          <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
+            @click="toggleExpand(parent.id)">
+            <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
+          </button>
 
           <button @click="toggleSubtask(parent)" class="subtask-checkbox">
             <div class="empty-circle"></div>
           </button>
 
           <div v-if="editingId === parent.id" class="edit-wrapper">
-             <input ref="editInputRef" v-model="editingTitle" class="edit-input" @blur="saveEditing" @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
+            <input ref="editInputRef" v-model="editingTitle" class="edit-input" @blur="saveEditing"
+              @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
           </div>
           <span v-else class="subtask-text" @click="startEditing(parent)">{{ parent.title }}</span>
 
           <!-- Add Sub-subtask Action -->
-          <button class="action-btn add-child-btn" @click="startAddingSubSubtask(parent.id)" :title="t('modal.addSubtask')">
-              <Plus :size="14" />
+          <button class="action-btn add-child-btn" @click="startAddingSubSubtask(parent.id)"
+            :title="t('modal.addSubtask')">
+            <Plus :size="14" />
+          </button>
+
+          <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(parent)"
+            :title="t('modal.moveSubtask')">
+            <ArrowRightLeft :size="14" />
           </button>
 
           <button @click="deleteSubtask(parent.id)" class="action-btn delete-btn">
@@ -265,37 +293,40 @@ const saveEditing = async () => {
 
         <!-- Children Row (Indented) -->
         <div v-if="isExpanded(parent.id) || addingToParentId === parent.id" class="children-container">
-            <div v-for="child in getChildren(parent.id)" :key="child.id" class="subtask-item child-item" :class="{ completed: child.completed }">
-                <div class="indent-line">
-                   <CornerDownRight :size="14" class="corner-icon" />
-                </div>
-                <button @click="toggleSubtask(child)" class="subtask-checkbox">
-                    <div v-if="child.completed" class="check-circle-wrapper small">
-                         <Check :size="10" class="check-icon-inner" />
-                     </div>
-                     <div v-else class="empty-circle small"></div>
-                </button>
-
-                <div v-if="editingId === child.id" class="edit-wrapper">
-                     <input ref="editInputRef" v-model="editingTitle" class="edit-input" @blur="saveEditing" @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
-                </div>
-                <span v-else class="subtask-text" @click="startEditing(child)">{{ child.title }}</span>
-
-                <button @click="deleteSubtask(child.id)" class="action-btn delete-btn">
-                     <Trash2 :size="14" />
-                </button>
+          <div v-for="child in getChildren(parent.id)" :key="child.id" class="subtask-item child-item"
+            :class="{ completed: child.completed }">
+            <div class="indent-line">
+              <CornerDownRight :size="14" class="corner-icon" />
             </div>
+            <button @click="toggleSubtask(child)" class="subtask-checkbox">
+              <div v-if="child.completed" class="check-circle-wrapper small">
+                <Check :size="10" class="check-icon-inner" />
+              </div>
+              <div v-else class="empty-circle small"></div>
+            </button>
 
-            <!-- Input for new child -->
-             <div v-if="addingToParentId === parent.id" class="subtask-item child-item adding-row">
-                 <div class="indent-line"></div>
-                 <input ref="subSubInputRef" v-model="newSubSubtaskTitle" class="child-input"
-                        :placeholder="t('modal.addSubtask')"
-                        @keyup.enter="handleAddSubtask(parent.id)"
-                        @blur="addingToParentId = null"
-                        @keyup.escape="addingToParentId = null"
-                        />
-             </div>
+            <div v-if="editingId === child.id" class="edit-wrapper">
+              <input ref="editInputRef" v-model="editingTitle" class="edit-input" @blur="saveEditing"
+                @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
+            </div>
+            <span v-else class="subtask-text" @click="startEditing(child)">{{ child.title }}</span>
+
+            <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(child)"
+              :title="t('modal.moveSubtask')">
+              <ArrowRightLeft :size="14" />
+            </button>
+            <button @click="deleteSubtask(child.id)" class="action-btn delete-btn">
+              <Trash2 :size="14" />
+            </button>
+          </div>
+
+          <!-- Input for new child -->
+          <div v-if="addingToParentId === parent.id" class="subtask-item child-item adding-row">
+            <div class="indent-line"></div>
+            <input ref="subSubInputRef" v-model="newSubSubtaskTitle" class="child-input"
+              :placeholder="t('modal.addSubtask')" @keyup.enter="handleAddSubtask(parent.id)"
+              @blur="addingToParentId = null" @keyup.escape="addingToParentId = null" />
+          </div>
         </div>
       </div>
     </div>
@@ -323,42 +354,52 @@ const saveEditing = async () => {
 
       <div v-if="isCompletedOpen" class="accordion-content">
         <div v-for="parent in completedParents" :key="parent.id" class="parent-group completed-group">
-            <div class="subtask-item parent-item completed">
-                <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }" @click="toggleExpand(parent.id)">
-                   <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
-                </button>
+          <div class="subtask-item parent-item completed">
+            <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
+              @click="toggleExpand(parent.id)">
+              <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
+            </button>
 
-                <button @click="toggleSubtask(parent)" class="subtask-checkbox">
-                    <div class="check-circle-wrapper">
-                      <Check :size="12" class="check-icon-inner" />
-                    </div>
-                </button>
+            <button @click="toggleSubtask(parent)" class="subtask-checkbox">
+              <div class="check-circle-wrapper">
+                <Check :size="12" class="check-icon-inner" />
+              </div>
+            </button>
 
-               <div v-if="editingId === parent.id" class="edit-wrapper">
-                    <input ref="editInputRef" v-model="editingTitle" class="edit-input" @blur="saveEditing" @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
-               </div>
-               <span v-else class="subtask-text" @click="startEditing(parent)">{{ parent.title }}</span>
-
-                <button @click="deleteSubtask(parent.id)" class="action-btn delete-btn">
-                    <Trash2 :size="14" />
-                </button>
+            <div v-if="editingId === parent.id" class="edit-wrapper">
+              <input ref="editInputRef" v-model="editingTitle" class="edit-input" @blur="saveEditing"
+                @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
             </div>
+            <span v-else class="subtask-text" @click="startEditing(parent)">{{ parent.title }}</span>
 
-            <!-- Children of completed parents -->
-             <div v-if="isExpanded(parent.id)" class="children-container">
-                <div v-for="child in getChildren(parent.id)" :key="child.id" class="subtask-item child-item completed">
-                     <div class="indent-line"></div>
-                     <button @click="toggleSubtask(child)" class="subtask-checkbox">
-                        <div class="check-circle-wrapper small">
-                            <Check :size="10" class="check-icon-inner" />
-                        </div>
-                    </button>
-                    <span class="subtask-text">{{ child.title }}</span>
+            <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(parent)"
+              :title="t('modal.moveSubtask')">
+              <ArrowRightLeft :size="14" />
+            </button>
+            <button @click="deleteSubtask(parent.id)" class="action-btn delete-btn">
+              <Trash2 :size="14" />
+            </button>
+          </div>
+
+          <!-- Children of completed parents -->
+          <div v-if="isExpanded(parent.id)" class="children-container">
+            <div v-for="child in getChildren(parent.id)" :key="child.id" class="subtask-item child-item completed">
+              <div class="indent-line"></div>
+              <button @click="toggleSubtask(child)" class="subtask-checkbox">
+                <div class="check-circle-wrapper small">
+                  <Check :size="10" class="check-icon-inner" />
                 </div>
-             </div>
+              </button>
+              <span class="subtask-text">{{ child.title }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Move Modal -->
+    <MoveSubtaskModal v-if="!isLocalMode && props.todoId" :is-open="isMoveModalOpen" :current-todo-id="props.todoId"
+      :subtask-title="subtaskToMove?.title || ''" @close="isMoveModalOpen = false" @move="handleMove" />
   </div>
 </template>
 
@@ -391,8 +432,8 @@ const saveEditing = async () => {
 
 /* Parent Group & Items */
 .parent-group {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .subtask-item {
@@ -405,32 +446,34 @@ const saveEditing = async () => {
 }
 
 .parent-item {
-    font-weight: 500;
+  font-weight: 500;
 }
 
 .child-item {
-    padding-left: 0; /* Indentation handled by indent-line */
-    font-size: 0.9em;
+  padding-left: 0;
+  /* Indentation handled by indent-line */
+  font-size: 0.9em;
 }
 
 .children-container {
-    display: flex;
-    flex-direction: column;
-    margin-left: 28px; /* Align under text */
-    padding-left: 0;
+  display: flex;
+  flex-direction: column;
+  margin-left: 28px;
+  /* Align under text */
+  padding-left: 0;
 }
 
 .indent-line {
-    width: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-muted);
-    opacity: 0.5;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  opacity: 0.5;
 }
 
 .corner-icon {
-    color: var(--color-text-muted);
+  color: var(--color-text-muted);
 }
 
 /* Checkboxes */
@@ -454,9 +497,9 @@ const saveEditing = async () => {
 }
 
 .empty-circle.small {
-    width: 14px;
-    height: 14px;
-    border-width: 1.5px;
+  width: 14px;
+  height: 14px;
+  border-width: 1.5px;
 }
 
 .subtask-checkbox:hover .empty-circle {
@@ -474,8 +517,8 @@ const saveEditing = async () => {
 }
 
 .check-circle-wrapper.small {
-    width: 14px;
-    height: 14px;
+  width: 14px;
+  height: 14px;
 }
 
 .check-icon-inner {
@@ -536,32 +579,36 @@ const saveEditing = async () => {
 }
 
 .add-child-btn:hover {
-    color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.move-btn:hover {
+  color: var(--color-primary);
 }
 
 /* Expand Btn */
 .expand-btn {
-    background: transparent;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    color: var(--color-text-muted);
-    display: flex;
-    align-items: center;
-    width: 20px;
-    justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  width: 20px;
+  justify-content: center;
 }
 
 .expand-btn.invisible {
-    visibility: hidden;
+  visibility: hidden;
 }
 
 .chevron {
-    transition: transform 0.2s;
+  transition: transform 0.2s;
 }
 
 .chevron.open {
-    transform: rotate(90deg);
+  transform: rotate(90deg);
 }
 
 
@@ -606,17 +653,18 @@ const saveEditing = async () => {
 }
 
 .child-input {
-    width: 100%;
-    border: none;
-    border-bottom: 1px solid var(--color-border);
-    background: transparent;
-    padding: 4px 0;
-    font-size: 0.9em;
-    color: var(--color-text-primary);
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  padding: 4px 0;
+  font-size: 0.9em;
+  color: var(--color-text-primary);
 }
+
 .child-input:focus {
-    outline: none;
-    border-bottom-color: var(--color-primary);
+  outline: none;
+  border-bottom-color: var(--color-primary);
 }
 
 .dark .subtask-input {

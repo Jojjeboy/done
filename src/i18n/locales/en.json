@@ -163,6 +163,8 @@
     "dueDate": "Due date",
     "subtasks": "Subtasks",
     "addSubtask": "Add subtask...",
+    "moveSubtask": "Move Subtask",
+    "movingSubtask": "Moving",
     "noDescription": "No description provided.",
     "repeat": "Repeat",
     "deleteCategory": "Delete Category",
