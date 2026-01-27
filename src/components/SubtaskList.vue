@@ -94,9 +94,13 @@ const handleMove = async (targetTodoId: string) => {
 const draggedSubtaskIndex = ref<number | null>(null)
 const draggedListType = ref<'incomplete' | 'completed' | null>(null)
 
-const handleDragStart = (index: number, type: 'incomplete' | 'completed') => {
+const handleDragStart = (e: DragEvent, index: number, type: 'incomplete' | 'completed') => {
   draggedSubtaskIndex.value = index
   draggedListType.value = type
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', index.toString())
+  }
 }
 
 const handleDragOver = (e: DragEvent) => {
@@ -289,7 +293,7 @@ const saveEditing = async () => {
     <!-- Incomplete Parents -->
     <div v-if="incompleteParents.length > 0" class="subtask-items">
       <div v-for="(parent, index) in incompleteParents" :key="parent.id" class="parent-group" draggable="true"
-        @dragstart="handleDragStart(index, 'incomplete')" @dragover="handleDragOver"
+        @dragstart="handleDragStart($event, index, 'incomplete')" @dragover="handleDragOver"
         @drop="handleDrop(index, 'incomplete')">
         <!-- Parent Row -->
         <div class="subtask-item parent-item">
@@ -391,7 +395,7 @@ const saveEditing = async () => {
 
       <div v-if="isCompletedOpen" class="accordion-content">
         <div v-for="(parent, index) in completedParents" :key="parent.id" class="parent-group completed-group"
-          draggable="true" @dragstart="handleDragStart(index, 'completed')" @dragover="handleDragOver"
+          draggable="true" @dragstart="handleDragStart($event, index, 'completed')" @dragover="handleDragOver"
           @drop="handleDrop(index, 'completed')">
           <div class="subtask-item parent-item completed">
             <div class="drag-handle">
@@ -481,7 +485,7 @@ const saveEditing = async () => {
 .subtask-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 6px;
   padding: var(--spacing-sm) 0;
   transition: all var(--transition-base);
   min-height: 32px;
@@ -628,6 +632,8 @@ const saveEditing = async () => {
   cursor: grab;
   color: var(--color-text-muted);
   padding: 0 4px;
+  margin-right: -4px;
+  /* Pull next element closer */
   display: flex;
   align-items: center;
   opacity: 0.3;
@@ -655,7 +661,7 @@ const saveEditing = async () => {
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
-  width: 20px;
+  width: 16px;
   justify-content: center;
 }
 
