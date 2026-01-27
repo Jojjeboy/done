@@ -11,7 +11,7 @@ import { useI18n } from 'vue-i18n'
 import {
   ArrowLeft, LogOut, Moon, Sun, Globe,
   ListChecks, RotateCcw, FileText, User,
-  Palette, Zap, Info, ChevronRight
+  Palette, Zap, Info, ChevronRight, Star
 } from 'lucide-vue-next'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import type { SupportedLocale } from '@/i18n'
@@ -223,6 +223,18 @@ const handleCheckForUpdates = async () => {
                   <span class="status-msg" v-if="updateStatusMessage">{{ updateStatusMessage }}</span>
                   <ChevronRight v-else :size="18" class="chevron" />
                 </div>
+              </div>
+              <div class="list-divider"></div>
+              <div class="list-item clickable" @click="router.push('/features')">
+                <div class="item-info">
+                  <div class="item-icon-circle features">
+                    <Star :size="16" />
+                  </div>
+                  <div class="item-text-group">
+                    <span class="item-label">{{ t('common.features') }}</span>
+                  </div>
+                </div>
+                <ChevronRight :size="18" class="chevron" />
               </div>
               <div class="list-divider"></div>
               <div class="list-item clickable" @click="router.push('/changelog')">
@@ -512,6 +524,11 @@ const handleCheckForUpdates = async () => {
   color: #6B7280;
 }
 
+.item-icon-circle.features {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
 .dark .item-icon-circle.theme {
   background: rgba(79, 70, 229, 0.15);
 }
@@ -530,6 +547,10 @@ const handleCheckForUpdates = async () => {
 
 .dark .item-icon-circle.changelog {
   background: rgba(107, 114, 128, 0.15);
+}
+
+.dark .item-icon-circle.features {
+  background: rgba(217, 119, 6, 0.15);
 }
 
 .item-text-group {

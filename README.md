@@ -8,7 +8,8 @@ A modern, offline-first Progressive Web App (PWA) for managing personal tasks, b
 
 - **Create & Edit**: Easily add tasks with titles, descriptions, priorities, and deadlines.
 - **Read/Edit Modes**: Distraction-free reading view with a seamless toggle to edit mode.
-- **Subtasks**: Break down complex tasks into smaller, manageable subtasks. Track progress with visual indicators (e.g., "1/3").
+- **Subtasks**: Break down complex tasks into smaller, manageable subtasks. Supports one level of nesting (Subtask -> Sub-subtask) for detailed organization.
+- **Cascading Progress**: Completing a parent subtask automatically completes its children.
 - **Deadlines**: Set due dates with a built-in datepicker. Simplified display shows "Today", "Tomorrow", or the date.
 - **Categories**: Organize tasks into color-coded categories (Work, Personal, Hobby, Lifestyle).
 - **Search**: Fast, responsive search to find any task instantly.

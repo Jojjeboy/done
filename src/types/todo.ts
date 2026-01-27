@@ -30,6 +30,7 @@ export interface Subtask {
   todoId: string
   title: string
   completed: boolean
+  parentId?: string | null
 }
 
 export interface Comment {

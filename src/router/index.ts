@@ -37,6 +37,16 @@ const router = createRouter({
       name: 'task-detail',
       component: () => import('../views/TaskDetailView.vue'),
     },
+    {
+      path: '/features',
+      name: 'features',
+      component: () => import('../views/FeaturesView.vue'),
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFoundView.vue'),
+    },
   ],
 })
 

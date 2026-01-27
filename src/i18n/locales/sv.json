@@ -25,6 +25,7 @@
     "deleteCommentConfirm": "Är du säker på att du vill ta bort den här kommentaren?",
     "importTasks": "Importera uppgifter",
     "insights": "Insikter",
+    "features": "Funktioner",
     "appName": "Done"
   },
   "focus": {
@@ -201,5 +202,9 @@
     "editJson": "Redigera JSON",
     "importTasksCount": "Importera {count} uppgifter",
     "failedToImport": "Misslyckades att importera uppgifter"
+  },
+  "error": {
+    "notFound": "Sidan hittades inte",
+    "notFoundDesc": "Hoppsan! Sidan du letar efter verkar ha vandrat iväg ut i intet."
   }
 }

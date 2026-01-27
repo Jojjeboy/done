@@ -22,12 +22,17 @@ const showExample = ref(false)
 const importText = ref('')
 const isAnalyzing = ref(false)
 const importError = ref<string | null>(null)
+interface ImportSubtask {
+  title: string
+  subtasks?: string[]
+}
+
 interface ImportTask {
   title: string
   description?: string
   priority?: string
   deadline?: string
-  subtasks?: string[]
+  subtasks?: (string | ImportSubtask)[]
 }
 
 const parsedTasks = ref<ImportTask[]>([])
@@ -37,7 +42,13 @@ const exampleJson = `[
     "title": "Buy groceries",
     "priority": "high",
     "deadline": "2026-01-30",
-    "subtasks": ["Milk", "Bread", "Eggs"]
+    "subtasks": [
+      "Milk",
+      {
+        "title": "Vegetables",
+        "subtasks": ["Carrots", "Spinach"]
+      }
+    ]
   },
   {
     "title": "Call dentist",
@@ -111,9 +122,20 @@ const performImport = async () => {
       )
 
       if (task.subtasks && Array.isArray(task.subtasks)) {
-        for (const subTitle of task.subtasks) {
-          if (typeof subTitle === 'string') {
-            await todoStore.addSubtask(newTodo.id, subTitle)
+        for (const subItem of task.subtasks) {
+          if (typeof subItem === 'string') {
+             // Simple subtask
+            await todoStore.addSubtask(newTodo.id, subItem)
+          } else if (typeof subItem === 'object' && subItem.title) {
+             // Parent subtask
+             const parent = await todoStore.addSubtask(newTodo.id, subItem.title)
+             if (subItem.subtasks && Array.isArray(subItem.subtasks)) {
+                 for (const childTitle of subItem.subtasks) {
+                     if (typeof childTitle === 'string') {
+                         await todoStore.addSubtask(newTodo.id, childTitle, parent.id)
+                     }
+                 }
+             }
           }
         }
       }

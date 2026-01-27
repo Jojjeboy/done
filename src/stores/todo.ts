@@ -362,12 +362,13 @@ export const useTodoStore = defineStore('todo', () => {
   }
 
   // Subtask CRUD
-  const addSubtask = async (todoId: string, title: string) => {
+  const addSubtask = async (todoId: string, title: string, parentId: string | null = null) => {
     const subtask: Subtask = {
       id: generateId(),
       todoId,
       title,
       completed: false,
+      parentId
     }
 
     subtasks.value.push(subtask)
@@ -415,14 +416,30 @@ export const useTodoStore = defineStore('todo', () => {
       throw new Error(`Subtask with id ${id} not found`)
     }
 
-    subtasks.value.splice(index, 1)
+    const subtaskToDelete = subtasks.value[index]
+    if (!subtaskToDelete) return
+
+    const idsToDelete = [id]
+
+    // If it's a parent, find all children to delete
+    if (!subtaskToDelete.parentId) {
+      const children = subtasks.value.filter(s => s.parentId === id)
+      idsToDelete.push(...children.map(c => c.id))
+    }
+
+    // Remove from local state
+    subtasks.value = subtasks.value.filter(s => !idsToDelete.includes(s.id))
 
     try {
       const db = getDatabase()
-      await db.table('subtasks').delete(id)
-      await syncService.deleteSubtask(id)
+      await db.table('subtasks').bulkDelete(idsToDelete)
+      for (const dId of idsToDelete) {
+          await syncService.deleteSubtask(dId)
+      }
     } catch (error) {
+      // Revert is complex here, for now just log
       console.error('Failed to delete subtask:', error)
+      // Ideally fetch from DB again to restore state
       throw error
     }
   }
@@ -455,7 +472,67 @@ export const useTodoStore = defineStore('todo', () => {
     const subtask = subtasks.value.find(s => s.id === id)
     if (!subtask) return
 
-    await updateSubtask(id, { completed: !subtask.completed })
+    const newCompleted = !subtask.completed
+    const updates: { id: string, changes: Partial<Subtask> }[] = []
+
+    updates.push({ id, changes: { completed: newCompleted } })
+
+    // Cascade down: if parent, toggle all children (if strict logic desired, usually yes)
+    if (!subtask.parentId) {
+        const children = subtasks.value.filter(s => s.parentId === id)
+        children.forEach(child => {
+            if (child.completed !== newCompleted) {
+                updates.push({ id: child.id, changes: { completed: newCompleted } })
+            }
+        })
+    }
+
+    // Cascade up: if child...
+    if (subtask.parentId) {
+        if (!newCompleted) {
+            // Include parent to uncheck if child unchecked
+            const parent = subtasks.value.find(s => s.id === subtask.parentId)
+            if (parent && parent.completed) {
+                updates.push({ id: parent.id, changes: { completed: false } })
+            }
+        } else {
+             // Check if all siblings are done -> check parent
+             const siblings = subtasks.value.filter(s => s.parentId === subtask.parentId && s.id !== id)
+             if (siblings.every(s => s.completed)) {
+                 const parent = subtasks.value.find(s => s.id === subtask.parentId)
+                 if (parent && !parent.completed) {
+                      updates.push({ id: parent.id, changes: { completed: true } })
+                 }
+             }
+        }
+    }
+
+    // Apply updates
+    updates.forEach(u => {
+        const idx = subtasks.value.findIndex(s => s.id === u.id)
+        if (idx !== -1) {
+            subtasks.value[idx] = { ...subtasks.value[idx], ...u.changes } as Subtask
+        }
+    })
+
+    // Persist
+    try {
+        const db = getDatabase()
+        await db.transaction('rw', db.table('subtasks'), async () => {
+             for (const u of updates) {
+                 await db.table('subtasks').update(u.id, u.changes)
+             }
+        })
+        for (const u of updates) {
+            // Construct full object to push? Or just update? Sync expects full push usually or specific update function
+            // Looking at other methods, pushSubtask takes full object.
+            const updatedSubtask = subtasks.value.find(s => s.id === u.id) // It's already updated locally
+            if (updatedSubtask) await syncService.pushSubtask(updatedSubtask)
+        }
+    } catch (e) {
+        console.error('Failed to toggle subtasks', e)
+        // Revert? Logic tricky.
+    }
   }
 
   const handleRecurrence = async (item: TodoItem) => {
