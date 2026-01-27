@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { BarChart, CheckCircle, List, AlertTriangle } from 'lucide-vue-next'
+import { BarChart, CheckCircle, List, AlertTriangle, ArrowLeft } from 'lucide-vue-next'
 
 const todoStore = useTodoStore()
 const { t } = useI18n()
+const router = useRouter()
 
 // Metrics
 const totalTasks = computed(() => todoStore.todoItems.length)
@@ -47,8 +49,8 @@ const categoryStats = computed(() => {
   return result.sort((a, b) => b.count - a.count)
 })
 
-// Conic Gradient for Pie Chart
-const pieChartStyle = computed(() => {
+// Conic Gradient for Donut Chart
+const donutChartStyle = computed(() => {
   let currentAngle = 0
   const total = totalTasks.value
   if (total === 0) return { background: '#e5e7eb' }
@@ -65,126 +67,184 @@ const pieChartStyle = computed(() => {
     background: `conic-gradient(${segments.join(', ')})`
   }
 })
-
 </script>
 
 <template>
   <div class="stats-view">
     <header class="stats-header">
+      <button @click="router.push('/')" class="back-button mobile-only" :aria-label="t('common.back')">
+        <ArrowLeft :size="18" />
+      </button>
       <h1 class="page-title">{{ t('stats.title') }}</h1>
     </header>
 
-    <div class="stats-grid">
-      <!-- Key Metrics -->
-      <div class="metric-card">
-        <div class="metric-icon success">
-          <CheckCircle :size="24" />
+    <div class="stats-content">
+      <div class="stats-grid">
+        <!-- Key Metrics with Entrance Animations -->
+        <div class="metric-card fade-in-up" style="animation-delay: 0.1s">
+          <div class="metric-icon success">
+            <CheckCircle :size="24" />
+          </div>
+          <div class="metric-content">
+            <span class="metric-value">{{ completionRate }}%</span>
+            <span class="metric-label">{{ t('stats.completionRate') }}</span>
+          </div>
         </div>
-        <div class="metric-content">
-          <span class="metric-value">{{ completionRate }}%</span>
-          <span class="metric-label">{{ t('stats.completionRate') }}</span>
-        </div>
-      </div>
 
-      <div class="metric-card">
-        <div class="metric-icon primary">
-          <List :size="24" />
+        <div class="metric-card fade-in-up" style="animation-delay: 0.2s">
+          <div class="metric-icon primary">
+            <List :size="24" />
+          </div>
+          <div class="metric-content">
+            <span class="metric-value">{{ completedTasks }}</span>
+            <span class="metric-label">{{ t('stats.tasksCompleted') }}</span>
+          </div>
         </div>
-        <div class="metric-content">
-          <span class="metric-value">{{ completedTasks }}</span>
-          <span class="metric-label">{{ t('stats.tasksCompleted') }}</span>
-        </div>
-      </div>
 
-      <div class="metric-card" v-if="staleTasksCount > 0">
-        <div class="metric-icon warning">
-          <AlertTriangle :size="24" />
-        </div>
-        <div class="metric-content">
-          <span class="metric-value">{{ staleTasksCount }}</span>
-          <span class="metric-label">{{ t('stats.staleTasks') }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Category Chart -->
-    <div class="chart-section" v-if="totalTasks > 0">
-      <h2 class="section-title">{{ t('stats.categoryBreakdown') }}</h2>
-      <div class="chart-container">
-        <div class="pie-chart" :style="pieChartStyle"></div>
-        <div class="chart-legend">
-          <div v-for="cat in categoryStats" :key="cat.name" class="legend-item">
-            <span class="legend-color" :style="{ background: cat.color }"></span>
-            <span class="legend-label">{{ cat.name }}</span>
-            <span class="legend-count">{{ cat.count }}</span>
+        <div class="metric-card fade-in-up" style="animation-delay: 0.3s" v-if="staleTasksCount > 0">
+          <div class="metric-icon warning">
+            <AlertTriangle :size="24" />
+          </div>
+          <div class="metric-content">
+            <span class="metric-value">{{ staleTasksCount }}</span>
+            <span class="metric-label">{{ t('stats.staleTasks') }}</span>
           </div>
         </div>
       </div>
-    </div>
 
-    <div v-else class="empty-state">
-      <BarChart :size="48" class="empty-icon" />
-      <p>{{ t('stats.emptyState') }}</p>
+      <!-- Category Chart -->
+      <div class="chart-section fade-in-up" style="animation-delay: 0.4s" v-if="totalTasks > 0">
+        <h2 class="section-title">{{ t('stats.categoryBreakdown') }}</h2>
+        <div class="chart-container">
+          <div class="chart-visual">
+            <div class="donut-chart" :style="donutChartStyle">
+              <div class="donut-hole">
+                <span class="total-count">{{ totalTasks }}</span>
+                <span class="total-label">Tasks</span>
+              </div>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <div v-for="cat in categoryStats" :key="cat.name" class="legend-item">
+              <span class="legend-color" :style="{ background: cat.color }"></span>
+              <div class="legend-info">
+                <span class="legend-label">{{ cat.name }}</span>
+                <span class="legend-percentage">{{ Math.round((cat.count / totalTasks) * 100) }}%</span>
+              </div>
+              <span class="legend-count">{{ cat.count }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="empty-state fade-in" style="animation-delay: 0.2s">
+        <div class="empty-icon-wrapper">
+          <BarChart :size="48" class="empty-icon" />
+        </div>
+        <p>{{ t('stats.emptyState') }}</p>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .stats-view {
-  padding: 0;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
+  padding-bottom: 2rem;
 }
 
 .stats-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
   margin-bottom: var(--spacing-2xl);
+}
+
+.back-button {
+  background: var(--color-bg-white);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  border: none;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark .back-button {
+  background: var(--color-bg-card);
+}
+
+.back-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .page-title {
   font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
+  font-weight: 800;
   color: var(--color-text-primary);
+  letter-spacing: -0.02em;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-2xl);
 }
 
 .metric-card {
   background: var(--color-bg-white);
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-xl);
   border: 1px solid var(--color-border-light);
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark .metric-card {
   background: var(--color-bg-card);
+  border-color: var(--color-border);
 }
 
 .metric-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary-light);
 }
 
 .metric-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-full);
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.metric-icon.success { background: rgba(16, 185, 129, 0.1); color: #10B981; }
-.metric-icon.primary { background: var(--color-bg-lavender); color: var(--color-primary); }
-.metric-icon.warning { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+.metric-icon.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+}
+
+.metric-icon.primary {
+  background: var(--color-bg-lavender);
+  color: var(--color-primary);
+}
+
+.metric-icon.warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #F59E0B;
+}
 
 .metric-content {
   display: flex;
@@ -192,102 +252,254 @@ const pieChartStyle = computed(() => {
 }
 
 .metric-value {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
+  font-size: 2rem;
+  font-weight: 800;
   color: var(--color-text-primary);
   line-height: 1;
 }
 
 .metric-label {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
   color: var(--color-text-secondary);
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .chart-section {
   background: var(--color-bg-white);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-2xl);
   border-radius: var(--radius-2xl);
   border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .dark .chart-section {
   background: var(--color-bg-card);
+  border-color: var(--color-border);
 }
 
 .section-title {
   font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
+  font-weight: 800;
   color: var(--color-text-primary);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  letter-spacing: -0.01em;
 }
 
 .chart-container {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2xl);
+  gap: var(--spacing-4xl);
   flex-wrap: wrap;
-  justify-content: center; /* Center content on smaller screens */
 }
 
-.pie-chart {
-  width: 160px;
-  height: 160px;
+.chart-visual {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  width: 220px;
+}
+
+.donut-chart {
+  width: 200px;
+  height: 200px;
   border-radius: 50%;
   position: relative;
-  /* Optional hole for donut chart effect */
-  /* mask: radial-gradient(white 50%, transparent 51%); */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.donut-hole {
+  width: 140px;
+  height: 140px;
+  background: var(--color-bg-white);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  z-index: 2;
+}
+
+.dark .donut-hole {
+  background: var(--color-bg-card);
+}
+
+.total-count {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+
+.total-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
 }
 
 .chart-legend {
   flex: 1;
-  min-width: 200px;
+  min-width: 260px;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  font-size: var(--font-size-sm);
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--color-bg-lighter);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s ease;
+}
+
+.dark .legend-item {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.legend-item:hover {
+  background: var(--color-bg-lavender);
+  transform: translateX(4px);
 }
 
 .legend-color {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legend-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .legend-label {
-  flex: 1;
+  font-size: var(--font-size-base);
+  font-weight: 700;
   color: var(--color-text-primary);
 }
 
+.legend-percentage {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
 .legend-count {
-  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  font-weight: 800;
   color: var(--color-text-primary);
 }
 
 .empty-state {
   text-align: center;
-  padding: var(--spacing-2xl);
-  color: var(--color-text-muted);
+  padding: 4rem 2rem;
+  background: var(--color-bg-white);
+  border-radius: var(--radius-2xl);
+  border: 1px dashed var(--color-border);
+}
+
+.dark .empty-state {
+  background: var(--color-bg-card);
+}
+
+.empty-icon-wrapper {
+  width: 100px;
+  height: 100px;
+  background: var(--color-bg-lighter);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--spacing-xl);
 }
 
 .empty-icon {
-  margin-bottom: var(--spacing-md);
   color: var(--color-text-muted);
 }
 
+.empty-state p {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+/* Animations */
+.fade-in-up {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: flex;
+  }
+}
+
 @media (max-width: 600px) {
-    .chart-container {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .pie-chart {
-        align-self: center;
-    }
+  .chart-container {
+    flex-direction: column;
+    gap: var(--spacing-2xl);
+  }
+
+  .chart-visual {
+    width: 100%;
+  }
+
+  .donut-chart {
+    width: 180px;
+    height: 180px;
+  }
+
+  .donut-hole {
+    width: 120px;
+    height: 120px;
+  }
+
+  .metric-card {
+    padding: var(--spacing-lg);
+  }
+
+  .metric-value {
+    font-size: 1.5rem;
+  }
+
+  .chart-section {
+    padding: var(--spacing-lg);
+  }
 }
 </style>

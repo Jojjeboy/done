@@ -236,6 +236,18 @@ const handleCheckForUpdates = async () => {
               <span>{{ t('settings.about') }}</span>
             </div>
             <div class="settings-card list-card">
+              <div class="list-item clickable" @click="router.push('/stats')">
+                <div class="item-info">
+                  <div class="item-icon-circle theme">
+                    <BarChart :size="16" />
+                  </div>
+                  <div class="item-text-group">
+                    <span class="item-label">{{ t('common.insights') }}</span>
+                  </div>
+                </div>
+                <ChevronRight :size="18" class="chevron" />
+              </div>
+              <div class="list-divider"></div>
               <div class="list-item clickable" @click="handleCheckForUpdates">
                 <div class="item-info">
                   <div class="item-icon-circle about">
