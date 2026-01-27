@@ -63,9 +63,18 @@ const handleMove = (targetTodoId: string) => {
                 </div>
                 <button v-for="task in filteredTasks" :key="task.id" class="task-item" @click="handleMove(task.id)">
                     <div class="task-info">
-                        <span class="task-name">{{ task.title }}</span>
-                        <span v-if="task.status === 'completed'" class="completed-badge">{{ t('tasks.filters.completed')
-                            }}</span>
+                        <div class="task-line">
+                            <span class="task-name">{{ task.title }}</span>
+                            <span v-if="task.status === 'completed'" class="completed-badge">{{
+                                t('tasks.filters.completed') }}</span>
+                        </div>
+                        <div v-if="task.categoryId" class="task-category-info">
+                            <div class="color-dot"
+                                :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color || '#ccc' }">
+                            </div>
+                            <span class="category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title
+                                }}</span>
+                        </div>
                     </div>
                 </button>
             </div>
@@ -233,6 +242,32 @@ const handleMove = (targetTodoId: string) => {
 .task-name {
     font-weight: 500;
     color: var(--color-text-primary);
+}
+
+.task-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.task-line {
+    display: flex;
+    align-items: center;
+}
+
+.task-category-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+.task-category-info .color-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
 }
 
 .completed-badge {

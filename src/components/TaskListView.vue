@@ -30,6 +30,9 @@ const resetFilters = () => {
 
 const currentViewLabel = computed(() => {
   if (activeCategoryId.value) {
+    if (activeCategoryId.value === '__none__') {
+      return t('tasks.categories.none')
+    }
     return todoStore.categoriesById.get(activeCategoryId.value)?.title || t('modal.category')
   }
   return t(`tasks.filters.${activeFilter.value}`)
@@ -40,7 +43,11 @@ const allTasks = computed(() => {
   let tasks = todoStore.todoItems
 
   if (activeCategoryId.value) {
-    tasks = tasks.filter(t => t.categoryId === activeCategoryId.value)
+    if (activeCategoryId.value === '__none__') {
+      tasks = tasks.filter(t => t.categoryId === null)
+    } else {
+      tasks = tasks.filter(t => t.categoryId === activeCategoryId.value)
+    }
   }
 
   return tasks

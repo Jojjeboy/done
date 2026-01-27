@@ -113,6 +113,14 @@ const addCategory = async () => {
           </button>
         </div>
 
+        <div class="category-item">
+          <button class="nav-item category-link" :class="{ active: isCategoryActive('__none__') }"
+            @click="router.push({ path: '/', query: { category: '__none__' } })">
+            <div class="color-dot none"></div>
+            <span class="category-title">{{ t('tasks.categories.none') }}</span>
+          </button>
+        </div>
+
         <div v-for="category in todoStore.categories" :key="category.id" class="category-item">
           <div v-if="isEditingCategory === category.id" class="edit-row">
             <input v-model="editingTitle" class="edit-input" autofocus @keyup.enter="saveCategory(category.id)"
@@ -344,5 +352,10 @@ const addCategory = async () => {
 
 .icon-btn.success {
   color: var(--color-success, #10b981);
+}
+
+.color-dot.none {
+  background: #ccc;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 </style>
