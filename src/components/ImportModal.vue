@@ -22,6 +22,12 @@ const showExample = ref(false)
 const importText = ref('')
 const isAnalyzing = ref(false)
 const importError = ref<string | null>(null)
+const selectedCategoryId = ref<string | null>(props.categoryId || null)
+
+import { watch } from 'vue'
+watch(() => props.categoryId, (newId) => {
+  if (newId) selectedCategoryId.value = newId
+})
 interface ImportSubtask {
   title: string
   subtasks?: string[]
@@ -118,24 +124,24 @@ const performImport = async () => {
         task.description || '',
         priority,
         deadline,
-        props.categoryId || null
+        selectedCategoryId.value as string | null
       )
 
       if (task.subtasks && Array.isArray(task.subtasks)) {
         for (const subItem of task.subtasks) {
           if (typeof subItem === 'string') {
-             // Simple subtask
+            // Simple subtask
             await todoStore.addSubtask(newTodo.id, subItem)
           } else if (typeof subItem === 'object' && subItem.title) {
-             // Parent subtask
-             const parent = await todoStore.addSubtask(newTodo.id, subItem.title)
-             if (subItem.subtasks && Array.isArray(subItem.subtasks)) {
-                 for (const childTitle of subItem.subtasks) {
-                     if (typeof childTitle === 'string') {
-                         await todoStore.addSubtask(newTodo.id, childTitle, parent.id)
-                     }
-                 }
-             }
+            // Parent subtask
+            const parent = await todoStore.addSubtask(newTodo.id, subItem.title)
+            if (subItem.subtasks && Array.isArray(subItem.subtasks)) {
+              for (const childTitle of subItem.subtasks) {
+                if (typeof childTitle === 'string') {
+                  await todoStore.addSubtask(newTodo.id, childTitle, parent.id)
+                }
+              }
+            }
           }
         }
       }
@@ -191,6 +197,23 @@ const closeModal = () => {
           <div v-if="importError" class="error-message">
             <AlertTriangle :size="16" />
             <span>{{ importError }}</span>
+          </div>
+
+          <!-- Category Selection -->
+          <div class="category-select-section">
+            <p class="section-label">{{ t('modal.category') }}</p>
+            <div class="category-options">
+              <button class="category-option" :class="{ active: selectedCategoryId === null }"
+                @click="selectedCategoryId = null">
+                <div class="color-dot none"></div>
+                <span>{{ t('modal.categories.none') }}</span>
+              </button>
+              <button v-for="cat in todoStore.categories" :key="cat.id" class="category-option"
+                :class="{ active: selectedCategoryId === cat.id }" @click="selectedCategoryId = cat.id">
+                <div class="color-dot" :style="{ backgroundColor: cat.color || '#ccc' }"></div>
+                <span>{{ cat.title }}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -521,5 +544,74 @@ const closeModal = () => {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+}
+
+/* Category Selection Styles */
+.category-select-section {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.section-label {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-md);
+  letter-spacing: 0.05em;
+}
+
+.category-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.category-option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 12px;
+  background: var(--color-bg-lighter);
+  border: 1px solid var(--color-border-light);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.dark .category-option {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.category-option:hover {
+  background: var(--color-bg-lavender);
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.category-option.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.category-option .color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.category-option .color-dot.none {
+  background: #ccc;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.category-option.active .color-dot.none {
+  background: white;
+  border-color: white;
 }
 </style>
