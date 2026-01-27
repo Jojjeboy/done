@@ -10,7 +10,7 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['logo.png', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['done.png', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'Done',
         short_name: 'Done',
@@ -18,12 +18,12 @@ export default defineConfig({
         theme_color: '#ffffff',
         icons: [
           {
-            src: 'img/icons/pwa-192x192.png',
+            src: 'done.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'img/icons/pwa-512x512.png',
+            src: 'done.png',
             sizes: '512x512',
             type: 'image/png',
           },

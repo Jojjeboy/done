@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref as vueRef } from 'vue'
 import { useRouter } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
 import BottomNavigation from '@/components/BottomNavigation.vue'
@@ -8,10 +8,13 @@ import { useThemeStore } from '@/stores/theme'
 import { useI18nStore } from '@/stores/i18n'
 import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
-import { ArrowLeft, LogOut, Moon, Sun, Globe, ListChecks, RotateCcw, FileText } from 'lucide-vue-next'
+import {
+  ArrowLeft, LogOut, Moon, Sun, Globe,
+  ListChecks, RotateCcw, FileText, User,
+  Palette, Zap, Info, ChevronRight
+} from 'lucide-vue-next'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import type { SupportedLocale } from '@/i18n'
-import { ref as vueRef } from 'vue'
 
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import type { CommitData } from '@/types/commit-info'
@@ -34,7 +37,7 @@ const latestCommit = computed<CommitData>(() => commitData as CommitData)
 const currentLocale = computed(() => locale.value as SupportedLocale)
 
 const userInfo = computed(() => ({
-  name: authStore.user?.displayName || 'User',
+  name: authStore.user?.displayName || t('common.user'),
   email: authStore.user?.email || '',
   photoURL: authStore.user?.photoURL || null
 }))
@@ -95,127 +98,160 @@ const handleCheckForUpdates = async () => {
             <button @click="router.push('/')" class="back-button mobile-only" :aria-label="t('common.back')">
               <ArrowLeft :size="18" />
             </button>
-            <h2 class="page-title">
-              {{ t('settings.title') }}
-            </h2>
+            <h2 class="page-title">{{ t('settings.title') }}</h2>
           </div>
 
-          <!-- User Profile Section -->
-          <div class="settings-card">
-            <div class="profile-info">
-              <div class="profile-avatar-large">
-                <img v-if="userInfo.photoURL" :src="userInfo.photoURL" alt="Profile" class="avatar-image" />
-                <span v-else class="avatar-initials">{{ userInfo.name.charAt(0) }}</span>
-              </div>
-              <div class="profile-details">
-                <h3 class="profile-name">{{ userInfo.name }}</h3>
-                <p class="profile-email">{{ userInfo.email }}</p>
-              </div>
+          <!-- Account Section -->
+          <div class="settings-group">
+            <div class="group-header">
+              <User :size="16" />
+              <span>{{ t('settings.account') }}</span>
             </div>
-          </div>
-
-          <!-- App Behavior -->
-          <div class="settings-card">
-            <div class="setting-header">
-              <ListChecks :size="18" class="setting-icon" />
-              <div class="setting-title-group">
-                <h3 class="setting-title">{{ t('settings.threeStepProcess') }}</h3>
-                <p class="setting-desc-inline">{{ t('settings.threeStepDesc') }}</p>
+            <div class="settings-card profile-card">
+              <div class="profile-info">
+                <div class="profile-avatar-large">
+                  <img v-if="userInfo.photoURL" :src="userInfo.photoURL" alt="Profile" class="avatar-image" />
+                  <span v-else class="avatar-initials">{{ userInfo.name.charAt(0) }}</span>
+                </div>
+                <div class="profile-details">
+                  <h3 class="profile-name">{{ userInfo.name }}</h3>
+                  <p class="profile-email">{{ userInfo.email }}</p>
+                </div>
               </div>
             </div>
-            <div class="button-group">
-              <button @click="settingsStore.setThreeStepEnabled(false)"
-                :class="['option-button', { active: !settingsStore.isThreeStepEnabled }]">
-                <span>{{ t('settings.disabled') }}</span>
-              </button>
-              <button @click="settingsStore.setThreeStepEnabled(true)"
-                :class="['option-button', { active: settingsStore.isThreeStepEnabled }]">
-                <span>{{ t('settings.enabled') }}</span>
-              </button>
+          </div>
+
+          <!-- Appearance Section -->
+          <div class="settings-group">
+            <div class="group-header">
+              <Palette :size="16" />
+              <span>{{ t('settings.appearance') }}</span>
+            </div>
+            <div class="settings-card list-card">
+              <!-- Theme -->
+              <div class="list-item">
+                <div class="item-info">
+                  <div class="item-icon-circle theme">
+                    <Moon :size="16" />
+                  </div>
+                  <div class="item-text-group">
+                    <span class="item-label">{{ t('settings.theme') }}</span>
+                  </div>
+                </div>
+                <div class="segmented-control">
+                  <button @click="handleThemeChange('light')"
+                    :class="['segment-btn', { active: themeStore.theme === 'light' }]">
+                    <Sun :size="14" />
+                  </button>
+                  <button @click="handleThemeChange('dark')"
+                    :class="['segment-btn', { active: themeStore.theme === 'dark' }]">
+                    <Moon :size="14" />
+                  </button>
+                </div>
+              </div>
+
+              <!-- Language -->
+              <div class="list-divider"></div>
+              <div class="list-item">
+                <div class="item-info">
+                  <div class="item-icon-circle lang">
+                    <Globe :size="16" />
+                  </div>
+                  <div class="item-text-group">
+                    <span class="item-label">{{ t('settings.language') }}</span>
+                  </div>
+                </div>
+                <div class="segmented-control text-segments">
+                  <button @click="handleLanguageChange('en')"
+                    :class="['segment-btn', { active: currentLocale === 'en' }]">
+                    <span>EN</span>
+                  </button>
+                  <button @click="handleLanguageChange('sv')"
+                    :class="['segment-btn', { active: currentLocale === 'sv' }]">
+                    <span>SV</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Theme Selection -->
-          <div class="settings-card">
-            <div class="setting-header">
-              <Moon :size="18" class="setting-icon" />
-              <h3 class="setting-title">{{ t('settings.theme') }}</h3>
+          <!-- Behavior Section -->
+          <div class="settings-group">
+            <div class="group-header">
+              <Zap :size="16" />
+              <span>{{ t('settings.behavior') }}</span>
             </div>
-            <div class="button-group">
-              <button @click="handleThemeChange('light')"
-                :class="['option-button', { active: themeStore.theme === 'light' }]">
-                <Sun :size="16" />
-                <span>{{ t('settings.light') }}</span>
-              </button>
-              <button @click="handleThemeChange('dark')"
-                :class="['option-button', { active: themeStore.theme === 'dark' }]">
-                <Moon :size="16" />
-                <span>{{ t('settings.dark') }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Language Selection -->
-          <div class="settings-card">
-            <div class="setting-header">
-              <Globe :size="18" class="setting-icon" />
-              <h3 class="setting-title">{{ t('settings.language') }}</h3>
-            </div>
-            <div class="button-group">
-              <button @click="handleLanguageChange('en')"
-                :class="['option-button', { active: currentLocale === 'en' }]">
-                <span>{{ t('settings.english') }}</span>
-              </button>
-              <button @click="handleLanguageChange('sv')"
-                :class="['option-button', { active: currentLocale === 'sv' }]">
-                <span>{{ t('settings.swedish') }}</span>
-              </button>
+            <div class="settings-card list-card">
+              <div class="list-item column-on-mobile">
+                <div class="item-info">
+                  <div class="item-icon-circle behavior">
+                    <ListChecks :size="16" />
+                  </div>
+                  <div class="item-text-group">
+                    <span class="item-label">{{ t('settings.threeStepProcess') }}</span>
+                    <span class="item-desc">{{ t('settings.threeStepDesc') }}</span>
+                  </div>
+                </div>
+                <div class="toggle-switch"
+                  @click="settingsStore.setThreeStepEnabled(!settingsStore.isThreeStepEnabled)">
+                  <div :class="['switch-track', { active: settingsStore.isThreeStepEnabled }]">
+                    <div class="switch-thumb"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Update Section -->
-          <div class="settings-card">
-            <div class="setting-header">
-              <RotateCcw :size="18" class="setting-icon" />
-              <h3 class="setting-title">{{ t('pwa.titleCheckForUpdate') }}</h3>
+          <!-- About Section -->
+          <div class="settings-group">
+            <div class="group-header">
+              <Info :size="16" />
+              <span>{{ t('settings.about') }}</span>
             </div>
-
-            <!-- Latest Commit Info -->
-            <div v-if="latestCommit.latest" class="commit-info">
-              <p class="commit-label">{{ t('pwa.latestCommit') }}:</p>
-              <p class="commit-text">
-                <code class="commit-hash">{{ latestCommit.latest.hash }}</code>
-                <span class="commit-message">{{ latestCommit.latest.message }}</span>
-              </p>
-            </div>
-
-            <div class="button-group">
-              <button @click="handleCheckForUpdates" :disabled="isCheckingForUpdate" class="option-button">
-                <RotateCcw :size="16" />
-                <span>{{ updateStatusMessage || t('pwa.checkForUpdate') }}</span>
-              </button>
-              <button @click="router.push('/changelog')" class="option-button">
-                <FileText :size="16" />
-                <span>{{ t('pwa.viewChangelog') }}</span>
-              </button>
+            <div class="settings-card list-card">
+              <div class="list-item clickable" @click="handleCheckForUpdates">
+                <div class="item-info">
+                  <div class="item-icon-circle about">
+                    <RotateCcw :size="16" :class="{ spinning: isCheckingForUpdate }" />
+                  </div>
+                  <div class="item-text-group">
+                    <span class="item-label">{{ t('pwa.titleCheckForUpdate') }}</span>
+                    <span class="item-desc" v-if="latestCommit.latest">{{ latestCommit.latest.message }}</span>
+                  </div>
+                </div>
+                <div class="item-action">
+                  <span class="status-msg" v-if="updateStatusMessage">{{ updateStatusMessage }}</span>
+                  <ChevronRight v-else :size="18" class="chevron" />
+                </div>
+              </div>
+              <div class="list-divider"></div>
+              <div class="list-item clickable" @click="router.push('/changelog')">
+                <div class="item-info">
+                  <div class="item-icon-circle changelog">
+                    <FileText :size="16" />
+                  </div>
+                  <div class="item-text-group">
+                    <span class="item-label">{{ t('pwa.viewChangelog') }}</span>
+                  </div>
+                </div>
+                <ChevronRight :size="18" class="chevron" />
+              </div>
             </div>
           </div>
 
-          <!-- Signout -->
-          <div class="settings-card">
-            <div class="setting-header">
-              <LogOut :size="18" class="setting-icon" />
-              <h3 class="setting-title">{{ t('auth.signOut') }}</h3>
-            </div>
-
-            <button @click="handleLogoutClick" class="logout-button">
+          <!-- Sign Out Action -->
+          <div class="actions-group">
+            <button @click="handleLogoutClick" class="logout-link-btn">
               <LogOut :size="18" />
-              <span>{{ t('auth.signOut') || 'Log Out' }}</span>
+              <span>{{ t('auth.signOut') }}</span>
             </button>
+          </div>
+
+          <div class="version-footer">
+            <span v-if="latestCommit.latest">Ver. {{ latestCommit.latest.hash.slice(0, 7) }}</span>
           </div>
         </div>
       </div>
-
 
       <!-- Mobile Bottom Nav -->
       <div class="mobile-only">
@@ -264,7 +300,7 @@ const handleCheckForUpdates = async () => {
 }
 
 .settings-view {
-  max-width: 500px;
+  max-width: 540px;
   margin: 0 auto;
   padding-bottom: 5rem;
 }
@@ -273,14 +309,14 @@ const handleCheckForUpdates = async () => {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-2xl);
 }
 
 .back-button {
   background: var(--color-bg-white);
   border-radius: var(--radius-md);
   padding: var(--spacing-sm);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   transition: all var(--transition-base);
   cursor: pointer;
   border: none;
@@ -296,12 +332,12 @@ const handleCheckForUpdates = async () => {
 
 .back-button:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .page-title {
   font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
+  font-weight: 800;
   color: var(--color-text-primary);
 }
 
@@ -324,36 +360,63 @@ const handleCheckForUpdates = async () => {
   }
 }
 
+/* Settings Groups & Cards */
+.settings-group {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-left: 4px;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
 .settings-card {
   background: var(--color-bg-white);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg) var(--spacing-xl);
-  margin-bottom: var(--spacing-md);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border-light);
 }
 
 .dark .settings-card {
   background: var(--color-bg-card);
+  border-color: var(--color-border);
+}
+
+.profile-card {
+  padding: var(--spacing-lg);
 }
 
 .profile-info {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
 }
 
 .profile-avatar-large {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: var(--radius-full);
-  background: linear-gradient(135deg, #6C5CE7 0%, #A78BFA 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #A78BFA 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
+  border: 3px solid var(--color-bg-white);
   box-shadow: var(--shadow-md);
+}
+
+.dark .profile-avatar-large {
+  border-color: var(--color-bg-card);
 }
 
 .avatar-image {
@@ -363,181 +426,301 @@ const handleCheckForUpdates = async () => {
 }
 
 .avatar-initials {
-  color: var(--color-text-white);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-}
-
-.profile-details {
-  flex: 1;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 800;
 }
 
 .profile-name {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  font-weight: 800;
   color: var(--color-text-primary);
   margin-bottom: 2px;
 }
 
 .profile-email {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-}
-
-.setting-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
-}
-
-.setting-icon {
-  color: var(--color-primary);
-}
-
-.setting-title {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.button-group {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-sm);
-}
-
-.option-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-md);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: transparent;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-base);
 }
 
-.option-button:hover {
-  border-color: var(--color-primary);
-  background: var(--color-bg-lavender);
-}
-
-.option-button.active {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-text-white);
-  box-shadow: var(--shadow-sm);
-}
-
-.option-button.full-width {
-  grid-column: span 2;
-  width: 100%;
-}
-
-.setting-title-group {
+/* List Items */
+.list-card {
   display: flex;
   flex-direction: column;
 }
 
-.setting-desc-inline {
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  gap: var(--spacing-md);
+  transition: background 0.2s;
+}
+
+.list-item.clickable {
+  cursor: pointer;
+}
+
+.list-item.clickable:hover {
+  background: var(--color-bg-lighter);
+}
+
+.dark .list-item.clickable:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.item-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.item-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.item-icon-circle.theme {
+  background: #E0E7FF;
+  color: #4F46E5;
+}
+
+.item-icon-circle.lang {
+  background: #ECFDF5;
+  color: #10B981;
+}
+
+.item-icon-circle.behavior {
+  background: #FFF7ED;
+  color: #F97316;
+}
+
+.item-icon-circle.about {
+  background: #F5F3FF;
+  color: #8B5CF6;
+}
+
+.item-icon-circle.changelog {
+  background: #F9FAFB;
+  color: #6B7280;
+}
+
+.dark .item-icon-circle.theme {
+  background: rgba(79, 70, 229, 0.15);
+}
+
+.dark .item-icon-circle.lang {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.dark .item-icon-circle.behavior {
+  background: rgba(249, 115, 22, 0.15);
+}
+
+.dark .item-icon-circle.about {
+  background: rgba(139, 92, 246, 0.15);
+}
+
+.dark .item-icon-circle.changelog {
+  background: rgba(107, 114, 128, 0.15);
+}
+
+.item-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-label {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.item-desc {
   font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.list-divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin-left: calc(var(--spacing-lg) + 36px + var(--spacing-md));
+}
+
+.dark .list-divider {
+  background: var(--color-bg-light);
+}
+
+.chevron {
   color: var(--color-text-muted);
 }
 
-.logout-section {
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
+/* Segmented Control */
+.segmented-control {
+  display: flex;
+  background: var(--color-bg-lighter);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-light);
 }
 
-.logout-button {
+.dark .segmented-control {
+  background: var(--color-bg-light);
+  border-color: var(--color-border);
+}
+
+.segment-btn {
+  border: none;
+  background: transparent;
+  width: 40px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: all 0.2s;
+}
+
+.text-segments .segment-btn {
+  width: 48px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.segment-btn.active {
+  background: var(--color-bg-white);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.dark .segment-btn.active {
+  background: var(--color-bg-card);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch-track {
+  width: 44px;
+  height: 24px;
+  background: var(--color-bg-lighter);
+  border-radius: 100px;
+  position: relative;
+  transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--color-border-light);
+}
+
+.dark .switch-track {
+  background: var(--color-bg-light);
+  border-color: var(--color-border);
+}
+
+.switch-track.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.switch-thumb {
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+}
+
+.active .switch-thumb {
+  transform: translateX(19px);
+}
+
+/* Actions Group */
+.actions-group {
+  margin-top: var(--spacing-xl);
+}
+
+.logout-link-btn {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  border: 2px solid #EF4444;
-  border-radius: var(--radius-md);
+  gap: 10px;
+  padding: var(--spacing-lg);
   background: transparent;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
   color: #EF4444;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: all 0.2s;
+  background: var(--color-bg-white);
 }
 
-.logout-button:hover {
-  background: #FEE2E2;
-  border-color: #DC2626;
-  color: #DC2626;
+.dark .logout-link-btn {
+  background: var(--color-bg-card);
+  border-color: var(--color-border);
 }
 
-.dark .logout-button:hover {
+.logout-link-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.dark .logout-link-btn:hover {
   background: rgba(239, 68, 68, 0.1);
 }
 
-.commit-info {
-  margin-bottom: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-lighter);
-  border-radius: var(--radius-sm);
-  border-left: 3px solid var(--color-primary);
-}
-
-.dark .commit-info {
-  background: var(--color-bg-light);
-}
-
-.commit-label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-xs);
-}
-
-.commit-text {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
-}
-
-.commit-hash {
-  font-family: 'Monaco', 'Courier New', monospace;
-  font-size: var(--font-size-xs);
-  background: var(--color-bg-white);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
+.status-msg {
+  font-size: 0.75rem;
   color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
+  font-weight: 600;
 }
 
-.dark .commit-hash {
-  background: var(--color-bg-card);
+.spinning {
+  animation: spin 1s linear infinite;
 }
 
-.commit-message {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-primary);
-  line-height: 1.4;
+.version-footer {
+  text-align: center;
+  margin-top: var(--spacing-xl);
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  letter-spacing: 0.05em;
 }
-
 
 @keyframes spin {
-
   from {
     transform: rotate(0deg);
   }
 
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Mobile Adjustments */
+@media (max-width: 600px) {
+  .column-on-mobile {
+    flex-direction: row;
+    /* Keep behavior switch in one row */
+    align-items: center;
   }
 }
 </style>

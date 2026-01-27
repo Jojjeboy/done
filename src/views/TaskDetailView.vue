@@ -248,28 +248,27 @@ const isEditMode = computed(() => !isNew.value)
     <div class="card-modal">
       <!-- Header -->
       <div class="modal-header">
-        <div class="breadcrumbs">
-          <span class="crumb-text">{{ t('tasks.title') }}</span>
-          <span class="crumb-separator">/</span>
-          <div class="crumb-category">
-            <select v-model="taskCategory" @change="handleFieldChange" class="crumb-select">
-              <option value="none">{{ t('tasks.categories.none') }}</option>
-              <option v-for="cat in todoStore.categories" :key="cat.id" :value="cat.id">
-                {{ cat.title }}
-              </option>
-            </select>
+        <div class="header-left">
+          <button class="icon-btn" :title="t('common.back')" @click="router.back()">
+            <ArrowLeft :size="18" />
+          </button>
+          <div class="breadcrumbs">
+            <span class="crumb-text">{{ t('tasks.title') }}</span>
+            <span class="crumb-separator">/</span>
+            <div class="crumb-category">
+              <select v-model="taskCategory" @change="handleFieldChange" class="crumb-select">
+                <option value="none">{{ t('tasks.categories.none') }}</option>
+                <option v-for="cat in todoStore.categories" :key="cat.id" :value="cat.id">
+                  {{ cat.title }}
+                </option>
+              </select>
+            </div>
           </div>
         </div>
 
         <div class="header-controls">
-          <button class="icon-btn" :title="t('common.back')" @click="router.back()">
-            <ArrowLeft :size="18" />
-          </button>
-          <button class="icon-btn" :title="t('common.delete')" @click="showDeleteConfirm = true">
+          <button class="icon-btn delete-btn" :title="t('common.delete')" @click="showDeleteConfirm = true">
             <Trash2 :size="18" />
-          </button>
-          <button class="icon-btn" @click="router.back()">
-            <X :size="20" />
           </button>
         </div>
       </div>
@@ -497,16 +496,22 @@ const isEditMode = computed(() => !isNew.value)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 24px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--color-border-light);
   height: 50px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .breadcrumbs {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--color-text-secondary);
 }
 
@@ -539,6 +544,11 @@ const isEditMode = computed(() => !isNew.value)
 .icon-btn:hover {
   background: var(--color-bg-lighter);
   color: var(--color-text-primary);
+}
+
+.delete-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
 }
 
 /* Scrollable Content */

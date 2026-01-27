@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { X, AlertTriangle, Check } from 'lucide-vue-next'
+import { X, AlertTriangle, Check, ChevronRight } from 'lucide-vue-next'
 import { useTodoStore } from '@/stores/todo'
 
 const props = defineProps<{
@@ -16,6 +16,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const todoStore = useTodoStore()
+
+const showExample = ref(false)
 
 const importText = ref('')
 const isAnalyzing = ref(false)
@@ -130,11 +132,6 @@ const closeModal = () => {
   importError.value = null
   emit('close')
 }
-
-const useExample = () => {
-  importText.value = exampleJson
-  analyzeImport()
-}
 </script>
 
 <template>
@@ -151,8 +148,17 @@ const useExample = () => {
         <div v-if="parsedTasks.length === 0" class="input-section">
           <p class="instruction">
             {{ t('import.instructions') }}
-            <button class="link-btn" @click="useExample">{{ t('import.useExample') }}</button>
           </p>
+
+          <div class="example-accordion" :class="{ open: showExample }">
+            <button class="accordion-toggle" @click="showExample = !showExample">
+              <span>{{ t('import.viewExample') }}</span>
+              <ChevronRight :size="16" class="toggle-icon" />
+            </button>
+            <div v-if="showExample" class="accordion-content">
+              <pre class="example-json">{{ exampleJson }}</pre>
+            </div>
+          </div>
 
           <div class="textarea-wrapper">
             <textarea v-model="importText" :placeholder="t('import.jsonPlaceholder')" class="json-input"
@@ -274,6 +280,62 @@ const useExample = () => {
   cursor: pointer;
   padding: 0;
   font-size: inherit;
+}
+
+.example-accordion {
+  margin-bottom: var(--spacing-md);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-bg-white);
+}
+
+.dark .example-accordion {
+  background: var(--color-bg-card);
+}
+
+.accordion-toggle {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-bg-lighter);
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.accordion-toggle:hover {
+  background: var(--color-bg-lavender);
+  color: var(--color-primary);
+}
+
+.toggle-icon {
+  transition: transform 0.2s;
+}
+
+.open .toggle-icon {
+  transform: rotate(90deg);
+}
+
+.accordion-content {
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.example-json {
+  margin: 0;
+  font-family: monospace;
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .text-btn {
