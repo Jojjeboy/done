@@ -10,15 +10,19 @@ import {
   Edit2,
   Check,
   X,
-  BarChart
+  BarChart,
+  FileJson
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import type { Category } from '@/types/todo'
+import ImportModal from '@/components/ImportModal.vue'
 
 const todoStore = useTodoStore()
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
+
+const showImportModal = ref(false)
 
 const isEditingCategory = ref<string | null>(null)
 const editingTitle = ref('')
@@ -85,6 +89,11 @@ const addCategory = async () => {
         <span>{{ t('common.insights') }}</span>
       </button>
 
+      <button class="nav-item" @click="showImportModal = true">
+        <FileJson :size="20" />
+        <span>{{ t('common.importTasks') }}</span>
+      </button>
+
       <div class="categories-section">
         <div class="section-header">
           <h2>{{ t('modal.category') }}</h2>
@@ -142,6 +151,8 @@ const addCategory = async () => {
     <ConfirmationModal :isOpen="showDeleteCategoryConfirm" :title="t('modal.deleteCategory')"
       :message="t('modal.deleteCategoryConfirm')" :confirmText="t('common.delete')" :cancelText="t('common.cancel')"
       type="danger" @confirm="confirmDeleteCategory" @cancel="showDeleteCategoryConfirm = false" />
+
+    <ImportModal :isOpen="showImportModal" @close="showImportModal = false" @import="showImportModal = false" />
   </aside>
 </template>
 
