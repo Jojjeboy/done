@@ -92,7 +92,8 @@ const features = [
   gap: var(--spacing-md);
   position: sticky;
   top: 0;
-  background-color: var(--color-bg-base); /* Ensure opacity */
+  background-color: var(--color-bg-base);
+  /* Ensure opacity */
   z-index: 10;
   border-bottom: 1px solid var(--color-border-light);
 }
@@ -116,11 +117,11 @@ const features = [
 .page-title {
   margin: 0;
   font-size: var(--font-size-xl);
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .content {
-  max-width: 800px;
+  max-width: 540px;
   margin: 0 auto;
   padding: var(--spacing-lg);
 }
@@ -148,8 +149,8 @@ const features = [
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-lg);
 }
 

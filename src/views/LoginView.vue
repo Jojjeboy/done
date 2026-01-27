@@ -109,7 +109,7 @@ const handleLogin = async () => {
 
 .app-title {
   font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
+  font-weight: 800;
   color: var(--color-text-primary);
   margin-bottom: var(--spacing-sm);
   letter-spacing: -0.5px;
@@ -128,7 +128,7 @@ const handleLogin = async () => {
 
 .welcome-title {
   font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
+  font-weight: 800;
   color: var(--color-text-primary);
   margin-bottom: var(--spacing-md);
 }

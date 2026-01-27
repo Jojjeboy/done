@@ -77,13 +77,14 @@ const { t } = useI18n()
   margin: 0;
   background: linear-gradient(135deg, var(--color-primary), var(--color-text-secondary));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1;
 }
 
 .subtitle {
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 800;
   margin: var(--spacing-sm) 0 var(--spacing-md);
   color: var(--color-text-primary);
 }
@@ -134,12 +135,26 @@ const { t } = useI18n()
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

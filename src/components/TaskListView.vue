@@ -407,7 +407,7 @@ onMounted(async () => {
 
 .view-title {
   font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
+  font-weight: 800;
   color: var(--color-text-primary);
   margin: 0;
 }

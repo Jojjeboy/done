@@ -372,7 +372,7 @@ const isEditMode = computed(() => !isNew.value)
             <div class="prop-content location-content" @click="handleLocationClick">
               <span v-if="!taskLocation" class="placeholder">{{ t('tasks.addLocation') }}</span>
               <span v-else class="location-coords">{{ taskLocation.lat.toFixed(4) }}, {{ taskLocation.lng.toFixed(4)
-              }}</span>
+                }}</span>
             </div>
           </div>
 
@@ -406,7 +406,7 @@ const isEditMode = computed(() => !isNew.value)
               <div class="comment-meta">
                 <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                   t('common.user')
-                }}</span>
+                  }}</span>
                 <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
                 <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                   v-if="comment.userId === authStore.user?.uid">
@@ -618,7 +618,7 @@ const isEditMode = computed(() => !isNew.value)
 
 .task-title-input {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 800;
   border: none;
   background: transparent;
   width: 100%;

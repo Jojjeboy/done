@@ -158,6 +158,7 @@ onMounted(async () => {
 .focus-title h1 {
     margin: 0;
     font-size: var(--font-size-xl);
+    font-weight: 800;
 }
 
 .focus-subtitle {
@@ -187,7 +188,7 @@ onMounted(async () => {
 .focus-content {
     flex: 1;
     padding: var(--spacing-xl);
-    max-width: 800px;
+    max-width: 540px;
     margin: 0 auto;
     width: 100%;
 }

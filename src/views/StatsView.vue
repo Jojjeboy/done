@@ -149,7 +149,7 @@ const donutChartStyle = computed(() => {
 
 <style scoped>
 .stats-view {
-  max-width: 900px;
+  max-width: 540px;
   margin: 0 auto;
   padding-bottom: 2rem;
 }
@@ -185,15 +185,14 @@ const donutChartStyle = computed(() => {
 }
 
 .page-title {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: 800;
   color: var(--color-text-primary);
-  letter-spacing: -0.02em;
 }
 
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-2xl);
 }
@@ -267,7 +266,7 @@ const donutChartStyle = computed(() => {
 
 .chart-section {
   background: var(--color-bg-white);
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-xl);
   border-radius: var(--radius-2xl);
   border: 1px solid var(--color-border-light);
   box-shadow: var(--shadow-sm);
@@ -288,16 +287,16 @@ const donutChartStyle = computed(() => {
 
 .chart-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--spacing-4xl);
-  flex-wrap: wrap;
+  gap: var(--spacing-2xl);
 }
 
 .chart-visual {
   flex-shrink: 0;
   display: flex;
   justify-content: center;
-  width: 220px;
+  width: 100%;
 }
 
 .donut-chart {
@@ -345,8 +344,7 @@ const donutChartStyle = computed(() => {
 }
 
 .chart-legend {
-  flex: 1;
-  min-width: 260px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
@@ -471,25 +469,6 @@ const donutChartStyle = computed(() => {
 }
 
 @media (max-width: 600px) {
-  .chart-container {
-    flex-direction: column;
-    gap: var(--spacing-2xl);
-  }
-
-  .chart-visual {
-    width: 100%;
-  }
-
-  .donut-chart {
-    width: 180px;
-    height: 180px;
-  }
-
-  .donut-hole {
-    width: 120px;
-    height: 120px;
-  }
-
   .metric-card {
     padding: var(--spacing-lg);
   }

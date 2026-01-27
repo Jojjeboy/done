@@ -140,7 +140,7 @@ onMounted(async () => {
   flex: 1;
   overflow-y: auto;
   padding: var(--spacing-lg);
-  max-width: 1200px;
+  max-width: 540px;
   margin: 0 auto;
   width: 100%;
 }
