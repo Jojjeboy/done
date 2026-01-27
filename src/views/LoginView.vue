@@ -27,17 +27,17 @@ const handleLogin = async () => {
             <span class="logo-icon">✓</span>
           </div>
           <h1 class="app-title">
-            Done
+            {{ t('common.appName') }}
           </h1>
           <p class="app-subtitle">
-            Task Management & To-Do List
+            {{ t('auth.appSubtitle') }}
           </p>
         </div>
 
         <div class="welcome-section">
           <h2 class="welcome-title">{{ t('auth.welcome') }}</h2>
           <p class="welcome-text">
-            Sign in to manage your tasks and stay organized
+            {{ t('auth.welcomeText') }}
           </p>
         </div>
 
@@ -47,7 +47,7 @@ const handleLogin = async () => {
         </button>
 
         <p class="privacy-text">
-          By signing in, you agree to our Terms of Service and Privacy Policy
+          {{ t('auth.privacyText') }}
         </p>
       </div>
     </div>

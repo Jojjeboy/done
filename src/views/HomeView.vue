@@ -6,6 +6,7 @@ import BottomNavigation from '@/components/BottomNavigation.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import SearchModal from '@/components/SearchModal.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
+import ImportModal from '@/components/ImportModal.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { Trash2, AlertTriangle } from 'lucide-vue-next'
@@ -17,6 +18,7 @@ const todoStore = useTodoStore()
 const { t } = useI18n()
 
 const showSearchModal = ref(false)
+const showImportModal = ref(false)
 const showStaleConfirm = ref(false)
 
 const openAddTask = () => {
@@ -70,7 +72,7 @@ onMounted(async () => {
     <!-- Main Content Area -->
     <main class="main-content">
       <div class="mobile-only">
-        <MobileHeader />
+        <MobileHeader @open-import="showImportModal = true" />
       </div>
 
       <div class="content-wrapper">
@@ -97,6 +99,7 @@ onMounted(async () => {
 
     <!-- Modals -->
     <SearchModal v-if="showSearchModal" @close="showSearchModal = false" />
+    <ImportModal :isOpen="showImportModal" @close="showImportModal = false" @import="showImportModal = false" />
 
     <!-- Desktop Add Task FAB -->
     <button class="desktop-fab" @click="openAddTask">

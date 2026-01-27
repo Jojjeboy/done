@@ -13,6 +13,11 @@ const router = createRouter({
       component: HomeView,
     },
     {
+      path: '/focus',
+      name: 'focus',
+      component: () => import('../views/FocusModeView.vue'),
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('../views/SettingsView.vue'),

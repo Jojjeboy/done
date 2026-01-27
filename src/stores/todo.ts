@@ -451,6 +451,13 @@ export const useTodoStore = defineStore('todo', () => {
     await updateTodoItem(id, { status: newStatus })
   }
 
+  const toggleSubtask = async (id: string) => {
+    const subtask = subtasks.value.find(s => s.id === id)
+    if (!subtask) return
+
+    await updateSubtask(id, { completed: !subtask.completed })
+  }
+
   const handleRecurrence = async (item: TodoItem) => {
       // Calculate new deadline
       // Create new item
@@ -540,6 +547,7 @@ export const useTodoStore = defineStore('todo', () => {
     addSubtask,
     updateSubtask,
     deleteSubtask,
+    toggleSubtask,
     // Comments
     comments,
     commentsByTodoId,

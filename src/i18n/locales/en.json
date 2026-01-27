@@ -7,9 +7,32 @@
     "delete": "Delete",
     "back": "Back",
     "close": "Close",
+    "add": "Add",
+    "user": "User",
+    "goodMorning": "Good morning",
+    "goodDay": "Good day",
+    "goodAfternoon": "Good afternoon",
+    "goodEvening": "Good evening",
+    "goodNight": "Good night",
     "deleteTask": "Delete Task",
     "deleteConfirm": "Are you sure you want to delete this task? This cannot be undone.",
-    "addToGoogleCalendar": "Add to Google Calendar"
+    "addToGoogleCalendar": "Add to Google Calendar",
+    "notice": "Notice",
+    "updateLocation": "Update Location",
+    "updateLocationMessage": "Update location to your current position?",
+    "update": "Update",
+    "deleteComment": "Delete Comment",
+    "deleteCommentConfirm": "Are you sure you want to delete this comment?",
+    "importTasks": "Import Tasks",
+    "insights": "Insights",
+    "appName": "Done"
+  },
+  "focus": {
+    "enterSelectionMode": "Enter Selection Mode",
+    "title": "Focus Mode",
+    "exit": "Exit Focus Mode",
+    "enter": "Enter Focus Mode",
+    "selected": "Selected"
   },
   "stats": {
     "title": "Productivity Insights",
@@ -67,7 +90,8 @@
     "addReminder": "Add reminders",
     "addLocation": "Add location",
     "comments": "Comments",
-    "writeComment": "Write a comment..."
+    "writeComment": "Write a comment...",
+    "due": "Due"
   },
   "settings": {
     "title": "Settings",
@@ -87,7 +111,10 @@
     "signIn": "Sign in with Google",
     "signOut": "Log Out",
     "welcome": "Your personal productivity oasis",
-    "confirmLogout": "Are you sure you want to log out?"
+    "confirmLogout": "Are you sure you want to log out?",
+    "appSubtitle": "Task Management & To-Do List",
+    "welcomeText": "Sign in to manage your tasks and stay organized",
+    "privacyText": "By signing in, you agree to our Terms of Service and Privacy Policy"
   },
   "search": {
     "placeholder": "Search tasks...",
@@ -117,7 +144,15 @@
     "dueDate": "Due date",
     "subtasks": "Subtasks",
     "addSubtask": "Add subtask...",
-    "noDescription": "No description provided."
+    "noDescription": "No description provided.",
+    "repeat": "Repeat",
+    "deleteCategory": "Delete Category",
+    "deleteCategoryConfirm": "Are you sure you want to delete this category? All tasks within it will be uncategorized.",
+    "startTask": "Start task",
+    "completeTask": "Complete task",
+    "restartTask": "Restart task",
+    "select": "Select",
+    "deselect": "Deselect"
   },
   "pwa": {
     "readyOffline": "App ready to work offline",
@@ -135,7 +170,15 @@
     "committedBy": "by",
     "viewOnGitHub": "View on GitHub",
     "noCommitData": "No commit information available",
-    "updateError": "Update check failed"
+    "updateError": "Update check failed",
+    "relativeTime": {
+      "seconds": "{n} seconds ago",
+      "minutes": "{n} minutes ago",
+      "hours": "{n} hours ago",
+      "days": "{n} days ago",
+      "months": "{n} months ago",
+      "years": "{n} years ago"
+    }
   },
   "home": {
     "staleTasksMessage": "You have {count} tasks untouched for 30 days. Clean up?",
@@ -143,5 +186,15 @@
     "cleanupTitle": "Clean up Stale Tasks",
     "cleanupMessage": "Are you sure you want to delete {count} tasks that haven't been touched in 30 days?",
     "cleanUp": "Clean Up"
+  },
+  "import": {
+    "instructions": "Paste a JSON list of tasks below.",
+    "useExample": "Use example format",
+    "jsonPlaceholder": "Paste JSON here...",
+    "analyze": "Analyze",
+    "readyToImport": "Ready to import {count} tasks",
+    "editJson": "Edit JSON",
+    "importTasksCount": "Import {count} Tasks",
+    "failedToImport": "Failed to import tasks"
   }
 }

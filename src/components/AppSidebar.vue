@@ -53,8 +53,8 @@ const deleteCategory = (id: string) => {
 
 const confirmDeleteCategory = async () => {
   if (categoryToDelete.value) {
-      await todoStore.deleteCategory(categoryToDelete.value)
-      categoryToDelete.value = null
+    await todoStore.deleteCategory(categoryToDelete.value)
+    categoryToDelete.value = null
   }
   showDeleteCategoryConfirm.value = false
 }
@@ -75,22 +75,14 @@ const addCategory = async () => {
     </div>
 
     <nav class="sidebar-nav">
-      <button
-        class="nav-item"
-        :class="{ active: isActive('/') && !route.query.category }"
-        @click="router.push('/')"
-      >
+      <button class="nav-item" :class="{ active: isActive('/') && !route.query.category }" @click="router.push('/')">
         <Home :size="20" />
         <span>{{ t('tasks.filters.all') }}</span>
       </button>
 
-      <button
-        class="nav-item"
-        :class="{ active: isActive('/stats') }"
-        @click="router.push('/stats')"
-      >
+      <button class="nav-item" :class="{ active: isActive('/stats') }" @click="router.push('/stats')">
         <BarChart :size="20" />
-        <span>Insights</span>
+        <span>{{ t('common.insights') }}</span>
       </button>
 
       <div class="categories-section">
@@ -102,40 +94,38 @@ const addCategory = async () => {
         </div>
 
         <div v-if="isAddingCategory" class="edit-row">
-            <input
-              v-model="newCategoryTitle"
-              class="edit-input"
-              autofocus
-              @keyup.enter="addCategory"
-              @keyup.esc="isAddingCategory = false"
-            />
-            <button @click="addCategory" class="icon-btn success"><Check :size="14"/></button>
-            <button @click="isAddingCategory = false" class="icon-btn"><X :size="14"/></button>
+          <input v-model="newCategoryTitle" class="edit-input" autofocus @keyup.enter="addCategory"
+            @keyup.esc="isAddingCategory = false" />
+          <button @click="addCategory" class="icon-btn success">
+            <Check :size="14" />
+          </button>
+          <button @click="isAddingCategory = false" class="icon-btn">
+            <X :size="14" />
+          </button>
         </div>
 
         <div v-for="category in todoStore.categories" :key="category.id" class="category-item">
           <div v-if="isEditingCategory === category.id" class="edit-row">
-            <input
-              v-model="editingTitle"
-              class="edit-input"
-              autofocus
-              @keyup.enter="saveCategory(category.id)"
-              @keyup.esc="isEditingCategory = null"
-            />
-            <button @click="saveCategory(category.id)" class="icon-btn success"><Check :size="14"/></button>
-            <button @click="isEditingCategory = null" class="icon-btn"><X :size="14"/></button>
+            <input v-model="editingTitle" class="edit-input" autofocus @keyup.enter="saveCategory(category.id)"
+              @keyup.esc="isEditingCategory = null" />
+            <button @click="saveCategory(category.id)" class="icon-btn success">
+              <Check :size="14" />
+            </button>
+            <button @click="isEditingCategory = null" class="icon-btn">
+              <X :size="14" />
+            </button>
           </div>
-          <button
-            v-else
-            class="nav-item category-link"
-            :class="{ active: isCategoryActive(category.id) }"
-            @click="router.push({ path: '/', query: { category: category.id } })"
-          >
+          <button v-else class="nav-item category-link" :class="{ active: isCategoryActive(category.id) }"
+            @click="router.push({ path: '/', query: { category: category.id } })">
             <div class="color-dot" :style="{ backgroundColor: category.color || '#ccc' }"></div>
             <span class="category-title">{{ category.title }}</span>
             <div class="actions">
-              <button @click.stop="startEditing(category)" class="action-btn"><Edit2 :size="12" /></button>
-              <button @click.stop="deleteCategory(category.id)" class="action-btn delete"><Trash2 :size="12" /></button>
+              <button @click.stop="startEditing(category)" class="action-btn">
+                <Edit2 :size="12" />
+              </button>
+              <button @click.stop="deleteCategory(category.id)" class="action-btn delete">
+                <Trash2 :size="12" />
+              </button>
             </div>
           </button>
         </div>
@@ -143,25 +133,15 @@ const addCategory = async () => {
     </nav>
 
     <div class="sidebar-footer">
-      <button
-        class="nav-item"
-        :class="{ active: isActive('/settings') }"
-        @click="router.push('/settings')"
-      >
+      <button class="nav-item" :class="{ active: isActive('/settings') }" @click="router.push('/settings')">
         <Settings :size="20" />
         <span>{{ t('settings.title') }}</span>
       </button>
     </div>
 
-    <ConfirmationModal
-        :isOpen="showDeleteCategoryConfirm"
-        title="Delete Category"
-        message="Are you sure you want to delete this category? All tasks within it will be uncategorized."
-        confirmText="Delete"
-        type="danger"
-        @confirm="confirmDeleteCategory"
-        @cancel="showDeleteCategoryConfirm = false"
-    />
+    <ConfirmationModal :isOpen="showDeleteCategoryConfirm" :title="t('modal.deleteCategory')"
+      :message="t('modal.deleteCategoryConfirm')" :confirmText="t('common.delete')" :cancelText="t('common.cancel')"
+      type="danger" @confirm="confirmDeleteCategory" @cancel="showDeleteCategoryConfirm = false" />
   </aside>
 </template>
 
@@ -225,8 +205,8 @@ const addCategory = async () => {
 }
 
 .dark .nav-item.active {
-    background: rgba(99, 102, 241, 0.2);
-    color: var(--color-primary);
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--color-primary);
 }
 
 .sidebar-footer {
@@ -269,14 +249,14 @@ const addCategory = async () => {
 }
 
 .category-link {
-    justify-content: space-between;
+  justify-content: space-between;
 }
 
 .category-link .category-title {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .color-dot {
@@ -306,12 +286,12 @@ const addCategory = async () => {
 }
 
 .action-btn:hover {
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   color: var(--color-text-primary);
 }
 
 .action-btn.delete:hover {
-    color: #ef4444;
+  color: #ef4444;
 }
 
 .edit-row {
@@ -322,36 +302,36 @@ const addCategory = async () => {
 }
 
 .edit-input {
-    flex: 1;
-    padding: 0.25rem 0.5rem;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    font-size: 0.9rem;
-    background: var(--color-bg-white);
-    color: var(--color-text-primary);
+  flex: 1;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background: var(--color-bg-white);
+  color: var(--color-text-primary);
 }
 
 .dark .edit-input {
-    background: var(--color-bg-lighter);
-    color: var(--color-text-primary);
-    border-color: var(--color-border);
+  background: var(--color-bg-lighter);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
 }
 
 .icon-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
 }
 
 .icon-btn:hover {
-    background: var(--color-bg-lavender);
-}
-.icon-btn.success {
-    color: var(--color-success, #10b981);
+  background: var(--color-bg-lavender);
 }
 
+.icon-btn.success {
+  color: var(--color-success, #10b981);
+}
 </style>

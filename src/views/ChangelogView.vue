@@ -21,12 +21,12 @@ const formatRelativeTime = (timestamp: string): string => {
     const now = new Date()
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
-    if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`
-    if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} months ago`
-    return `${Math.floor(diffInSeconds / 31536000)} years ago`
+    if (diffInSeconds < 60) return t('pwa.relativeTime.seconds', { n: diffInSeconds })
+    if (diffInSeconds < 3600) return t('pwa.relativeTime.minutes', { n: Math.floor(diffInSeconds / 60) })
+    if (diffInSeconds < 86400) return t('pwa.relativeTime.hours', { n: Math.floor(diffInSeconds / 3600) })
+    if (diffInSeconds < 2592000) return t('pwa.relativeTime.days', { n: Math.floor(diffInSeconds / 86400) })
+    if (diffInSeconds < 31536000) return t('pwa.relativeTime.months', { n: Math.floor(diffInSeconds / 2592000) })
+    return t('pwa.relativeTime.years', { n: Math.floor(diffInSeconds / 31536000) })
 }
 
 // Format full date

@@ -4,7 +4,11 @@ import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
-import { Sun, Moon, Eye, EyeOff } from 'lucide-vue-next'
+import { Sun, Moon, Eye, FileJson } from 'lucide-vue-next'
+
+const emit = defineEmits<{
+  (e: 'open-import'): void
+}>()
 
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
@@ -59,9 +63,16 @@ const toggleTheme = () => {
       </div>
 
       <div class="header-actions">
-        <button class="action-btn" @click="settingsStore.setHideCompleted(!settingsStore.hideCompleted)" :aria-label="settingsStore.hideCompleted ? 'Show completed' : 'Hide completed'">
-          <EyeOff v-if="settingsStore.hideCompleted" :size="20" />
-          <Eye v-else :size="20" />
+        <button class="action-btn" @click="emit('open-import')" :title="t('common.importTasks')">
+          <FileJson :size="20" />
+        </button>
+        <button class="action-btn" @click="settingsStore.toggleSelectionMode()"
+          :class="{ 'active': settingsStore.inSelectionMode }"
+          :title="settingsStore.inSelectionMode ? t('common.cancel') : t('focus.enterSelectionMode')">
+          <Eye v-if="!settingsStore.inSelectionMode" :size="20" />
+          <span v-else class="selection-icon-wrapper">
+            <div class="selection-checkbox-icon"></div>
+          </span>
         </button>
         <button class="theme-toggle-btn" @click="toggleTheme" :aria-label="t('settings.theme')">
           <Sun v-if="themeStore.theme === 'dark'" :size="20" />
@@ -153,7 +164,8 @@ const toggleTheme = () => {
   gap: var(--spacing-sm);
 }
 
-.theme-toggle-btn, .action-btn {
+.theme-toggle-btn,
+.action-btn {
   background: transparent;
   border: none;
   color: var(--color-text-primary);
@@ -166,12 +178,26 @@ const toggleTheme = () => {
   border-radius: var(--radius-md);
 }
 
-.theme-toggle-btn:hover, .action-btn:hover {
+.theme-toggle-btn:hover,
+.action-btn:hover {
   background-color: var(--color-bg-lavender);
   color: var(--color-primary);
 }
 
-.dark .theme-toggle-btn:hover, .dark .action-btn:hover {
+.dark .theme-toggle-btn:hover,
+.dark .action-btn:hover {
   background-color: rgba(108, 92, 231, 0.1);
+}
+
+.action-btn.active {
+  color: var(--color-primary);
+  background-color: var(--color-bg-lavender);
+}
+
+.selection-checkbox-icon {
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
 }
 </style>

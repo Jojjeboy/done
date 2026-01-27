@@ -30,7 +30,7 @@ const resetFilters = () => {
 
 const currentViewLabel = computed(() => {
   if (activeCategoryId.value) {
-    return todoStore.categoriesById.get(activeCategoryId.value)?.title || 'Category'
+    return todoStore.categoriesById.get(activeCategoryId.value)?.title || t('modal.category')
   }
   return t(`tasks.filters.${activeFilter.value}`)
 })
@@ -43,17 +43,11 @@ const allTasks = computed(() => {
     tasks = tasks.filter(t => t.categoryId === activeCategoryId.value)
   }
 
-  // Filter out completed if setting is enabled, ONLY if not explicitly viewing 'completed' tab
-  if (settingsStore.hideCompleted && activeFilter.value !== 'completed') {
-    tasks = tasks.filter(t => t.status !== 'completed')
-  }
-
   return tasks
 })
 
 const completedTasks = computed(() => {
-  // Only show separate completed list if we are in 'all' filter and not hiding completed globally
-  if (activeFilter.value === 'all' && !settingsStore.hideCompleted) {
+  if (activeFilter.value === 'all') {
     return allTasks.value.filter(t => t.status === 'completed')
   }
   return []
@@ -149,7 +143,7 @@ const tasksByDate = computed(() => {
   // Add no-date at the end
   const noDateTasks = groups.get('no-date')
   if (noDateTasks) {
-    sortedGroups.set('no-date', { label: 'No date', tasks: noDateTasks })
+    sortedGroups.set('no-date', { label: t('tasks.noDate'), tasks: noDateTasks })
   }
 
   return sortedGroups
@@ -188,6 +182,27 @@ const formatTime = (deadline: number | null) => {
   }
 
   return datePrefix
+}
+
+const handleTaskClick = (task: TodoItem) => {
+  if (settingsStore.inSelectionMode) {
+    settingsStore.toggleTaskInFocusMode(task.id)
+  } else {
+    router.push(`/task/${task.id}`)
+  }
+}
+
+const handleTaskAction = (task: TodoItem) => {
+  if (settingsStore.inSelectionMode) {
+    settingsStore.toggleTaskInFocusMode(task.id)
+  } else {
+    todoStore.toggleTodoCompletion(task.id)
+  }
+}
+
+const enterFocusMode = () => {
+  router.push('/focus')
+  settingsStore.inSelectionMode = false
 }
 
 onMounted(async () => {
@@ -230,18 +245,30 @@ onMounted(async () => {
       <div v-for="[dateKey, group] in tasksByDate" :key="dateKey" class="task-section">
         <h3 class="section-title">{{ group.label }}</h3>
         <TransitionGroup name="list" tag="div" class="tasks">
-          <div v-for="task in group.tasks" :key="task.id" class="task-card"
-            :class="{ completed: task.status === 'completed' }" @click="router.push(`/task/${task.id}`)">
-            <button @click.stop="todoStore.toggleTodoCompletion(task.id)" class="task-checkbox-btn"
-              :title="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'"
-              :aria-label="task.status === 'pending' ? 'Start task' : task.status === 'in-progress' ? 'Complete task' : 'Restart task'">
-              <div v-if="task.status === 'completed'" class="check-circle-wrapper">
-                <Check :size="14" class="check-icon-inner" />
+          <div v-for="task in group.tasks" :key="task.id" class="task-card" :class="{
+            completed: task.status === 'completed',
+            selected: settingsStore.focusModeTaskIds.includes(task.id)
+          }" @click="handleTaskClick(task)">
+            <button @click.stop="handleTaskAction(task)" class="task-checkbox-btn"
+              :class="{ 'selection-mode': settingsStore.inSelectionMode }"
+              :title="settingsStore.inSelectionMode ? (settingsStore.focusModeTaskIds.includes(task.id) ? t('modal.deselect') : t('modal.select')) : (task.status === 'pending' ? t('modal.startTask') : task.status === 'in-progress' ? t('modal.completeTask') : t('modal.restartTask'))">
+
+              <!-- Selection Mode Checkbox -->
+              <div v-if="settingsStore.inSelectionMode" class="selection-checkbox"
+                :class="{ checked: settingsStore.focusModeTaskIds.includes(task.id) }">
+                <Check :size="12" class="check-icon-inner" v-if="settingsStore.focusModeTaskIds.includes(task.id)" />
               </div>
-              <div v-else-if="task.status === 'in-progress'" class="progress-circle-wrapper">
-                <div class="inner-dot"></div>
-              </div>
-              <div v-else class="empty-circle"></div>
+
+              <!-- Standard Status Icons -->
+              <template v-else>
+                <div v-if="task.status === 'completed'" class="check-circle-wrapper">
+                  <Check :size="14" class="check-icon-inner" />
+                </div>
+                <div v-else-if="task.status === 'in-progress'" class="progress-circle-wrapper">
+                  <div class="inner-dot"></div>
+                </div>
+                <div v-else class="empty-circle"></div>
+              </template>
             </button>
 
             <div class="task-content">
@@ -313,6 +340,13 @@ onMounted(async () => {
     <div v-if="filteredTasks.length === 0 && completedTasks.length === 0" class="empty-state">
       <p v-if="todoStore.searchQuery">{{ t('tasks.noResults') }}</p>
       <p v-else>{{ t('tasks.noTasks') }}</p>
+    </div>
+
+    <!-- Focus Mode FAB -->
+    <div class="focus-fab-container" v-if="settingsStore.inSelectionMode && settingsStore.focusModeTaskIds.length > 0">
+      <button class="focus-fab" @click="enterFocusMode">
+        <span class="focus-fab-text">{{ t('focus.enter') }} ({{ settingsStore.focusModeTaskIds.length }})</span>
+      </button>
     </div>
   </div>
 </template>
@@ -685,5 +719,87 @@ onMounted(async () => {
 
 .dark .empty-state {
   color: var(--color-text-secondary);
+}
+
+/* Focus Mode Styles */
+.task-card.selected {
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-lavender);
+}
+
+.dark .task-card.selected {
+  background-color: rgba(108, 92, 231, 0.15);
+  border-color: var(--color-primary);
+}
+
+.selection-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 4px;
+  /* Square for selection */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+}
+
+.selection-checkbox.checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.task-card:hover .selection-checkbox {
+  border-color: var(--color-primary);
+}
+
+.focus-fab-container {
+  position: fixed;
+  bottom: 5rem;
+  /* Above bottom nav */
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--spacing-lg);
+  z-index: 100;
+  pointer-events: none;
+  /* Let clicks pass through container */
+}
+
+.focus-fab {
+  pointer-events: auto;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-full);
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-weight: var(--font-weight-bold);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  transform: translateY(0);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.focus-fab:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow-xl);
+}
+
+.focus-fab:active {
+  transform: translateY(0) scale(0.95);
+}
+
+@media (min-width: 769px) {
+  .focus-fab-container {
+    bottom: 3rem;
+    left: 280px;
+    /* Sidebar width */
+    justify-content: center;
+    width: auto;
+  }
 }
 </style>

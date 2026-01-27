@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import {
   X, Calendar, Flag, MapPin,
-  Hash, CheckCircle, Circle, Trash2
+  Hash, CheckCircle, Circle, Trash2, ArrowLeft
 } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
@@ -51,7 +51,7 @@ const currentUserAvatar = computed(() => {
 })
 
 const currentUserName = computed(() => {
-  return authStore.user?.displayName || 'User'
+  return authStore.user?.displayName || t('common.user')
 })
 
 // Validation
@@ -262,6 +262,9 @@ const isEditMode = computed(() => !isNew.value)
         </div>
 
         <div class="header-controls">
+          <button class="icon-btn" :title="t('common.back')" @click="router.back()">
+            <ArrowLeft :size="18" />
+          </button>
           <button class="icon-btn" :title="t('common.delete')" @click="showDeleteConfirm = true">
             <Trash2 :size="18" />
           </button>
@@ -370,7 +373,8 @@ const isEditMode = computed(() => !isNew.value)
             </div>
             <div class="comment-bubble">
               <div class="comment-meta">
-                <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName : 'User'
+                <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
+                  t('common.user')
                   }}</span>
                 <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
                 <button class="delete-comment-btn" @click="deleteComment(comment.id)"
@@ -410,18 +414,19 @@ const isEditMode = computed(() => !isNew.value)
       @cancel="showDeleteConfirm = false" />
 
     <!-- Alert Modal -->
-    <ConfirmationModal :isOpen="showAlertModal" title="Notice" :message="alertMessage" confirmText="OK" singleButton
-      @confirm="showAlertModal = false" @cancel="showAlertModal = false" />
+    <ConfirmationModal :isOpen="showAlertModal" :title="t('common.notice')" :message="alertMessage"
+      :confirmText="t('common.close')" singleButton @confirm="showAlertModal = false"
+      @cancel="showAlertModal = false" />
 
     <!-- Location Update Confirm -->
-    <ConfirmationModal :isOpen="showLocationUpdateConfirm" title="Update Location"
-      message="Update location to your current position?" confirmText="Update" :cancelText="t('common.cancel')"
+    <ConfirmationModal :isOpen="showLocationUpdateConfirm" :title="t('common.updateLocation')"
+      :message="t('common.updateLocationMessage')" :confirmText="t('common.update')" :cancelText="t('common.cancel')"
       @confirm="fetchLocation" @cancel="showLocationUpdateConfirm = false" />
 
     <!-- Delete Comment Confirm -->
-    <ConfirmationModal :isOpen="!!deleteCommentId" title="Delete Comment"
-      message="Are you sure you want to delete this comment?" :confirmText="t('common.delete')"
-      :cancelText="t('common.cancel')" type="danger" @confirm="confirmDeleteComment" @cancel="deleteCommentId = null" />
+    <ConfirmationModal :isOpen="!!deleteCommentId" :title="t('common.deleteComment')"
+      :message="t('common.deleteCommentConfirm')" :confirmText="t('common.delete')" :cancelText="t('common.cancel')"
+      type="danger" @confirm="confirmDeleteComment" @cancel="deleteCommentId = null" />
   </div>
 </template>
 

@@ -2,7 +2,7 @@
 import { ref, computed, nextTick } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { Plus, Trash2, Check } from 'lucide-vue-next'
+import { Plus, Trash2, Check, ChevronRight } from 'lucide-vue-next'
 import type { Subtask } from '@/types/todo'
 
 const props = defineProps<{
@@ -32,6 +32,16 @@ const subtasks = computed(() => {
   }
   return todoStore.subtasksByTodoId.get(props.todoId!) || []
 })
+
+const incompleteSubtasks = computed(() => {
+  return subtasks.value.filter(s => !s.completed)
+})
+
+const completedSubtasks = computed(() => {
+  return subtasks.value.filter(s => s.completed)
+})
+
+const isCompletedOpen = ref(false)
 
 const handleAddSubtask = async () => {
   if (!newSubtaskTitle.value.trim()) return
@@ -77,8 +87,8 @@ const toggleSubtask = async (subtask: Subtask | { id: string; title: string; com
 const deleteSubtask = async (subtaskId: string) => {
   try {
     if (isLocalMode.value) {
-       const updated = (props.modelValue || []).filter(s => s.id !== subtaskId)
-       emit('update:modelValue', updated)
+      const updated = (props.modelValue || []).filter(s => s.id !== subtaskId)
+      emit('update:modelValue', updated)
     } else {
       await todoStore.deleteSubtask(subtaskId)
     }
@@ -102,18 +112,18 @@ const cancelEditing = () => {
 
 const saveEditing = async () => {
   if (!editingId.value || !editingTitle.value.trim()) {
-      cancelEditing()
-      return
+    cancelEditing()
+    return
   }
 
   try {
     if (isLocalMode.value) {
-        const updated = (props.modelValue || []).map(s =>
-            s.id === editingId.value ? { ...s, title: editingTitle.value.trim() } : s
-        )
-        emit('update:modelValue', updated)
+      const updated = (props.modelValue || []).map(s =>
+        s.id === editingId.value ? { ...s, title: editingTitle.value.trim() } : s
+      )
+      emit('update:modelValue', updated)
     } else {
-        await todoStore.updateSubtask(editingId.value, { title: editingTitle.value.trim() })
+      await todoStore.updateSubtask(editingId.value, { title: editingTitle.value.trim() })
     }
     cancelEditing()
   } catch (error) {
@@ -128,17 +138,11 @@ const saveEditing = async () => {
       <h3 class="subtask-title">{{ t('modal.subtasks') }}</h3>
     </div>
 
-    <div v-if="subtasks.length > 0" class="subtask-items">
-      <div
-        v-for="subtask in subtasks"
-        :key="subtask.id"
-        class="subtask-item"
-        :class="{ completed: subtask.completed }"
-      >
-        <button
-          @click="toggleSubtask(subtask)"
-          class="subtask-checkbox"
-        >
+    <!-- Incomplete Subtasks -->
+    <div v-if="incompleteSubtasks.length > 0" class="subtask-items">
+      <div v-for="subtask in incompleteSubtasks" :key="subtask.id" class="subtask-item"
+        :class="{ completed: subtask.completed }">
+        <button @click="toggleSubtask(subtask)" class="subtask-checkbox">
           <div v-if="subtask.completed" class="check-circle-wrapper">
             <Check :size="12" class="check-icon-inner" />
           </div>
@@ -146,21 +150,11 @@ const saveEditing = async () => {
         </button>
 
         <div v-if="editingId === subtask.id" class="edit-wrapper">
-            <input
-                ref="editInputRef"
-                v-model="editingTitle"
-                class="edit-input"
-                @blur="saveEditing"
-                @keyup.enter="saveEditing"
-                @keyup.escape="cancelEditing"
-            />
+          <input ref="editInputRef" v-model="editingTitle" class="edit-input" @blur="saveEditing"
+            @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
         </div>
-        <span
-            v-else
-            class="subtask-text"
-            @click="startEditing(subtask)"
-        >
-            {{ subtask.title }}
+        <span v-else class="subtask-text" @click="startEditing(subtask)">
+          {{ subtask.title }}
         </span>
 
         <button @click="deleteSubtask(subtask.id)" class="delete-btn">
@@ -169,25 +163,48 @@ const saveEditing = async () => {
       </div>
     </div>
 
+    <!-- Add Subtask Input -->
     <div class="add-subtask">
       <div class="input-wrapper">
         <Plus :size="16" class="plus-icon" />
-        <input
-          v-model="newSubtaskTitle"
-          type="text"
-          :placeholder="t('modal.addSubtask')"
-          class="subtask-input"
-          @keyup.enter="handleAddSubtask"
-        />
+        <input v-model="newSubtaskTitle" type="text" :placeholder="t('modal.addSubtask')" class="subtask-input"
+          @keyup.enter="handleAddSubtask" />
       </div>
-      <button
-        v-if="newSubtaskTitle.trim()"
-        @click="handleAddSubtask"
-        class="add-btn"
-        :disabled="isAdding"
-      >
+      <button v-if="newSubtaskTitle.trim()" @click="handleAddSubtask" class="add-btn" :disabled="isAdding">
         {{ t('common.add') }}
       </button>
+    </div>
+
+    <!-- Completed Subtasks Accordion -->
+    <div v-if="completedSubtasks.length > 0" class="completed-accordion">
+      <button class="accordion-header" @click="isCompletedOpen = !isCompletedOpen">
+        <span class="accordion-title">{{ t('tasks.filters.completed') }} ({{ completedSubtasks.length }})</span>
+        <div class="accordion-icon" :class="{ open: isCompletedOpen }">
+          <ChevronRight :size="16" />
+        </div>
+      </button>
+
+      <div v-if="isCompletedOpen" class="accordion-content">
+        <div v-for="subtask in completedSubtasks" :key="subtask.id" class="subtask-item completed">
+          <button @click="toggleSubtask(subtask)" class="subtask-checkbox">
+            <div class="check-circle-wrapper">
+              <Check :size="12" class="check-icon-inner" />
+            </div>
+          </button>
+
+          <div v-if="editingId === subtask.id" class="edit-wrapper">
+            <input ref="editInputRef" v-model="editingTitle" class="edit-input" @blur="saveEditing"
+              @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
+          </div>
+          <span v-else class="subtask-text" @click="startEditing(subtask)">
+            {{ subtask.title }}
+          </span>
+
+          <button @click="deleteSubtask(subtask.id)" class="delete-btn">
+            <Trash2 :size="14" />
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -274,22 +291,22 @@ const saveEditing = async () => {
 }
 
 .edit-wrapper {
-    flex: 1;
+  flex: 1;
 }
 
 .edit-input {
-    width: 100%;
-    font-size: var(--font-size-sm);
-    padding: 2px 4px;
-    border: 1px solid var(--color-primary);
-    border-radius: 4px;
-    background: var(--color-bg-white);
-    color: var(--color-text-primary);
-    margin: -3px 0;
+  width: 100%;
+  font-size: var(--font-size-sm);
+  padding: 2px 4px;
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  background: var(--color-bg-white);
+  color: var(--color-text-primary);
+  margin: -3px 0;
 }
 
 .edit-input:focus {
-    outline: none;
+  outline: none;
 }
 
 .subtask-item.completed .subtask-text {
@@ -383,5 +400,61 @@ const saveEditing = async () => {
 .add-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Completed Accordion Styles */
+.completed-accordion {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: var(--spacing-sm) 0;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.accordion-title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.accordion-icon {
+  transition: transform 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.accordion-icon.open {
+  transform: rotate(90deg);
+}
+
+.accordion-content {
+  margin-top: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

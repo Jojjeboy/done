@@ -7,9 +7,32 @@
     "delete": "Ta bort",
     "back": "Bakåt",
     "close": "Stäng",
+    "add": "Lägg till",
+    "user": "Användare",
+    "goodMorning": "God morgon",
+    "goodDay": "God dag",
+    "goodAfternoon": "God eftermiddag",
+    "goodEvening": "God kväll",
+    "goodNight": "God natt",
     "deleteTask": "Ta bort uppgift",
     "deleteConfirm": "Är du säker på att du vill ta bort den här uppgiften? Detta går inte att ångra.",
-    "addToGoogleCalendar": "Lägg till i Google Calendar"
+    "addToGoogleCalendar": "Lägg till i Google Calendar",
+    "notice": "Observera",
+    "updateLocation": "Uppdatera plats",
+    "updateLocationMessage": "Uppdatera plats till din nuvarande position?",
+    "update": "Uppdatera",
+    "deleteComment": "Ta bort kommentar",
+    "deleteCommentConfirm": "Är du säker på att du vill ta bort den här kommentaren?",
+    "importTasks": "Importera uppgifter",
+    "insights": "Insikter",
+    "appName": "Done"
+  },
+  "focus": {
+    "enterSelectionMode": "Välj uppgifter",
+    "title": "Fokusläge",
+    "exit": "Lämna fokusläge",
+    "enter": "Gå till fokusläge",
+    "selected": "Valda"
   },
   "stats": {
     "title": "Produktivitetsinsikter",
@@ -67,7 +90,8 @@
     "addReminder": "Lägg till påminnelser",
     "addLocation": "Lägg till plats",
     "comments": "Kommentarer",
-    "writeComment": "Skriv en kommentar..."
+    "writeComment": "Skriv en kommentar...",
+    "due": "Förfaller"
   },
   "settings": {
     "title": "Inställningar",
@@ -87,7 +111,10 @@
     "signIn": "Logga in med Google",
     "signOut": "Logga ut",
     "welcome": "Din personliga produktivitetsoas",
-    "confirmLogout": "Är du säker på att du vill logga ut?"
+    "confirmLogout": "Är du säker på att du vill logga ut?",
+    "appSubtitle": "Uppgiftshantering & att göra-lista",
+    "welcomeText": "Logga in för att hantera dina uppgifter och hålla dig organiserad",
+    "privacyText": "Genom att logga in godkänner du våra användarvillkor och integritetspolicy"
   },
   "search": {
     "placeholder": "Sök uppgifter...",
@@ -117,7 +144,15 @@
     "dueDate": "Förfallodatum",
     "subtasks": "Deluppgifter",
     "addSubtask": "Lägg till deluppgift...",
-    "noDescription": "Ingen beskrivning."
+    "noDescription": "Ingen beskrivning.",
+    "repeat": "Upprepa",
+    "deleteCategory": "Ta bort kategori",
+    "deleteCategoryConfirm": "Är du säker på att du vill ta bort den här kategorin? Alla uppgifter i den kommer att bli okategoriserade.",
+    "startTask": "Starta uppgift",
+    "completeTask": "Slutför uppgift",
+    "restartTask": "Återstarta uppgift",
+    "select": "Välj",
+    "deselect": "Avmarkera"
   },
   "pwa": {
     "readyOffline": "Appen är redo att användas offline",
@@ -135,7 +170,15 @@
     "committedBy": "av",
     "viewOnGitHub": "Visa på GitHub",
     "noCommitData": "Ingen commit-information tillgänglig",
-    "updateError": "Misslyckades att söka efter uppdateringar"
+    "updateError": "Misslyckades att söka efter uppdateringar",
+    "relativeTime": {
+      "seconds": "{n} sekunder sedan",
+      "minutes": "{n} minuter sedan",
+      "hours": "{n} timmar sedan",
+      "days": "{n} dagar sedan",
+      "months": "{n} månader sedan",
+      "years": "{n} år sedan"
+    }
   },
   "home": {
     "staleTasksMessage": "Du har {count} uppgifter som inte rörts på 30 dagar. Rensa?",
@@ -143,5 +186,15 @@
     "cleanupTitle": "Rensa gamla uppgifter",
     "cleanupMessage": "Är du säker på att du vill ta bort {count} uppgifter som inte rörts på 30 dagar?",
     "cleanUp": "Rensa"
+  },
+  "import": {
+    "instructions": "Klistra in en JSON-lista med uppgifter nedan.",
+    "useExample": "Använd exempelformat",
+    "jsonPlaceholder": "Klistra in JSON här...",
+    "analyze": "Analysera",
+    "readyToImport": "Redo att importera {count} uppgifter",
+    "editJson": "Redigera JSON",
+    "importTasksCount": "Importera {count} uppgifter",
+    "failedToImport": "Misslyckades att importera uppgifter"
   }
 }

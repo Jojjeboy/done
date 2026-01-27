@@ -130,9 +130,9 @@ const handleSave = async () => {
 
       // Add Subtasks
       if (localSubtasks.value.length > 0) {
-          for (const sub of localSubtasks.value) {
-              await todoStore.addSubtask(newItem.id, sub.title)
-          }
+        for (const sub of localSubtasks.value) {
+          await todoStore.addSubtask(newItem.id, sub.title)
+        }
       }
     }
     handleClose()
@@ -159,21 +159,21 @@ const googleCalendarLink = computed(() => {
 
 
 const handleDelete = () => {
-    if (!props.todoId) return
-    showDeleteConfirm.value = true
+  if (!props.todoId) return
+  showDeleteConfirm.value = true
 }
 
 const confirmDelete = async () => {
-    try {
-        isSubmitting.value = true
-        await todoStore.deleteTodoItem(props.todoId!)
-        handleClose()
-    } catch (error) {
-        console.error('Failed to delete task:', error)
-    } finally {
-        isSubmitting.value = false
-        showDeleteConfirm.value = false
-    }
+  try {
+    isSubmitting.value = true
+    await todoStore.deleteTodoItem(props.todoId!)
+    handleClose()
+  } catch (error) {
+    console.error('Failed to delete task:', error)
+  } finally {
+    isSubmitting.value = false
+    showDeleteConfirm.value = false
+  }
 }
 </script>
 
@@ -182,21 +182,17 @@ const confirmDelete = async () => {
     <div class="modal-content" @click.stop>
       <div class="modal-header">
         <div class="header-left">
-           <h2 class="modal-title" v-if="!viewMode">{{ isEditMode ? t('modal.editTask') : t('modal.newTask') }}</h2>
-           <div v-else class="view-header">
-             <span class="category-badge" v-if="taskCategory !== 'none'" :style="{ backgroundColor: todoStore.categoriesById.get(taskCategory)?.color + '20', color: todoStore.categoriesById.get(taskCategory)?.color }">
-               {{ todoStore.categoriesById.get(taskCategory)?.title }}
-             </span>
-           </div>
+          <h2 class="modal-title" v-if="!viewMode">{{ isEditMode ? t('modal.editTask') : t('modal.newTask') }}</h2>
+          <div v-else class="view-header">
+            <span class="category-badge" v-if="taskCategory !== 'none'"
+              :style="{ backgroundColor: todoStore.categoriesById.get(taskCategory)?.color + '20', color: todoStore.categoriesById.get(taskCategory)?.color }">
+              {{ todoStore.categoriesById.get(taskCategory)?.title }}
+            </span>
+          </div>
         </div>
         <div class="header-actions">
-          <a
-            v-if="viewMode && taskDeadline"
-            :href="googleCalendarLink"
-            target="_blank"
-            class="action-btn"
-            title="Add to Google Calendar"
-          >
+          <a v-if="viewMode && taskDeadline" :href="googleCalendarLink" target="_blank" class="action-btn"
+            :title="t('common.addToGoogleCalendar')">
             <CalendarPlus :size="18" />
           </a>
           <button v-if="viewMode" @click="handleDelete" class="action-btn delete-btn" :title="t('common.delete')">
@@ -217,17 +213,17 @@ const confirmDelete = async () => {
           <h1 class="view-title">{{ taskTitle }}</h1>
 
           <div class="view-meta">
-             <div class="meta-item" v-if="taskDeadline">
-               <Clock :size="16" />
-               <span>{{ new Date(taskDeadline).toLocaleDateString() }}</span>
-             </div>
-             <div class="meta-item priority-badge" :class="taskPriority">
-               {{ t(`tasks.priority.${taskPriority}`) }}
-             </div>
-             <div class="meta-item" v-if="taskRecurrence !== 'none'">
-               <Repeat :size="16" />
-               <span class="capitalize">{{ taskRecurrence }}</span>
-             </div>
+            <div class="meta-item" v-if="taskDeadline">
+              <Clock :size="16" />
+              <span>{{ new Date(taskDeadline).toLocaleDateString() }}</span>
+            </div>
+            <div class="meta-item priority-badge" :class="taskPriority">
+              {{ t(`tasks.priority.${taskPriority}`) }}
+            </div>
+            <div class="meta-item" v-if="taskRecurrence !== 'none'">
+              <Repeat :size="16" />
+              <span class="capitalize">{{ t(`tasks.recurrence.${taskRecurrence}`) }}</span>
+            </div>
           </div>
 
           <p class="view-description" v-if="taskDescription">{{ taskDescription }}</p>
@@ -240,26 +236,18 @@ const confirmDelete = async () => {
         <div v-else class="step-container">
           <div class="form-group">
             <label class="label">{{ t('modal.whatTask') }}</label>
-            <input
-              v-model="taskTitle"
-              type="text"
-              :placeholder="t('modal.taskPlaceholder')"
-              class="form-input"
-              autofocus
-            />
+            <input v-model="taskTitle" type="text" :placeholder="t('modal.taskPlaceholder')" class="form-input"
+              autofocus />
             <div v-if="parsedIntent" class="intent-badge">
               <Sparkles :size="12" />
-              <span>Due: {{ new Date(parsedIntent.date!).toLocaleDateString() }}</span>
+              <span>{{ t('tasks.due') }}: {{ new Date(parsedIntent.date!).toLocaleDateString() }}</span>
             </div>
           </div>
 
           <div class="form-group mt-xl">
             <label class="label">{{ t('modal.description') }}</label>
-            <textarea
-              v-model="taskDescription"
-              :placeholder="t('modal.descriptionPlaceholder')"
-              class="form-textarea"
-            ></textarea>
+            <textarea v-model="taskDescription" :placeholder="t('modal.descriptionPlaceholder')"
+              class="form-textarea"></textarea>
           </div>
 
           <div class="form-row mt-xl">
@@ -275,11 +263,7 @@ const confirmDelete = async () => {
               <label class="label">{{ t('modal.category') }}</label>
               <select v-model="taskCategory" class="form-select">
                 <option value="none">{{ t('modal.categories.none') }}</option>
-                <option
-                  v-for="category in todoStore.categories"
-                  :key="category.id"
-                  :value="category.id"
-                >
+                <option v-for="category in todoStore.categories" :key="category.id" :value="category.id">
                   {{ category.title }}
                 </option>
               </select>
@@ -287,77 +271,46 @@ const confirmDelete = async () => {
           </div>
 
           <div class="form-group mt-xl">
-             <label class="label">{{ t('modal.dueDate') }}</label>
-             <div class="date-input-wrapper">
-               <Calendar :size="18" class="date-icon" />
-               <input
-                 v-model="taskDeadline"
-                 type="date"
-                 class="form-input date-input"
-               />
-             </div>
+            <label class="label">{{ t('modal.dueDate') }}</label>
+            <div class="date-input-wrapper">
+              <Calendar :size="18" class="date-icon" />
+              <input v-model="taskDeadline" type="date" class="form-input date-input" />
+            </div>
           </div>
 
           <div class="form-group mt-xl">
-             <label class="label">Repeat</label>
-             <div class="recurrence-options">
-               <button
-                 type="button"
-                 v-for="option in ['none', 'daily', 'weekly', 'monthly']"
-                 :key="option"
-                 class="recurrence-btn"
-                 :class="{ active: taskRecurrence === option }"
-                 @click="taskRecurrence = option as any"
-               >
-                 {{ option === 'none' ? 'Never' : option }}
-               </button>
-             </div>
+            <label class="label">{{ t('modal.repeat') }}</label>
+            <div class="recurrence-options">
+              <button type="button" v-for="option in ['none', 'daily', 'weekly', 'monthly']" :key="option"
+                class="recurrence-btn" :class="{ active: taskRecurrence === option }"
+                @click="taskRecurrence = option as any">
+                {{ option === 'none' ? t('tasks.recurrence.none') : t(`tasks.recurrence.${option}`) }}
+              </button>
+            </div>
           </div>
 
-          <SubtaskList
-            :todo-id="props.todoId"
-            v-model="localSubtasks"
-          />
+          <SubtaskList :todo-id="props.todoId" v-model="localSubtasks" />
 
           <div class="footer-actions mt-2xl">
-            <button
-                v-if="viewMode"
-                class="btn-secondary flex-1"
-                @click="toggleViewMode"
-            >
-                {{ t('common.edit') }}
+            <button v-if="viewMode" class="btn-secondary flex-1" @click="toggleViewMode">
+              {{ t('common.edit') }}
             </button>
             <template v-else>
-               <button
-                  v-if="isEditMode"
-                  class="btn-secondary"
-                  @click="toggleViewMode"
-                >
-                  {{ t('common.cancel') }}
-                </button>
-                <button
-                  class="btn-primary flex-1"
-                  :disabled="!taskTitle.trim() || isSubmitting"
-                  @click="handleSave"
-                >
-                  {{ isSubmitting ? t('modal.saving') : (isEditMode ? t('modal.saveTask') : t('modal.createTask')) }}
-                </button>
+              <button v-if="isEditMode" class="btn-secondary" @click="toggleViewMode">
+                {{ t('common.cancel') }}
+              </button>
+              <button class="btn-primary flex-1" :disabled="!taskTitle.trim() || isSubmitting" @click="handleSave">
+                {{ isSubmitting ? t('modal.saving') : (isEditMode ? t('modal.saveTask') : t('modal.createTask')) }}
+              </button>
             </template>
           </div>
         </div>
       </div>
     </div>
 
-    <ConfirmationModal
-      :isOpen="showDeleteConfirm"
-      title="Delete Task"
-      message="Are you sure you want to delete this task? This cannot be undone."
-      confirmText="Delete"
-      cancelText="Cancel"
-      type="danger"
-      @confirm="confirmDelete"
-      @cancel="showDeleteConfirm = false"
-    />
+    <ConfirmationModal :isOpen="showDeleteConfirm" :title="t('common.deleteTask')" :message="t('common.deleteConfirm')"
+      :confirmText="t('common.delete')" :cancelText="t('common.cancel')" type="danger" @confirm="confirmDelete"
+      @cancel="showDeleteConfirm = false" />
   </div>
 </template>
 
@@ -378,8 +331,13 @@ const confirmDelete = async () => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
@@ -398,8 +356,15 @@ const confirmDelete = async () => {
 }
 
 @keyframes slideIn {
-  from { transform: translateY(20px) scale(0.95); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
+  from {
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
 .modal-header {
@@ -485,9 +450,20 @@ const confirmDelete = async () => {
   border-radius: 4px;
 }
 
-.priority-badge.high { color: #EF4444; background: rgba(239, 68, 68, 0.1); }
-.priority-badge.medium { color: #F59E0B; background: rgba(245, 158, 11, 0.1); }
-.priority-badge.low { color: #10B981; background: rgba(16, 185, 129, 0.1); }
+.priority-badge.high {
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.priority-badge.medium {
+  color: #F59E0B;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.priority-badge.low {
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.1);
+}
 
 .view-description {
   font-size: var(--font-size-base);
@@ -541,7 +517,9 @@ const confirmDelete = async () => {
   margin-bottom: var(--spacing-sm);
 }
 
-.form-input, .form-textarea, .form-select {
+.form-input,
+.form-textarea,
+.form-select {
   width: 100%;
   padding: var(--spacing-lg);
   border: 1px solid var(--color-border);
@@ -557,7 +535,9 @@ const confirmDelete = async () => {
   resize: vertical;
 }
 
-.form-input:focus, .form-textarea:focus, .form-select:focus {
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
@@ -634,9 +614,17 @@ const confirmDelete = async () => {
   gap: var(--spacing-md);
 }
 
-.mt-xl { margin-top: var(--spacing-xl); }
-.mt-2xl { margin-top: var(--spacing-2xl); }
-.flex-1 { flex: 1; }
+.mt-xl {
+  margin-top: var(--spacing-xl);
+}
+
+.mt-2xl {
+  margin-top: var(--spacing-2xl);
+}
+
+.flex-1 {
+  flex: 1;
+}
 
 .recurrence-options {
   display: flex;
@@ -663,7 +651,7 @@ const confirmDelete = async () => {
 .recurrence-btn.active {
   background: var(--color-bg-white);
   color: var(--color-primary);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   font-weight: 500;
 }
 
