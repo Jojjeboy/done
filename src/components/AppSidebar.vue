@@ -11,7 +11,8 @@ import {
   Check,
   X,
   BarChart,
-  FileJson
+  FileJson,
+  Star
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import type { Category } from '@/types/todo'
@@ -82,6 +83,12 @@ const addCategory = async () => {
       <button class="nav-item" :class="{ active: isActive('/') && !route.query.category }" @click="router.push('/')">
         <Home :size="20" />
         <span>{{ t('tasks.filters.all') }}</span>
+      </button>
+
+      <button class="nav-item" :class="{ active: route.query.filter === 'starred' }"
+        @click="router.push({ path: '/', query: { filter: 'starred' } })">
+        <Star :size="20" />
+        <span>{{ t('tasks.filters.starred') }}</span>
       </button>
 
       <button class="nav-item" :class="{ active: isActive('/stats') }" @click="router.push('/stats')">

@@ -17,7 +17,16 @@ const router = useRouter()
 
 
 type FilterType = 'all' | 'todo' | 'in-progress' | 'completed' | 'starred'
-const activeFilter = ref<FilterType>('all')
+const activeFilter = ref<FilterType>((route.query.filter as FilterType) || 'all')
+
+import { watch } from 'vue'
+watch(() => route.query.filter, (newFilter) => {
+  if (newFilter) {
+    activeFilter.value = newFilter as FilterType
+  } else {
+    activeFilter.value = 'all'
+  }
+})
 
 const activeCategoryId = computed(() => route.query.category as string | undefined)
 
