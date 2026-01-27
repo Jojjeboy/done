@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Home, Plus, Settings } from 'lucide-vue-next'
+import { Home, Plus, Settings, BarChart } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
@@ -23,28 +23,19 @@ const addTask = () => {
 
 <template>
   <nav class="bottom-nav">
-    <button
-      @click="router.push('/')"
-      class="nav-btn"
-      :class="{ active: isActive('/') }"
-      :aria-label="t('common.appName')"
-    >
+    <button @click="router.push('/')" class="nav-btn" :class="{ active: isActive('/') }"
+      :aria-label="t('common.appName')">
       <Home :size="24" />
     </button>
-    <button
-      v-if="!isActive('/settings')"
-      @click="addTask"
-      class="nav-btn-add"
-      :aria-label="t('tasks.addTask')"
-    >
+    <button @click="router.push('/stats')" class="nav-btn" :class="{ active: isActive('/stats') }"
+      :aria-label="t('common.insights')">
+      <BarChart :size="24" />
+    </button>
+    <button v-if="!isActive('/settings')" @click="addTask" class="nav-btn-add" :aria-label="t('tasks.addTask')">
       <Plus :size="28" />
     </button>
-    <button
-      @click="router.push('/settings')"
-      class="nav-btn"
-      :class="{ active: isActive('/settings') }"
-      :aria-label="t('settings.title')"
-    >
+    <button @click="router.push('/settings')" class="nav-btn" :class="{ active: isActive('/settings') }"
+      :aria-label="t('settings.title')">
       <Settings :size="24" />
     </button>
   </nav>

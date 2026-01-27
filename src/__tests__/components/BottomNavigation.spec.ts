@@ -25,6 +25,7 @@ describe('BottomNavigation Component', () => {
           Home: true,
           Plus: true,
           Settings: true,
+          BarChart: true,
         },
       },
     })
@@ -32,19 +33,20 @@ describe('BottomNavigation Component', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders all 3 navigation buttons', () => {
+  it('renders all 4 navigation buttons', () => {
     const wrapper = mount(BottomNavigation, {
       global: {
         stubs: {
           Home: true,
           Plus: true,
           Settings: true,
+          BarChart: true,
         },
       },
     })
 
     const buttons = wrapper.findAll('button')
-    expect(buttons.length).toBe(3)
+    expect(buttons.length).toBe(4)
   })
 
   it('has appropriate ARIA labels', () => {
@@ -54,6 +56,7 @@ describe('BottomNavigation Component', () => {
           Home: true,
           Plus: true,
           Settings: true,
+          BarChart: true,
         },
       },
     })
@@ -62,9 +65,9 @@ describe('BottomNavigation Component', () => {
     const ariaLabels = buttons.map((btn) => btn.attributes('aria-label'))
 
     expect(ariaLabels).toContain('common.appName')
+    expect(ariaLabels).toContain('common.insights')
     expect(ariaLabels).toContain('tasks.addTask')
     expect(ariaLabels).toContain('settings.title')
-    expect(ariaLabels).not.toContain('projects.title')
   })
 
   it('emits openAddTask event when add button is clicked', async () => {
@@ -74,6 +77,7 @@ describe('BottomNavigation Component', () => {
           Home: true,
           Plus: true,
           Settings: true,
+          BarChart: true,
         },
       },
     })
@@ -91,6 +95,7 @@ describe('BottomNavigation Component', () => {
           Home: true,
           Plus: true,
           Settings: true,
+          BarChart: true,
         },
       },
     })

@@ -780,17 +780,19 @@ const handleCheckForUpdates = async () => {
 }
 
 .color-palette-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
+  display: flex;
+  gap: 8px;
   width: 100%;
   margin-top: 4px;
+  flex-wrap: wrap;
 }
 
 .color-swatch {
-  aspect-ratio: 1;
-  border-radius: var(--radius-md);
-  border: 3px solid transparent;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
   cursor: pointer;
   transition: all var(--transition-base);
   display: flex;
@@ -798,29 +800,29 @@ const handleCheckForUpdates = async () => {
   justify-content: center;
   position: relative;
   box-shadow: var(--shadow-sm);
-  min-height: 44px;
 }
 
 .color-swatch:hover {
-  transform: translateY(-2px);
+  transform: scale(1.1);
   box-shadow: var(--shadow-md);
 }
 
 .color-swatch.active {
   border-color: var(--color-text-primary);
-  box-shadow: var(--shadow-lg);
-  transform: scale(1.05);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+  transform: scale(1.15);
 }
 
 .dark .color-swatch.active {
   border-color: var(--color-text-white);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
 }
 
 .color-swatch .checkmark {
   color: white;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   font-weight: bold;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .item-icon-circle.palette {
@@ -834,8 +836,7 @@ const handleCheckForUpdates = async () => {
 
 @media (max-width: 600px) {
   .color-palette-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
 }
 </style>
