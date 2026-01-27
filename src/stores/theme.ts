@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { getDatabase } from '@/db'
 
 export type Theme = 'light' | 'dark'
-export type ColorPalette = 'purple' | 'blue' | 'green' | 'rose' | 'orange' | 'indigo'
+export type ColorPalette = 'purple' | 'blue' | 'green' | 'rose' | 'orange' | 'indigo' | 'teal' | 'cyan' | 'fuchsia'
 
 interface PaletteColors {
   primary: string
@@ -42,6 +42,21 @@ const COLOR_PALETTES: Record<ColorPalette, PaletteColors> = {
     primary: '#6366f1',
     primaryLight: '#818cf8',
     primaryDark: '#4f46e5',
+  },
+  teal: {
+    primary: '#14b8a6',
+    primaryLight: '#5eead4',
+    primaryDark: '#0d9488',
+  },
+  cyan: {
+    primary: '#06b6d4',
+    primaryLight: '#67e8f9',
+    primaryDark: '#0891b2',
+  },
+  fuchsia: {
+    primary: '#d946ef',
+    primaryLight: '#f5d0fe',
+    primaryDark: '#a21caf',
   },
 }
 

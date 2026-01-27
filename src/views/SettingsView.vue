@@ -11,7 +11,7 @@ import { useI18n } from 'vue-i18n'
 import {
   ArrowLeft, LogOut, Moon, Sun, Globe,
   ListChecks, RotateCcw, FileText, User,
-  Palette, Zap, Info, ChevronRight, Star
+  Palette, Zap, Info, ChevronRight, Star, BarChart
 } from 'lucide-vue-next'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import type { SupportedLocale } from '@/i18n'
@@ -181,9 +181,7 @@ const handleCheckForUpdates = async () => {
               <div class="list-divider"></div>
               <div class="list-item column-layout">
                 <div class="item-info">
-                  <div class="item-icon-circle palette">
-                    <Palette :size="16" />
-                  </div>
+
                   <div class="item-text-group">
                     <span class="item-label">{{ t('settings.colorPalette') }}</span>
                   </div>

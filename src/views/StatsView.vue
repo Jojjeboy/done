@@ -150,7 +150,7 @@ const donutChartStyle = computed(() => {
 <style scoped>
 .stats-view {
   max-width: 540px;
-  margin: 0 auto;
+  margin: 1rem;
   padding-bottom: 2rem;
 }
 
