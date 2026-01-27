@@ -2,16 +2,17 @@
 import { ref, computed, nextTick } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { Plus, Trash2, Check, ChevronRight, CornerDownRight, ArrowRightLeft } from 'lucide-vue-next'
+import type { Subtask } from '@/types/todo'
+import { Plus, Trash2, Check, ChevronRight, CornerDownRight, ArrowRightLeft, GripVertical } from 'lucide-vue-next'
 import MoveSubtaskModal from './MoveSubtaskModal.vue'
 
 const props = defineProps<{
   todoId?: string | null
-  modelValue?: { title: string; completed: boolean; id: string; parentId?: string | null }[]
+  modelValue?: (Partial<Subtask> & { id: string; title: string; completed: boolean; order: number })[]
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: { title: string; completed: boolean; id: string; parentId?: string | null }[]]
+  'update:modelValue': [value: (Partial<Subtask> & { id: string; title: string; completed: boolean; order: number })[]]
 }>()
 
 const todoStore = useTodoStore()
@@ -89,6 +90,46 @@ const handleMove = async (targetTodoId: string) => {
   }
 }
 
+// Drag and Drop for sorting
+const draggedSubtaskIndex = ref<number | null>(null)
+const draggedListType = ref<'incomplete' | 'completed' | null>(null)
+
+const handleDragStart = (index: number, type: 'incomplete' | 'completed') => {
+  draggedSubtaskIndex.value = index
+  draggedListType.value = type
+}
+
+const handleDragOver = (e: DragEvent) => {
+  e.preventDefault() // Allow drop
+}
+
+const handleDrop = async (targetIndex: number, type: 'incomplete' | 'completed') => {
+  if (draggedSubtaskIndex.value === null || draggedListType.value !== type) return
+  if (draggedSubtaskIndex.value === targetIndex) return
+
+  const list = type === 'incomplete' ? [...incompleteParents.value] : [...completedParents.value]
+  const [removed] = list.splice(draggedSubtaskIndex.value, 1) as (Partial<Subtask> & { id: string; title: string; completed: boolean; order: number })[]
+  if (!removed) return
+  list.splice(targetIndex, 0, removed)
+
+  // Update order property for affected items
+  const updatedSubtasks = list.map((s, idx) => ({ ...s, order: idx }))
+
+  if (isLocalMode.value) {
+    const otherSubtasks = (props.modelValue || []).filter(s => s.parentId || (type === 'incomplete' ? s.completed : !s.completed))
+    emit('update:modelValue', [...otherSubtasks, ...updatedSubtasks])
+  } else {
+    try {
+      await todoStore.updateSubtasksOrder(updatedSubtasks as Subtask[])
+    } catch (e) {
+      console.error('Failed to update order', e)
+    }
+  }
+
+  draggedSubtaskIndex.value = null
+  draggedListType.value = null
+}
+
 // Actions
 const handleAddSubtask = async (parentId: string | null = null) => {
   const title = parentId ? newSubSubtaskTitle.value.trim() : newSubtaskTitle.value.trim()
@@ -106,8 +147,9 @@ const handleAddSubtask = async (parentId: string | null = null) => {
         id: crypto.randomUUID(),
         title,
         completed: false,
-        parentId
-      }
+        parentId,
+        order: (props.modelValue?.length || 0)
+      } as Partial<Subtask> & { id: string; title: string; completed: boolean; order: number }
       emit('update:modelValue', [...(props.modelValue || []), newSubtask])
     } else {
       await todoStore.addSubtask(props.todoId!, title, parentId)
@@ -148,23 +190,13 @@ const toggleSubtask = async (subtask: { id: string; completed: boolean; parentId
       if (!item) return
 
       const newCompleted = !item.completed
-      updated[sIndex] = {
-        title: item.title,
-        completed: newCompleted,
-        id: item.id,
-        parentId: item.parentId
-      }
+      updated[sIndex] = { ...item, completed: newCompleted }
 
       // Cascade down
       if (!subtask.parentId) {
         updated = updated.map(s => {
           if (s.parentId === subtask.id) {
-            return {
-              title: s.title,
-              completed: newCompleted,
-              id: s.id,
-              parentId: s.parentId
-            }
+            return { ...s, completed: newCompleted }
           }
           return s
         })
@@ -175,7 +207,7 @@ const toggleSubtask = async (subtask: { id: string; completed: boolean; parentId
           const pIndex = updated.findIndex(s => s.id === subtask.parentId)
           if (pIndex !== -1) {
             const p = updated[pIndex]
-            if (p) updated[pIndex] = { title: p.title, completed: false, id: p.id, parentId: p.parentId }
+            if (p) updated[pIndex] = { ...p, completed: false }
           }
         } else {
           const siblings = updated.filter(s => s.parentId === subtask.parentId && s.id !== subtask.id)
@@ -183,7 +215,7 @@ const toggleSubtask = async (subtask: { id: string; completed: boolean; parentId
             const pIndex = updated.findIndex(s => s.id === subtask.parentId)
             if (pIndex !== -1) {
               const p = updated[pIndex]
-              if (p) updated[pIndex] = { title: p.title, completed: true, id: p.id, parentId: p.parentId }
+              if (p) updated[pIndex] = { ...p, completed: true }
             }
           }
         }
@@ -256,9 +288,14 @@ const saveEditing = async () => {
 
     <!-- Incomplete Parents -->
     <div v-if="incompleteParents.length > 0" class="subtask-items">
-      <div v-for="parent in incompleteParents" :key="parent.id" class="parent-group">
+      <div v-for="(parent, index) in incompleteParents" :key="parent.id" class="parent-group" draggable="true"
+        @dragstart="handleDragStart(index, 'incomplete')" @dragover="handleDragOver"
+        @drop="handleDrop(index, 'incomplete')">
         <!-- Parent Row -->
         <div class="subtask-item parent-item">
+          <div class="drag-handle">
+            <GripVertical :size="14" />
+          </div>
           <!-- Expand/Collapse for Parents with children -->
           <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
             @click="toggleExpand(parent.id)">
@@ -353,8 +390,13 @@ const saveEditing = async () => {
       </button>
 
       <div v-if="isCompletedOpen" class="accordion-content">
-        <div v-for="parent in completedParents" :key="parent.id" class="parent-group completed-group">
+        <div v-for="(parent, index) in completedParents" :key="parent.id" class="parent-group completed-group"
+          draggable="true" @dragstart="handleDragStart(index, 'completed')" @dragover="handleDragOver"
+          @drop="handleDrop(index, 'completed')">
           <div class="subtask-item parent-item completed">
+            <div class="drag-handle">
+              <GripVertical :size="14" />
+            </div>
             <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
               @click="toggleExpand(parent.id)">
               <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
@@ -580,6 +622,24 @@ const saveEditing = async () => {
 
 .add-child-btn:hover {
   color: var(--color-primary);
+}
+
+.drag-handle {
+  cursor: grab;
+  color: var(--color-text-muted);
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+
+.parent-item:hover .drag-handle {
+  opacity: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .move-btn:hover {

@@ -31,6 +31,7 @@ export interface Subtask {
   title: string
   completed: boolean
   parentId?: string | null
+  order: number
 }
 
 export interface Comment {

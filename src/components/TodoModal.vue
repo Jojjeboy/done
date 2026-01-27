@@ -6,6 +6,7 @@ import { X, Calendar, Edit2, Clock, Sparkles, Repeat, CalendarPlus, Trash2 } fro
 import SubtaskList from '@/components/SubtaskList.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
+import type { Subtask } from '@/types/todo'
 
 
 const props = defineProps<{
@@ -61,7 +62,7 @@ const toggleViewMode = () => {
   viewMode.value = !viewMode.value
 }
 
-const localSubtasks = ref<{ title: string; completed: boolean; id: string }[]>([])
+const localSubtasks = ref<(Partial<Subtask> & { id: string; title: string; completed: boolean; order: number })[]>([])
 
 const resetForm = () => {
   taskTitle.value = ''
@@ -130,7 +131,9 @@ const handleSave = async () => {
 
       // Add Subtasks
       if (localSubtasks.value.length > 0) {
-        for (const sub of localSubtasks.value) {
+        // Sort by order before adding to ensure sequential persist if order matters
+        const sorted = [...localSubtasks.value].sort((a, b) => a.order - b.order)
+        for (const sub of sorted) {
           await todoStore.addSubtask(newItem.id, sub.title)
         }
       }

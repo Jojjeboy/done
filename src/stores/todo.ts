@@ -25,6 +25,8 @@ export const useTodoStore = defineStore('todo', () => {
       }
       map.get(subtask.todoId)!.push(subtask)
     })
+    // Sort each list by order asc
+    map.forEach((list) => list.sort((a, b) => (a.order || 0) - (b.order || 0)))
     return map
   })
 
@@ -179,7 +181,10 @@ export const useTodoStore = defineStore('todo', () => {
       }
 
       todoItems.value = migratedItems
-      subtasks.value = dbSubtasks
+      subtasks.value = dbSubtasks.map((s, index) => ({
+        ...s,
+        order: typeof s.order === 'number' ? s.order : index
+      }))
       comments.value = dbComments || []
       categories.value = finalCategories
 
@@ -363,12 +368,17 @@ export const useTodoStore = defineStore('todo', () => {
 
   // Subtask CRUD
   const addSubtask = async (todoId: string, title: string, parentId: string | null = null) => {
+    // Get max order for this parentId/todoId
+    const existing = subtasks.value.filter(s => s.todoId === todoId && s.parentId === parentId)
+    const maxOrder = existing.length > 0 ? Math.max(...existing.map(s => s.order || 0)) : -1
+
     const subtask: Subtask = {
       id: generateId(),
       todoId,
       title,
       completed: false,
-      parentId
+      parentId,
+      order: maxOrder + 1
     }
 
     subtasks.value.push(subtask)
@@ -480,6 +490,27 @@ export const useTodoStore = defineStore('todo', () => {
       }
     } catch (error) {
       console.error('Failed to reparent subtask:', error)
+      throw error
+    }
+  }
+
+  const updateSubtasksOrder = async (updates: Subtask[]) => {
+    // Update local state
+    updates.forEach(updated => {
+      const index = subtasks.value.findIndex(s => s.id === updated.id)
+      if (index !== -1) {
+        subtasks.value[index] = { ...updated }
+      }
+    })
+
+    try {
+      const db = getDatabase()
+      await db.table('subtasks').bulkPut(updates)
+      for (const updated of updates) {
+        await syncService.pushSubtask(updated)
+      }
+    } catch (error) {
+      console.error('Failed to update subtasks order:', error)
       throw error
     }
   }
@@ -666,6 +697,7 @@ export const useTodoStore = defineStore('todo', () => {
     deleteSubtask,
     toggleSubtask,
     reparentSubtask,
+    updateSubtasksOrder,
     // Comments
     comments,
     commentsByTodoId,
