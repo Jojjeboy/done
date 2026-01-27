@@ -107,7 +107,7 @@ export const parseDateFromText = (input: string): DateParseResult | null => {
   }
 
   // 5. Time Patterns
-  const timeRegex = /\b(?:at|kl|klockan|kl\.)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i
+  const timeRegex = /\b(?:at|kl|klockan|kl\.|kl\s)\s*(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?\b/i
   const timeMatch = input.match(timeRegex)
   if (timeMatch && timeMatch[1]) {
     let hours = parseInt(timeMatch[1])
@@ -116,7 +116,7 @@ export const parseDateFromText = (input: string): DateParseResult | null => {
 
     if (period === 'pm' && hours < 12) hours += 12
     if (period === 'am' && hours === 12) hours = 0
-    if (!period && hours < 7 && matched) hours += 12
+    if (!period && hours < 8 && matched) hours += 12
 
     targetDate.setHours(hours, minutes, 0, 0)
     matched = true

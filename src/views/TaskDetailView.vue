@@ -4,13 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
-import {
-  X, Calendar, Flag, MapPin,
-  Hash, CheckCircle, Circle, Trash2, ArrowLeft
-} from 'lucide-vue-next'
+import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
+import { X, Calendar, Flag, MapPin, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
-import { type DateParseResult } from '@/utils/dateParser'
 
 const route = useRoute()
 const router = useRouter()
@@ -97,11 +94,19 @@ const saveChanges = async () => {
 
   try {
     isSubmitting.value = true
-    const deadline = taskDeadline.value ? new Date(taskDeadline.value).getTime() : null
+
+    // Resolve deadline: Priority NLP > Manual
+    let deadline = taskDeadline.value ? new Date(taskDeadline.value).getTime() : null
+    let finalTitle = taskTitle.value.trim()
+
+    if (parsedIntent.value) {
+      finalTitle = parsedIntent.value.text
+      deadline = parsedIntent.value.date
+    }
 
     if (isEditMode.value && !isNew.value) {
       await todoStore.updateTodoItem(todoId.value, {
-        title: taskTitle.value.trim(),
+        title: finalTitle,
         description: taskDescription.value.trim(),
         priority: taskPriority.value,
         deadline: deadline,
@@ -109,9 +114,18 @@ const saveChanges = async () => {
         status: taskStatus.value,
         location: taskLocation.value
       })
+
+      // If we used NLP, refresh the UI values to match the cleaned state
+      if (parsedIntent.value) {
+        taskTitle.value = finalTitle
+        if (deadline) {
+          taskDeadline.value = new Date(deadline).toISOString().split('T')[0] || ''
+        }
+        parsedIntent.value = null
+      }
     } else {
       const newItem = await todoStore.addTodoItem(
-        taskTitle.value.trim(),
+        finalTitle,
         taskDescription.value.trim(),
         taskPriority.value,
         deadline,
@@ -228,6 +242,20 @@ const fetchLocation = () => {
 // Watchers
 watch(() => route.params.id, loadTodoData)
 
+watch(taskTitle, (newVal) => {
+  if (!newVal) {
+    parsedIntent.value = null
+    return
+  }
+
+  const result = parseDateFromText(newVal)
+  if (result && result.date) {
+    parsedIntent.value = result
+  } else {
+    parsedIntent.value = null
+  }
+})
+
 // Initialize
 onMounted(async () => {
   if (!todoStore.initialized) {
@@ -284,6 +312,10 @@ const isEditMode = computed(() => !isNew.value)
           <div class="title-inputs">
             <input v-model="taskTitle" type="text" class="task-title-input" :placeholder="t('modal.whatTask')"
               @blur="handleFieldChange" @keydown.enter="handleFieldChange">
+            <div v-if="parsedIntent" class="intent-badge" @click="saveChanges">
+              <Sparkles :size="12" />
+              <span>{{ t('tasks.due') }}: {{ new Date(parsedIntent.date!).toLocaleString() }}</span>
+            </div>
             <input v-model="taskDescription" type="text" class="task-desc-input"
               :placeholder="t('modal.descriptionPlaceholder')" @blur="handleFieldChange">
           </div>
@@ -340,7 +372,7 @@ const isEditMode = computed(() => !isNew.value)
             <div class="prop-content location-content" @click="handleLocationClick">
               <span v-if="!taskLocation" class="placeholder">{{ t('tasks.addLocation') }}</span>
               <span v-else class="location-coords">{{ taskLocation.lat.toFixed(4) }}, {{ taskLocation.lng.toFixed(4)
-                }}</span>
+              }}</span>
             </div>
           </div>
 
@@ -374,7 +406,7 @@ const isEditMode = computed(() => !isNew.value)
               <div class="comment-meta">
                 <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                   t('common.user')
-                  }}</span>
+                }}</span>
                 <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
                 <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                   v-if="comment.userId === authStore.user?.uid">
@@ -816,5 +848,33 @@ const isEditMode = computed(() => !isNew.value)
 
 .btn-primary:disabled {
   opacity: 0.5;
+}
+
+.intent-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  margin-top: 2px;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease;
+  cursor: pointer;
+}
+
+.intent-badge:hover {
+  text-decoration: underline;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

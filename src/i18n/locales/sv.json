@@ -112,7 +112,16 @@
     "account": "Konto",
     "appearance": "Utseende",
     "behavior": "Beteende",
-    "about": "Om appen"
+    "about": "Om appen",
+    "colorPalette": "Färgtema",
+    "colorPalettes": {
+      "purple": "Lila",
+      "blue": "Blå",
+      "green": "Grön",
+      "rose": "Rosa",
+      "orange": "Orange",
+      "indigo": "Indigo"
+    }
   },
   "auth": {
     "signIn": "Logga in med Google",

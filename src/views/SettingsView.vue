@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
 import BottomNavigation from '@/components/BottomNavigation.vue'
 import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
+import { useThemeStore, type ColorPalette } from '@/stores/theme'
 import { useI18nStore } from '@/stores/i18n'
 import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
@@ -48,6 +48,10 @@ const handleLanguageChange = async (newLocale: SupportedLocale) => {
 
 const handleThemeChange = async (newTheme: 'light' | 'dark') => {
   await themeStore.setTheme(newTheme)
+}
+
+const handleColorPaletteChange = async (palette: ColorPalette) => {
+  await themeStore.setColorPalette(palette)
 }
 
 const handleLogoutClick = () => {
@@ -169,6 +173,29 @@ const handleCheckForUpdates = async () => {
                   <button @click="handleLanguageChange('sv')"
                     :class="['segment-btn', { active: currentLocale === 'sv' }]">
                     <span>SV</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Color Palette -->
+              <div class="list-divider"></div>
+              <div class="list-item column-layout">
+                <div class="item-info">
+                  <div class="item-icon-circle palette">
+                    <Palette :size="16" />
+                  </div>
+                  <div class="item-text-group">
+                    <span class="item-label">{{ t('settings.colorPalette') }}</span>
+                  </div>
+                </div>
+                <div class="color-palette-grid">
+                  <button v-for="palette in themeStore.getAvailablePalettes()" :key="palette"
+                    @click="handleColorPaletteChange(palette)"
+                    :class="['color-swatch', { active: themeStore.colorPalette === palette }]"
+                    :style="{ backgroundColor: themeStore.getPaletteColors(palette).primary }"
+                    :aria-label="t(`settings.colorPalettes.${palette}`)"
+                    :title="t(`settings.colorPalettes.${palette}`)">
+                    <span v-if="themeStore.colorPalette === palette" class="checkmark">✓</span>
                   </button>
                 </div>
               </div>
@@ -742,6 +769,73 @@ const handleCheckForUpdates = async () => {
     flex-direction: row;
     /* Keep behavior switch in one row */
     align-items: center;
+  }
+}
+
+/* Color Palette Selector */
+.column-layout {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: var(--spacing-md);
+}
+
+.color-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.color-swatch {
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  min-height: 44px;
+}
+
+.color-swatch:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.color-swatch.active {
+  border-color: var(--color-text-primary);
+  box-shadow: var(--shadow-lg);
+  transform: scale(1.05);
+}
+
+.dark .color-swatch.active {
+  border-color: var(--color-text-white);
+}
+
+.color-swatch .checkmark {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.item-icon-circle.palette {
+  background: linear-gradient(135deg, #6c5ce7, #f43f5e);
+  color: white;
+}
+
+.dark .item-icon-circle.palette {
+  background: linear-gradient(135deg, #6c5ce7, #f43f5e);
+}
+
+@media (max-width: 600px) {
+  .color-palette-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
   }
 }
 </style>

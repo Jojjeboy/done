@@ -112,7 +112,16 @@
     "account": "Account",
     "appearance": "Appearance",
     "behavior": "Behavior",
-    "about": "About"
+    "about": "About",
+    "colorPalette": "Color Theme",
+    "colorPalettes": {
+      "purple": "Purple",
+      "blue": "Blue",
+      "green": "Green",
+      "rose": "Rose",
+      "orange": "Orange",
+      "indigo": "Indigo"
+    }
   },
   "auth": {
     "signIn": "Sign in with Google",
