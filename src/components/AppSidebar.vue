@@ -23,6 +23,14 @@ const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 
+const handleCategoryClick = (categoryId: string) => {
+  if (isCategoryActive(categoryId)) {
+    router.push('/')
+  } else {
+    router.push({ path: '/', query: { category: categoryId } })
+  }
+}
+
 const showImportModal = ref(false)
 
 const isEditingCategory = ref<string | null>(null)
@@ -122,7 +130,7 @@ const addCategory = async () => {
 
         <div class="category-item">
           <button class="nav-item category-link" :class="{ active: isCategoryActive('__none__') }"
-            @click="router.push({ path: '/', query: { category: '__none__' } })">
+            @click="handleCategoryClick('__none__')">
             <div class="color-dot none"></div>
             <span class="category-title">{{ t('tasks.categories.none') }}</span>
           </button>
@@ -140,7 +148,7 @@ const addCategory = async () => {
             </button>
           </div>
           <button v-else class="nav-item category-link" :class="{ active: isCategoryActive(category.id) }"
-            @click="router.push({ path: '/', query: { category: category.id } })">
+            @click="handleCategoryClick(category.id)">
             <div class="color-dot" :style="{ backgroundColor: category.color || '#ccc' }"></div>
             <span class="category-title">{{ category.title }}</span>
             <div class="actions">

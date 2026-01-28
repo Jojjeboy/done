@@ -3,16 +3,16 @@ import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
 import { X, Check } from 'lucide-vue-next'
 
-defineProps<{
-  isOpen: boolean
-  activeFilter: string
-  activeCategory: string | null
+const props = defineProps<{
+    isOpen: boolean
+    activeFilter: string
+    activeCategory: string | null
 }>()
 
 const emit = defineEmits<{
-  close: []
-  'update:filter': [filter: string]
-  'update:category': [categoryId: string | null]
+    close: []
+    'update:filter': [filter: string]
+    'update:category': [categoryId: string | null]
 }>()
 
 const todoStore = useTodoStore()
@@ -26,77 +26,71 @@ const selectFilter = (filter: string) => {
 }
 
 const selectCategory = (categoryId: string | null) => {
-    emit('update:category', categoryId)
+    if (props.activeCategory === categoryId && categoryId !== null) {
+        emit('update:category', null)
+    } else {
+        emit('update:category', categoryId)
+    }
 }
 </script>
 
 <template>
-  <div v-if="isOpen" class="modal-overlay" @click="emit('close')">
-    <div class="modal-content" @click.stop>
-       <div class="modal-header">
-           <h3 class="title">{{ t('common.viewOptions') }}</h3>
-           <button class="close-btn" @click="emit('close')"><X :size="20" /></button>
-       </div>
+    <div v-if="isOpen" class="modal-overlay" @click="emit('close')">
+        <div class="modal-content" @click.stop>
+            <div class="modal-header">
+                <h3 class="title">{{ t('common.viewOptions') }}</h3>
+                <button class="close-btn" @click="emit('close')">
+                    <X :size="20" />
+                </button>
+            </div>
 
-       <div class="section">
-           <label class="label">{{ t('tasks.statusTitle') }}</label>
-           <div class="filter-options">
-               <button
-                  v-for="filter in filters"
-                  :key="filter"
-                  class="filter-chip"
-                  :class="{ active: activeFilter === filter }"
-                  @click="selectFilter(filter)"
-               >
-                   {{ t(`tasks.filters.${filter === 'in-progress' ? 'inProgress' : filter}`) }}
-                   <Check v-if="activeFilter === filter" :size="14" />
-               </button>
-           </div>
-       </div>
+            <div class="section">
+                <label class="label">{{ t('tasks.statusTitle') }}</label>
+                <div class="filter-options">
+                    <button v-for="filter in filters" :key="filter" class="filter-chip"
+                        :class="{ active: activeFilter === filter }" @click="selectFilter(filter)">
+                        {{ t(`tasks.filters.${filter === 'in-progress' ? 'inProgress' : filter}`) }}
+                        <Check v-if="activeFilter === filter" :size="14" />
+                    </button>
+                </div>
+            </div>
 
-       <div class="section">
-           <label class="label">{{ t('modal.category') }}</label>
-           <div class="category-grid">
-               <button
-                  class="category-card"
-                  :class="{ active: activeCategory === null }"
-                  @click="selectCategory(null)"
-               >
-                   <div class="dot" style="background-color: #9CA3AF"></div>
-                   <span>{{ t('tasks.filters.all') }} {{ t('modal.category').toLowerCase() }}</span>
-               </button>
-               <button
-                  v-for="category in todoStore.categories"
-                  :key="category.id"
-                  class="category-card"
-                  :class="{ active: activeCategory === category.id }"
-                  @click="selectCategory(category.id)"
-               >
-                   <div class="dot" :style="{ backgroundColor: category.color }"></div>
-                   <span>{{ category.title }}</span>
-               </button>
-           </div>
-       </div>
+            <div class="section">
+                <label class="label">{{ t('modal.category') }}</label>
+                <div class="category-grid">
+                    <button class="category-card" :class="{ active: activeCategory === null }"
+                        @click="selectCategory(null)">
+                        <div class="dot" style="background-color: #9CA3AF"></div>
+                        <span>{{ t('tasks.filters.all') }} {{ t('modal.category').toLowerCase() }}</span>
+                    </button>
+                    <button v-for="category in todoStore.categories" :key="category.id" class="category-card"
+                        :class="{ active: activeCategory === category.id }" @click="selectCategory(category.id)">
+                        <div class="dot" :style="{ backgroundColor: category.color }"></div>
+                        <span>{{ category.title }}</span>
+                    </button>
+                </div>
+            </div>
 
-       <div class="footer">
-           <button class="btn-full" @click="emit('close')">{{ t('common.close') }}</button>
-       </div>
+            <div class="footer">
+                <button class="btn-full" @click="emit('close')">{{ t('common.close') }}</button>
+            </div>
+        </div>
     </div>
-  </div>
 </template>
 
 <style scoped>
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  z-index: 100;
-  display: flex;
-  align-items: flex-end; /* Bottom sheet on mobile default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    /* Bottom sheet on mobile default */
 }
 
 .modal-content {
@@ -115,6 +109,7 @@ const selectCategory = (categoryId: string | null) => {
         align-items: center;
         justify-content: center;
     }
+
     .modal-content {
         width: 400px;
         border-radius: var(--radius-xl);
@@ -243,12 +238,24 @@ const selectCategory = (categoryId: string | null) => {
 }
 
 @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
 }
 
 @keyframes scaleIn {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 </style>

@@ -729,44 +729,47 @@ const saveEditing = async () => {
 
 .input-wrapper {
   flex: 1;
-  position: relative;
   display: flex;
   align-items: center;
-}
-
-.plus-icon {
-  position: absolute;
-  left: var(--spacing-sm);
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-.subtask-input {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) calc(var(--spacing-lg) + 8px);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  background: var(--color-bg-lavender);
-  font-size: var(--font-size-sm);
-  color: var(--color-primary);
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: all var(--transition-base);
 }
 
+.input-wrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dark .input-wrapper {
+  background: var(--color-bg-lighter);
+}
+
+.plus-icon {
+  color: var(--color-text-muted);
+  pointer-events: none;
+  margin-right: var(--spacing-sm);
+}
+
+.subtask-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: var(--spacing-sm) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
 .subtask-input::placeholder {
-  color: var(--color-primary);
+  color: var(--color-text-muted);
   opacity: 0.7;
 }
 
 .subtask-input:focus {
   outline: none;
-  background: var(--color-bg-white);
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.1);
-  color: var(--color-text-primary);
-}
-
-.subtask-input:focus::placeholder {
-  color: var(--color-text-muted);
 }
 
 .child-input {
@@ -784,13 +787,6 @@ const saveEditing = async () => {
   border-bottom-color: var(--color-primary);
 }
 
-.dark .subtask-input {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.dark .subtask-input:focus {
-  background: var(--color-bg-card);
-}
 
 .add-btn {
   padding: var(--spacing-xs) var(--spacing-md);
