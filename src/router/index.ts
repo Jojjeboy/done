@@ -11,6 +11,13 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      children: [
+        {
+          path: 'task/:id',
+          name: 'task-detail',
+          component: () => import('../views/TaskDetailView.vue'),
+        },
+      ]
     },
     {
       path: '/focus',
@@ -36,11 +43,6 @@ const router = createRouter({
       path: '/changelog',
       name: 'changelog',
       component: () => import('../views/ChangelogView.vue'),
-    },
-    {
-      path: '/task/:id',
-      name: 'task-detail',
-      component: () => import('../views/TaskDetailView.vue'),
     },
     {
       path: '/features',

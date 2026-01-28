@@ -199,8 +199,11 @@ const addCategory = async () => {
 
 .sidebar-nav {
   flex: 1;
-  padding: 1rem;
+  padding: 1.5rem 1rem;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .nav-item {
@@ -222,6 +225,7 @@ const addCategory = async () => {
 .nav-item:hover {
   background: var(--color-bg-lavender);
   color: var(--color-primary);
+  transform: translateX(4px);
 }
 
 .nav-item.active {
@@ -236,7 +240,7 @@ const addCategory = async () => {
 }
 
 .sidebar-footer {
-  padding: 1rem;
+  padding: 1.5rem 1rem;
   border-top: 1px solid var(--color-border);
 }
 
@@ -253,11 +257,11 @@ const addCategory = async () => {
 }
 
 .section-header h2 {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   color: var(--color-text-muted);
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-weight: 800;
+  letter-spacing: 0.1em;
 }
 
 .add-cat-btn {

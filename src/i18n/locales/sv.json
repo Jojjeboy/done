@@ -94,7 +94,11 @@
     "addLocation": "Lägg till plats",
     "comments": "Kommentarer",
     "writeComment": "Skriv en kommentar...",
-    "due": "Förfaller"
+    "due": "Förfaller",
+    "selectTask": "Välj en uppgift",
+    "selectTaskOr": "Välj en uppgift eller",
+    "createNew": "Skapa en ny",
+    "selectTaskDesc": "Välj en uppgift från listan för att visa och redigera dess detaljer."
   },
   "settings": {
     "title": "Inställningar",

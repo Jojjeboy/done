@@ -94,7 +94,11 @@
     "addLocation": "Add location",
     "comments": "Comments",
     "writeComment": "Write a comment...",
-    "due": "Due"
+    "due": "Due",
+    "selectTask": "Select a task",
+    "selectTaskOr": "Select a task or",
+    "createNew": "create a new",
+    "selectTaskDesc": "Choose a task from the list to view and edit its details."
   },
   "settings": {
     "title": "Settings",

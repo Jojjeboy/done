@@ -263,7 +263,8 @@ onMounted(async () => {
         <TransitionGroup name="list" tag="div" class="tasks">
           <div v-for="task in group.tasks" :key="task.id" class="task-card" :class="{
             completed: task.status === 'completed',
-            selected: settingsStore.focusModeTaskIds.includes(task.id)
+            selected: settingsStore.focusModeTaskIds.includes(task.id),
+            active: route.params.id === task.id
           }" @click="handleTaskClick(task)">
             <button @click.stop="handleTaskAction(task)" class="task-checkbox-btn"
               :class="{ 'selection-mode': settingsStore.inSelectionMode }"
@@ -327,8 +328,7 @@ onMounted(async () => {
       </button>
 
       <div v-if="isCompletedOpen" class="accordion-content">
-        <div v-for="task in completedTasks" :key="task.id" class="task-card completed"
-          @click="router.push(`/task/${task.id}`)">
+        <div v-for="task in completedTasks" :key="task.id" class="task-card completed" @click="handleTaskClick(task)">
           <button @click.stop="todoStore.toggleTodoCompletion(task.id)" class="task-checkbox-btn">
             <div class="check-circle-wrapper">
               <Check :size="14" class="check-icon-inner" />
@@ -596,6 +596,17 @@ onMounted(async () => {
 .task-card.completed .task-title {
   text-decoration: line-through;
   color: var(--color-text-muted);
+}
+
+.task-card.active {
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-lavender);
+  box-shadow: var(--shadow-md);
+}
+
+.dark .task-card.active {
+  background-color: rgba(108, 92, 231, 0.1);
+  border-color: var(--color-primary);
 }
 
 .task-checkbox-btn {

@@ -9,7 +9,7 @@ import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import ImportModal from '@/components/ImportModal.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
-import { Trash2, AlertTriangle } from 'lucide-vue-next'
+import { Trash2, AlertTriangle, Sparkles } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
@@ -51,7 +51,15 @@ const confirmCleanup = async () => {
   }
 }
 
+const isDesktop = ref(window.innerWidth > 768)
+
+const handleResize = () => {
+  isDesktop.value = window.innerWidth > 768
+}
+
 onMounted(async () => {
+  window.addEventListener('resize', handleResize)
+
   if (!todoStore.initialized) {
     try {
       await todoStore.initialize()
@@ -59,6 +67,11 @@ onMounted(async () => {
       console.error('Failed to initialize todo store:', error)
     }
   }
+})
+
+import { onUnmounted } from 'vue'
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
@@ -95,16 +108,37 @@ onMounted(async () => {
       <div class="mobile-only">
         <BottomNavigation @open-search="showSearchModal = true" @open-add-task="openAddTask" />
       </div>
+
+      <!-- Desktop Add Task FAB -->
+      <button class="desktop-fab" @click="openAddTask">
+        <span class="plus-icon">+</span>
+      </button>
     </main>
+
+    <!-- Desktop Task Detail Side Panel -->
+    <aside class="desktop-detail-panel">
+      <RouterView v-slot="{ Component }">
+        <template v-if="Component">
+          <component :is="Component" :is-embedded="isDesktop" />
+        </template>
+        <div v-else class="empty-detail-state">
+          <div class="empty-placeholder">
+            <div class="placeholder-icon">
+              <Sparkles :size="48" />
+            </div>
+            <h3>{{ t('tasks.selectTaskOr') }}</h3>
+            <button @click="openAddTask" class="create-new-btn">
+              {{ t('tasks.createNew') }}
+            </button>
+            <p>{{ t('tasks.selectTaskDesc') }}</p>
+          </div>
+        </div>
+      </RouterView>
+    </aside>
 
     <!-- Modals -->
     <SearchModal v-if="showSearchModal" @close="showSearchModal = false" />
     <ImportModal :isOpen="showImportModal" @close="showImportModal = false" @import="showImportModal = false" />
-
-    <!-- Desktop Add Task FAB -->
-    <button class="desktop-fab" @click="openAddTask">
-      <span class="plus-icon">+</span>
-    </button>
 
     <ConfirmationModal :isOpen="showStaleConfirm" :title="t('home.cleanupTitle')"
       :message="t('home.cleanupMessage', { count: staleTasks.length })" :confirmText="t('home.cleanUp')" type="neutral"
@@ -140,8 +174,8 @@ onMounted(async () => {
   flex: 1;
   overflow-y: auto;
   padding: var(--spacing-lg);
-  max-width: 540px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   width: 100%;
 }
 
@@ -150,6 +184,10 @@ onMounted(async () => {
 }
 
 .desktop-fab {
+  display: none;
+}
+
+.desktop-detail-panel {
   display: none;
 }
 
@@ -165,6 +203,63 @@ onMounted(async () => {
 
   .content-wrapper {
     padding: var(--spacing-2xl);
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .desktop-detail-panel {
+    display: block;
+    width: 450px;
+    height: 100vh;
+    border-left: 1px solid var(--color-border);
+    background: var(--color-bg-white);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .empty-detail-state {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+    text-align: center;
+    color: var(--color-text-muted);
+  }
+
+  .placeholder-icon {
+    margin-bottom: 1.5rem;
+    color: var(--color-bg-lavender);
+  }
+
+  .empty-placeholder h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-primary);
+  }
+
+  .create-new-btn {
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+  }
+
+  .create-new-btn:hover {
+    background: var(--color-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .empty-placeholder p {
+    font-size: 0.95rem;
+    line-height: 1.5;
   }
 
   .desktop-fab {
