@@ -695,6 +695,66 @@ export const useTodoStore = defineStore('todo', () => {
     }
   }
 
+  async function convertSubtaskToTodo(subtaskId: string) {
+    try {
+        const subtask = subtasks.value.find(s => s.id === subtaskId)
+        if (!subtask) throw new Error('Subtask not found')
+
+        const parentTodo = todoItems.value.find(t => t.id === subtask.todoId)
+        if (!parentTodo) throw new Error('Parent todo not found')
+
+        // 1. Create new Todo
+        const newTodo: TodoItem = {
+            id: crypto.randomUUID(),
+            title: subtask.title,
+            description: '',
+            status: subtask.completed ? 'completed' : 'pending',
+            priority: parentTodo.priority,
+            deadline: parentTodo.deadline,
+            categoryId: parentTodo.categoryId,
+            location: parentTodo.location,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        }
+
+        // 2. Add new Todo
+        todoItems.value.push(newTodo)
+        const db = getDatabase()
+        await db.table('todoItems').add(newTodo)
+        await syncService.pushTodo(newTodo)
+
+        // 3. Move children (sub-subtasks)
+        const children = subtasks.value.filter(s => s.parentId === subtaskId)
+        for (const child of children) {
+            const updatedChild = {
+                ...child,
+                todoId: newTodo.id,
+                parentId: null
+            }
+            // Update local state
+            const idx = subtasks.value.findIndex(s => s.id === child.id)
+            if (idx !== -1) subtasks.value[idx] = updatedChild
+
+            // Update DB
+            await db.table('subtasks').update(child.id, {
+                todoId: newTodo.id,
+                parentId: null
+            })
+            // Sync
+            await syncService.pushSubtask(updatedChild)
+        }
+
+        // 4. Delete original subtask
+        await deleteSubtask(subtaskId)
+
+        return newTodo.id
+
+    } catch (e) {
+        console.error('Failed to convert subtask to todo', e)
+        throw e
+    }
+  }
+
   const handleRecurrence = async (item: TodoItem) => {
       // Calculate new deadline
       // Create new item
@@ -788,6 +848,7 @@ export const useTodoStore = defineStore('todo', () => {
     reparentSubtask,
     updateSubtasksOrder,
     convertTodoToSubtask,
+    convertSubtaskToTodo,
     // Comments
     comments,
     commentsByTodoId,

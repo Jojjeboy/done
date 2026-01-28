@@ -3,7 +3,7 @@ import { ref, computed, nextTick } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
 import type { Subtask } from '@/types/todo'
-import { Plus, Trash2, Check, ChevronRight, CornerDownRight, ArrowRightLeft, GripVertical } from 'lucide-vue-next'
+import { Plus, Trash2, Check, ChevronRight, CornerDownRight, ArrowRightLeft, GripVertical, ArrowUp } from 'lucide-vue-next'
 import MoveSubtaskModal from './MoveSubtaskModal.vue'
 
 const props = defineProps<{
@@ -322,6 +322,11 @@ const saveEditing = async () => {
             <Plus :size="14" />
           </button>
 
+          <button v-if="!isLocalMode" class="action-btn convert-task-btn"
+            @click="todoStore.convertSubtaskToTodo(parent.id)" :title="t('modal.convertSubtaskToTask')">
+            <ArrowUp :size="14" />
+          </button>
+
           <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(parent)"
             :title="t('modal.moveSubtask')">
             <ArrowRightLeft :size="14" />
@@ -351,6 +356,11 @@ const saveEditing = async () => {
                 @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
             </div>
             <span v-else class="subtask-text" @click="startEditing(child)">{{ child.title }}</span>
+
+            <button v-if="!isLocalMode" class="action-btn convert-task-btn"
+              @click="todoStore.convertSubtaskToTodo(child.id)" :title="t('modal.convertSubtaskToTask')">
+              <ArrowUp :size="14" />
+            </button>
 
             <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(child)"
               :title="t('modal.moveSubtask')">
@@ -418,6 +428,11 @@ const saveEditing = async () => {
             </div>
             <span v-else class="subtask-text" @click="startEditing(parent)">{{ parent.title }}</span>
 
+            <button v-if="!isLocalMode" class="action-btn convert-task-btn"
+              @click="todoStore.convertSubtaskToTodo(parent.id)" :title="t('modal.convertSubtaskToTask')">
+              <ArrowUp :size="14" />
+            </button>
+
             <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(parent)"
               :title="t('modal.moveSubtask')">
               <ArrowRightLeft :size="14" />
@@ -437,6 +452,10 @@ const saveEditing = async () => {
                 </div>
               </button>
               <span class="subtask-text">{{ child.title }}</span>
+              <button v-if="!isLocalMode" class="action-btn convert-task-btn"
+                @click="todoStore.convertSubtaskToTodo(child.id)" :title="t('modal.convertSubtaskToTask')">
+                <ArrowUp :size="14" />
+              </button>
             </div>
           </div>
         </div>

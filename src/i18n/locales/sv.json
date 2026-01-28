@@ -172,6 +172,7 @@
     "convertTask": "Konvertera till deluppgift",
     "convertingTask": "Konverterar",
     "selectingTarget": "Välj måluppgift",
+    "convertSubtaskToTask": "Konvertera till huvuduppgift",
     "noDescription": "Ingen beskrivning.",
     "repeat": "Upprepa",
     "deleteCategory": "Ta bort kategori",

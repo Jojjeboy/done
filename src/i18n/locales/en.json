@@ -172,6 +172,7 @@
     "convertTask": "Convert to Subtask",
     "convertingTask": "Converting",
     "selectingTarget": "Select target task",
+    "convertSubtaskToTask": "Convert to top-level task",
     "noDescription": "No description provided.",
     "repeat": "Repeat",
     "deleteCategory": "Delete Category",
