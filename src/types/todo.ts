@@ -9,6 +9,7 @@ export interface Category {
   color?: string
   isDefault?: boolean
   createdAt: number
+  order: number
 }
 
 export interface TodoItem {

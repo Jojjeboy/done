@@ -79,6 +79,38 @@ const addCategory = async () => {
     isAddingCategory.value = false
   }
 }
+
+// Drag and Drop
+const draggedCategoryIndex = ref<number | null>(null)
+
+const handleDragStart = (index: number) => {
+  draggedCategoryIndex.value = index
+}
+
+const handleDragOver = (e: DragEvent) => {
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move'
+  }
+}
+
+const handleDrop = async (targetIndex: number) => {
+  if (draggedCategoryIndex.value === null || draggedCategoryIndex.value === targetIndex) return
+
+  const list = [...todoStore.categories]
+  const [removed] = list.splice(draggedCategoryIndex.value, 1)
+  if (!removed) return
+  list.splice(targetIndex, 0, removed)
+
+  // Update order property
+  const updated = list.map((cat, idx) => ({
+    ...cat,
+    order: idx
+  }))
+
+  await todoStore.updateCategoriesOrder(updated)
+  draggedCategoryIndex.value = null
+}
 </script>
 
 <template>
@@ -136,7 +168,9 @@ const addCategory = async () => {
           </button>
         </div>
 
-        <div v-for="category in todoStore.categories" :key="category.id" class="category-item">
+        <div v-for="(category, index) in todoStore.categories" :key="category.id" class="category-item" draggable="true"
+          @dragstart="handleDragStart(index)" @dragover="handleDragOver" @drop="handleDrop(index)"
+          :class="{ dragging: draggedCategoryIndex === index }">
           <div v-if="isEditingCategory === category.id" class="edit-row">
             <input v-model="editingTitle" class="edit-input" autofocus @keyup.enter="saveCategory(category.id)"
               @keyup.esc="isEditingCategory = null" />
@@ -284,6 +318,18 @@ const addCategory = async () => {
 .add-cat-btn:hover {
   background: var(--color-bg-lavender);
   color: var(--color-primary);
+}
+
+.category-item.dragging {
+  opacity: 0.5;
+}
+
+.category-item {
+  cursor: grab;
+}
+
+.category-item:active {
+  cursor: grabbing;
 }
 
 .category-link {

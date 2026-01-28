@@ -99,6 +99,20 @@ export const useTodoStore = defineStore('todo', () => {
     return crypto.randomUUID()
   }
 
+  const COLOR_PALETTE = [
+    '#6c5ce7', // Purple
+    '#ff6b9d', // Pink
+    '#ff8a50', // Orange
+    '#5b8def', // Blue
+    '#4ade80', // Green
+    '#f87171', // Red
+    '#fbbf24', // Amber
+    '#22d3ee', // Cyan
+    '#818cf8', // Indigo
+    '#fb7185'  // Rose
+  ]
+  const DEFAULT_COLOR = '#9ca3af' // Grey
+
   // Initialize store from IndexedDB
   const initialize = async () => {
     if (initialized.value) {
@@ -124,10 +138,10 @@ export const useTodoStore = defineStore('todo', () => {
       // Initialize default categories if none exist
       if (finalCategories.length === 0) {
         const defaults = [
-          { id: generateId(), title: 'Work', color: '#ffbd2e', isDefault: true, createdAt: Date.now() },
-          { id: generateId(), title: 'Lifestyle', color: '#ff5c5c', isDefault: true, createdAt: Date.now() },
-          { id: generateId(), title: 'Personal', color: '#2ecc71', isDefault: true, createdAt: Date.now() },
-          { id: generateId(), title: 'Hobby', color: '#3498db', isDefault: true, createdAt: Date.now() },
+          { id: generateId(), title: 'Work', color: '#6c5ce7', isDefault: true, createdAt: Date.now(), order: 0 },
+          { id: generateId(), title: 'Lifestyle', color: '#ff6b9d', isDefault: true, createdAt: Date.now(), order: 1 },
+          { id: generateId(), title: 'Personal', color: '#ff8a50', isDefault: true, createdAt: Date.now(), order: 2 },
+          { id: generateId(), title: 'Hobby', color: '#5b8def', isDefault: true, createdAt: Date.now(), order: 3 },
         ]
         categoriesToAdd.push(...defaults)
         finalCategories = [...defaults]
@@ -187,7 +201,10 @@ export const useTodoStore = defineStore('todo', () => {
         order: typeof s.order === 'number' ? s.order : index
       }))
       comments.value = dbComments || []
-      categories.value = finalCategories
+      categories.value = finalCategories.map((c, index) => ({
+        ...c,
+        order: typeof c.order === 'number' ? c.order : index
+      })).sort((a, b) => a.order - b.order)
 
       initialized.value = true
 
@@ -207,12 +224,17 @@ export const useTodoStore = defineStore('todo', () => {
   // Category CRUD
 
   const addCategory = async (title: string, color?: string, icon?: string) => {
+      // Find the first unused color from the palette
+      const usedColors = new Set(categories.value.map(c => c.color))
+      const autoColor = color || COLOR_PALETTE.find(c => !usedColors.has(c)) || DEFAULT_COLOR
+
       const category: Category = {
           id: generateId(),
           title,
-          color,
+          color: autoColor,
           icon,
-          createdAt: Date.now()
+          createdAt: Date.now(),
+          order: categories.value.length
       }
       categories.value.push(category)
       try {
@@ -224,6 +246,19 @@ export const useTodoStore = defineStore('todo', () => {
           throw e
       }
       return category
+  }
+
+  const updateCategoriesOrder = async (updatedCategories: Category[]) => {
+      categories.value = [...updatedCategories].sort((a, b) => a.order - b.order)
+      try {
+          await getDatabase().table('categories').bulkPut(updatedCategories)
+          for (const cat of updatedCategories) {
+              await syncService.pushCategory(cat)
+          }
+      } catch (e) {
+          console.error('Failed to update categories order', e)
+          throw e
+      }
   }
 
   const updateCategory = async (id: string, updates: Partial<Category>) => {
@@ -845,6 +880,7 @@ export const useTodoStore = defineStore('todo', () => {
     addCategory,
     updateCategory,
     deleteCategory,
+    updateCategoriesOrder,
     addTodoItem,
     updateTodoItem,
     deleteTodoItem,
