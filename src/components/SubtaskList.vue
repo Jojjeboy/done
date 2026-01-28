@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
 import type { Subtask } from '@/types/todo'
@@ -59,6 +59,19 @@ const editInputRef = ref<HTMLInputElement | null>(null)
 const expandedParents = ref<Set<string>>(new Set())
 const isCompletedOpen = ref(false)
 
+const expandAllParents = () => {
+  allSubtasks.value.forEach(s => {
+    if (!s.parentId) {
+      const hasChildren = getChildren(s.id).length > 0
+      if (hasChildren) {
+        expandedParents.value.add(s.id)
+      }
+    }
+  })
+}
+
+const isExpanded = (id: string) => expandedParents.value.has(id)
+
 const toggleExpand = (id: string) => {
   if (expandedParents.value.has(id)) {
     expandedParents.value.delete(id)
@@ -66,8 +79,6 @@ const toggleExpand = (id: string) => {
     expandedParents.value.add(id)
   }
 }
-
-const isExpanded = (id: string) => expandedParents.value.has(id)
 
 // Moving
 const isMoveModalOpen = ref(false)
@@ -133,12 +144,22 @@ const handleDrop = async (targetIndex: number, type: 'incomplete' | 'completed')
   draggedSubtaskIndex.value = null
   draggedListType.value = null
 }
+onMounted(() => {
+  expandAllParents()
+})
+
+watch(() => props.todoId, () => {
+  expandAllParents()
+})
+
+watch(() => allSubtasks.value, () => {
+  expandAllParents()
+}, { deep: true })
 
 // Actions
 const handleAddSubtask = async (parentId: string | null = null) => {
   const title = parentId ? newSubSubtaskTitle.value.trim() : newSubtaskTitle.value.trim()
   if (!title) return
-
   try {
     if (parentId) {
       // Adding sub-subtask
@@ -179,6 +200,7 @@ const startAddingSubSubtask = (parentId: string) => {
   newSubSubtaskTitle.value = ''
   expandedParents.value.add(parentId)
   nextTick(() => {
+    // We already have subSubInputRef, let's use it
     subSubInputRef.value?.focus()
   })
 }
@@ -726,8 +748,13 @@ const saveEditing = async () => {
   border-radius: var(--radius-md);
   background: var(--color-bg-lavender);
   font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
+  color: var(--color-primary);
   transition: all var(--transition-base);
+}
+
+.subtask-input::placeholder {
+  color: var(--color-primary);
+  opacity: 0.7;
 }
 
 .subtask-input:focus {
@@ -735,6 +762,11 @@ const saveEditing = async () => {
   background: var(--color-bg-white);
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.1);
+  color: var(--color-text-primary);
+}
+
+.subtask-input:focus::placeholder {
+  color: var(--color-text-muted);
 }
 
 .child-input {

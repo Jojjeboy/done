@@ -5,7 +5,7 @@ import { useTodoStore } from '@/stores/todo'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
-import { X, Calendar, Flag, MapPin, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft } from 'lucide-vue-next'
+import { X, Calendar, Flag, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import ConvertTaskModal from '@/components/ConvertTaskModal.vue'
@@ -29,13 +29,9 @@ const taskPriority = ref<'low' | 'medium' | 'high'>('medium')
 const taskCategory = ref<string>('none')
 const taskDeadline = ref<string>('')
 const taskStatus = ref<'pending' | 'in-progress' | 'completed'>('pending')
-const taskLocation = ref<{ lat: number; lng: number } | null>(null)
 const parsedIntent = ref<DateParseResult | null>(null)
 const isSubmitting = ref(false)
 const showDeleteConfirm = ref(false)
-const showLocationUpdateConfirm = ref(false)
-const showAlertModal = ref(false)
-const alertMessage = ref('')
 const deleteCommentId = ref<string | null>(null)
 const showConvertModal = ref(false)
 
@@ -71,7 +67,6 @@ const loadTodoData = () => {
             taskPriority.value = todo.priority
             taskCategory.value = todo.categoryId || 'none'
             taskStatus.value = todo.status
-            taskLocation.value = todo.location || null
             if (todo.deadline) {
                 taskDeadline.value = new Date(todo.deadline as number).toISOString().split('T')[0] as string
             } else {
@@ -90,7 +85,6 @@ const resetForm = () => {
     taskCategory.value = 'none'
     taskDeadline.value = ''
     taskStatus.value = 'pending'
-    taskLocation.value = null
     parsedIntent.value = null
 }
 
@@ -116,8 +110,7 @@ const saveChanges = async () => {
                 priority: taskPriority.value,
                 deadline: deadline,
                 categoryId: taskCategory.value === 'none' ? null : taskCategory.value,
-                status: taskStatus.value,
-                location: taskLocation.value
+                status: taskStatus.value
             })
 
             // If we used NLP, refresh the UI values to match the cleaned state
@@ -135,8 +128,7 @@ const saveChanges = async () => {
                 taskPriority.value,
                 deadline,
                 taskCategory.value === 'none' ? null : taskCategory.value,
-                null, // Recurrence
-                taskLocation.value
+                null // Recurrence
             )
             // For embedded mode, we might want to stay here or notify parent
             if (!props.isEmbedded) {
@@ -215,52 +207,6 @@ const handleConvertTask = async (targetTodoId: string) => {
     } catch (error) {
         console.error('Failed to convert task:', error)
     }
-}
-
-const handleLocationClick = () => {
-    if (taskLocation.value) {
-        showLocationUpdateConfirm.value = true
-    } else {
-        fetchLocation()
-    }
-}
-
-const fetchLocation = () => {
-    if (!navigator.geolocation) {
-        alertMessage.value = 'Geolocation is not supported by your browser'
-        showAlertModal.value = true
-        return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            taskLocation.value = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-            }
-            handleFieldChange()
-            showLocationUpdateConfirm.value = false
-        },
-        (error) => {
-            console.error('Error fetching location:', error)
-            let message = 'Unable to retrieve your location'
-            switch (error.code) {
-                case error.PERMISSION_DENIED:
-                    message = 'Location permission denied. Please enable it in browser settings.'
-                    break
-                case error.POSITION_UNAVAILABLE:
-                    message = 'Location information is unavailable.'
-                    break
-                case error.TIMEOUT:
-                    message = 'The request to get user location timed out.'
-                    break
-            }
-            alertMessage.value = message
-            showAlertModal.value = true
-            showLocationUpdateConfirm.value = false
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    )
 }
 
 const handleClose = () => {
@@ -398,26 +344,6 @@ const isEditMode = computed(() => !isNew.value)
                     </div>
                 </div>
 
-                <!-- Location -->
-                <div class="property-row location-row">
-                    <div class="prop-icon">
-                        <MapPin :size="16" />
-                    </div>
-                    <div class="prop-content location-content" @click="handleLocationClick">
-                        <span v-if="!taskLocation" class="placeholder">{{ t('tasks.addLocation') }}</span>
-                        <span v-else class="location-coords">{{ taskLocation.lat.toFixed(4) }}, {{
-                            taskLocation.lng.toFixed(4)
-                            }}</span>
-                    </div>
-                </div>
-
-                <!-- Map Preview -->
-                <div v-if="taskLocation" class="map-preview">
-                    <iframe width="100%" height="200" style="border:0; border-radius: 8px;" loading="lazy"
-                        allowfullscreen
-                        :src="`https://maps.google.com/maps?q=${taskLocation.lat},${taskLocation.lng}&z=15&output=embed`">
-                    </iframe>
-                </div>
             </div>
 
             <div class="divider"></div>
@@ -441,7 +367,7 @@ const isEditMode = computed(() => !isNew.value)
                         <div class="comment-meta">
                             <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                                 t('common.user')
-                                }}</span>
+                            }}</span>
                             <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
                             <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                                 v-if="comment.userId === authStore.user?.uid">
@@ -470,7 +396,7 @@ const isEditMode = computed(() => !isNew.value)
 
             <div v-if="isNew" class="create-actions">
                 <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-                    }}</button>
+                }}</button>
             </div>
         </div>
 
@@ -479,13 +405,6 @@ const isEditMode = computed(() => !isNew.value)
             :message="t('common.deleteConfirm')" :confirmText="t('common.delete')" :cancelText="t('common.cancel')"
             type="danger" @confirm="confirmDelete" @cancel="showDeleteConfirm = false" />
 
-        <ConfirmationModal :isOpen="showAlertModal" :title="t('common.notice')" :message="alertMessage"
-            :confirmText="t('common.close')" singleButton @confirm="showAlertModal = false"
-            @cancel="showAlertModal = false" />
-
-        <ConfirmationModal :isOpen="showLocationUpdateConfirm" :title="t('common.updateLocation')"
-            :message="t('common.updateLocationMessage')" :confirmText="t('common.update')"
-            :cancelText="t('common.cancel')" @confirm="fetchLocation" @cancel="showLocationUpdateConfirm = false" />
 
         <ConfirmationModal :isOpen="!!deleteCommentId" :title="t('common.deleteComment')"
             :message="t('common.deleteCommentConfirm')" :confirmText="t('common.delete')"
@@ -680,14 +599,6 @@ const isEditMode = computed(() => !isNew.value)
     font-style: italic;
 }
 
-.prop-content.location-content {
-    cursor: pointer;
-}
-
-.prop-content.location-content:hover {
-    color: var(--color-primary);
-}
-
 .clean-select,
 .clean-date-input {
     border: none;
@@ -704,10 +615,6 @@ const isEditMode = computed(() => !isNew.value)
     outline: none;
 }
 
-.map-preview {
-    margin-top: 8px;
-    margin-left: 32px;
-}
 
 /* Subtasks */
 .subtasks-container {

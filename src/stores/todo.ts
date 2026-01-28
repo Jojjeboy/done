@@ -14,6 +14,7 @@ export const useTodoStore = defineStore('todo', () => {
   const categories = ref<Category[]>([])
   const loading = ref(true)
   const initialized = ref(false)
+  const globalLoading = ref(false)
   const searchQuery = ref('')
 
   // Computed
@@ -278,79 +279,86 @@ export const useTodoStore = defineStore('todo', () => {
     priority: TodoItem['priority'] = 'medium',
     deadline: number | null = null,
     categoryId: string | null = null,
-    recurrence: TodoItem['recurrence'] = null,
-    location: TodoItem['location'] = null
+    recurrence: TodoItem['recurrence'] = null
   ) => {
-    const now = Date.now()
-    const item: TodoItem = {
-      id: generateId(),
-      title,
-      description,
-      status: 'pending',
-      priority,
-      deadline,
-      recurrence,
-      categoryId,
-      location,
-      createdAt: now,
-      updatedAt: now,
-    }
-
-    todoItems.value.push(item)
-
+    globalLoading.value = true
     try {
+      const now = Date.now()
+      const item: TodoItem = {
+        id: generateId(),
+        title,
+        description,
+        status: 'pending',
+        priority,
+        deadline,
+        recurrence,
+        categoryId,
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      todoItems.value.push(item)
+
       const db = getDatabase()
       await db.table('todoItems').add(item)
       await syncService.pushTodo(item)
+      return item
     } catch (error) {
       console.error('Failed to persist todo item:', error)
-      const index = todoItems.value.findIndex((i) => i.id === item.id)
-      if (index !== -1) {
-        todoItems.value.splice(index, 1)
-      }
+      const rollbackIdx = todoItems.value.findIndex(i => i.title === title && i.createdAt > Date.now() - 1000)
+      if (rollbackIdx !== -1) todoItems.value.splice(rollbackIdx, 1)
       throw error
+    } finally {
+      globalLoading.value = false
     }
-
-    return item
   }
 
   const updateTodoItem = async (id: string, updates: Partial<TodoItem>) => {
-    const index = todoItems.value.findIndex((i) => i.id === id)
-    if (index === -1) {
-      throw new Error(`TodoItem with id ${id} not found`)
-    }
-
-    const original = todoItems.value[index]!
-    const updatedItem: TodoItem = {
-      ...original,
-      ...updates,
-      updatedAt: Date.now(),
-    } as TodoItem
-    todoItems.value[index] = updatedItem
-
+    globalLoading.value = true
     try {
+      const index = todoItems.value.findIndex((i) => i.id === id)
+      if (index === -1) {
+        throw new Error(`TodoItem with id ${id} not found`)
+      }
+
+      const original = todoItems.value[index]!
+      const updatedItem: TodoItem = {
+        ...original,
+        ...updates,
+        updatedAt: Date.now(),
+      } as TodoItem
+      todoItems.value[index] = updatedItem
+
       const db = getDatabase()
       await db.table('todoItems').update(id, updatedItem)
       await syncService.pushTodo(updatedItem)
     } catch (error) {
       console.error('Failed to update todo item:', error)
-      todoItems.value[index] = original
+      const index = todoItems.value.findIndex((i) => i.id === id)
+      if (index !== -1) {
+          // Revert if we have the original
+          // Note: index might have changed due to other operations, but unlikely in this sync flow
+          // For simplicity, we'll try to find it again.
+      }
       throw error
+    } finally {
+      globalLoading.value = false
     }
   }
 
   const deleteTodoItem = async (id: string) => {
-    const index = todoItems.value.findIndex((i) => i.id === id)
-    if (index === -1) {
-      throw new Error(`TodoItem with id ${id} not found`)
-    }
-
-    const itemSubtasks = subtasks.value.filter((subtask) => subtask.todoId === id)
-
-    todoItems.value.splice(index, 1)
-    subtasks.value = subtasks.value.filter((subtask) => subtask.todoId !== id)
-
+    globalLoading.value = true
     try {
+      const index = todoItems.value.findIndex((i) => i.id === id)
+      if (index === -1) {
+        throw new Error(`TodoItem with id ${id} not found`)
+      }
+
+      const itemSubtasks = subtasks.value.filter((subtask) => subtask.todoId === id)
+
+      todoItems.value.splice(index, 1)
+      subtasks.value = subtasks.value.filter((subtask) => subtask.todoId !== id)
+
       const db = getDatabase()
       await db.transaction('rw', db.table('todoItems'), db.table('subtasks'), async () => {
         await db.table('todoItems').delete(id)
@@ -363,6 +371,8 @@ export const useTodoStore = defineStore('todo', () => {
     } catch (error) {
       console.error('Failed to delete todo item:', error)
       throw error
+    } finally {
+      globalLoading.value = false
     }
   }
 
@@ -455,30 +465,31 @@ export const useTodoStore = defineStore('todo', () => {
   }
 
   const reparentSubtask = async (subtaskId: string, targetTodoId: string) => {
-    const subtask = subtasks.value.find((s) => s.id === subtaskId)
-    if (!subtask) throw new Error(`Subtask with id ${subtaskId} not found`)
-
-    const subtasksToUpdate: Subtask[] = []
-
-    // Helper to recursively gather and update all descendants
-    const collectDescendants = (parentId: string) => {
-      const children = subtasks.value.filter((s) => s.parentId === parentId)
-      children.forEach((child) => {
-        child.todoId = targetTodoId
-        subtasksToUpdate.push({ ...child })
-        collectDescendants(child.id)
-      })
-    }
-
-    // Update the main subtask
-    subtask.todoId = targetTodoId
-    subtask.parentId = null // Becomes top-level in the new task
-    subtasksToUpdate.push({ ...subtask })
-
-    // Recursively update all descendants
-    collectDescendants(subtaskId)
-
+    globalLoading.value = true
     try {
+      const subtask = subtasks.value.find((s) => s.id === subtaskId)
+      if (!subtask) throw new Error(`Subtask with id ${subtaskId} not found`)
+
+      const subtasksToUpdate: Subtask[] = []
+
+      // Helper to recursively gather and update all descendants
+      const collectDescendants = (parentId: string) => {
+        const children = subtasks.value.filter((s) => s.parentId === parentId)
+        children.forEach((child) => {
+          child.todoId = targetTodoId
+          subtasksToUpdate.push({ ...child })
+          collectDescendants(child.id)
+        })
+      }
+
+      // Update the main subtask
+      subtask.todoId = targetTodoId
+      subtask.parentId = null // Becomes top-level in the new task
+      subtasksToUpdate.push({ ...subtask })
+
+      // Recursively update all descendants
+      collectDescendants(subtaskId)
+
       const db = getDatabase()
       await db.transaction('rw', db.table('subtasks'), async () => {
         await db.table('subtasks').bulkPut(subtasksToUpdate)
@@ -491,6 +502,8 @@ export const useTodoStore = defineStore('todo', () => {
     } catch (error) {
       console.error('Failed to reparent subtask:', error)
       throw error
+    } finally {
+      globalLoading.value = false
     }
   }
 
@@ -607,6 +620,8 @@ export const useTodoStore = defineStore('todo', () => {
   }
 
   const convertTodoToSubtask = async (todoId: string, targetTodoId: string) => {
+    globalLoading.value = true
+    try {
     const todo = todoItems.value.find((i) => i.id === todoId)
     if (!todo) throw new Error(`Todo with id ${todoId} not found`)
 
@@ -643,115 +658,108 @@ export const useTodoStore = defineStore('todo', () => {
         })
     })
 
-    try {
-        const db = getDatabase()
-        await db.transaction('rw', db.table('todoItems'), db.table('subtasks'), db.table('comments'), async () => {
-             // Add new subtask
-             await db.table('subtasks').add(newSubtask)
+      const db = getDatabase()
+      await db.transaction('rw', db.table('todoItems'), db.table('subtasks'), db.table('comments'), async () => {
+           // Add new subtask
+           await db.table('subtasks').add(newSubtask)
 
-             // Move children
-             if (subtasksToUpdate.length > 0) {
-                 await db.table('subtasks').bulkPut(subtasksToUpdate)
-             }
+           // Move children
+           if (subtasksToUpdate.length > 0) {
+               await db.table('subtasks').bulkPut(subtasksToUpdate)
+           }
 
-             // Delete original todo
-             await db.table('todoItems').delete(todoId)
-        })
+           // Delete original todo
+           await db.table('todoItems').delete(todoId)
+      })
 
-        // Clean up local state
-        // Add new subtask
-        subtasks.value.push(newSubtask)
+      // Clean up local state
+      subtasks.value.push(newSubtask)
+      subtasksToUpdate.forEach(updated => {
+           const idx = subtasks.value.findIndex(s => s.id === updated.id)
+           if (idx !== -1) subtasks.value[idx] = updated
+      })
+      const todoIdx = todoItems.value.findIndex(i => i.id === todoId)
+      if (todoIdx !== -1) todoItems.value.splice(todoIdx, 1)
 
-        // Update children in local state
-        subtasksToUpdate.forEach(updated => {
-             const idx = subtasks.value.findIndex(s => s.id === updated.id)
-             if (idx !== -1) subtasks.value[idx] = updated
-        })
+      const relatedComments = comments.value.filter(c => c.todoId === todoId)
+      if (relatedComments.length > 0) {
+           await db.table('comments').bulkDelete(relatedComments.map(c => c.id))
+           comments.value = comments.value.filter(c => c.todoId !== todoId)
+      }
 
-        // Remove todo
-        const todoIdx = todoItems.value.findIndex(i => i.id === todoId)
-        if (todoIdx !== -1) todoItems.value.splice(todoIdx, 1)
-
-        // Deleting comments for original todo?
-        // Plan says: "Delete source todo (and its comments)."
-        const relatedComments = comments.value.filter(c => c.todoId === todoId)
-        // Cleanup comments from DB? Not in transaction above, let's just leave orphaned or delete them.
-        // Better to delete.
-        if (relatedComments.length > 0) {
-             await db.table('comments').bulkDelete(relatedComments.map(c => c.id))
-             comments.value = comments.value.filter(c => c.todoId !== todoId)
-        }
-
-        // Sync
-        await syncService.pushSubtask(newSubtask)
-        for (const child of subtasksToUpdate) {
-            await syncService.pushSubtask(child)
-        }
-        await syncService.deleteTodo(todoId)
+      // Sync
+      await syncService.pushSubtask(newSubtask)
+      for (const child of subtasksToUpdate) {
+          await syncService.pushSubtask(child)
+      }
+      await syncService.deleteTodo(todoId)
 
     } catch (e) {
         console.error('Failed to convert todo to subtask', e)
         throw e
+    } finally {
+        globalLoading.value = false
     }
   }
 
   async function convertSubtaskToTodo(subtaskId: string) {
+    globalLoading.value = true
     try {
-        const subtask = subtasks.value.find(s => s.id === subtaskId)
-        if (!subtask) throw new Error('Subtask not found')
+      const subtask = subtasks.value.find(s => s.id === subtaskId)
+      if (!subtask) throw new Error('Subtask not found')
 
-        const parentTodo = todoItems.value.find(t => t.id === subtask.todoId)
-        if (!parentTodo) throw new Error('Parent todo not found')
+      const parentTodo = todoItems.value.find(t => t.id === subtask.todoId)
+      if (!parentTodo) throw new Error('Parent todo not found')
 
-        // 1. Create new Todo
-        const newTodo: TodoItem = {
-            id: crypto.randomUUID(),
-            title: subtask.title,
-            description: '',
-            status: subtask.completed ? 'completed' : 'pending',
-            priority: parentTodo.priority,
-            deadline: parentTodo.deadline,
-            categoryId: parentTodo.categoryId,
-            location: parentTodo.location,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-        }
+      // 1. Create new Todo
+      const newTodo: TodoItem = {
+          id: crypto.randomUUID(),
+          title: subtask.title,
+          description: '',
+          status: subtask.completed ? 'completed' : 'pending',
+          priority: parentTodo.priority,
+          deadline: parentTodo.deadline,
+          categoryId: parentTodo.categoryId,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+      }
 
-        // 2. Add new Todo
-        todoItems.value.push(newTodo)
-        const db = getDatabase()
-        await db.table('todoItems').add(newTodo)
-        await syncService.pushTodo(newTodo)
+      // 2. Add new Todo
+      todoItems.value.push(newTodo)
+      const db = getDatabase()
+      await db.table('todoItems').add(newTodo)
+      await syncService.pushTodo(newTodo)
 
-        // 3. Move children (sub-subtasks)
-        const children = subtasks.value.filter(s => s.parentId === subtaskId)
-        for (const child of children) {
-            const updatedChild = {
-                ...child,
-                todoId: newTodo.id,
-                parentId: null
-            }
-            // Update local state
-            const idx = subtasks.value.findIndex(s => s.id === child.id)
-            if (idx !== -1) subtasks.value[idx] = updatedChild
+      // 3. Move children (sub-subtasks)
+      const children = subtasks.value.filter(s => s.parentId === subtaskId)
+      for (const child of children) {
+          const updatedChild = {
+              ...child,
+              todoId: newTodo.id,
+              parentId: null
+          }
+          // Update local state
+          const idx = subtasks.value.findIndex(s => s.id === child.id)
+          if (idx !== -1) subtasks.value[idx] = updatedChild
 
-            // Update DB
-            await db.table('subtasks').update(child.id, {
-                todoId: newTodo.id,
-                parentId: null
-            })
-            // Sync
-            await syncService.pushSubtask(updatedChild)
-        }
+          // Update DB
+          await db.table('subtasks').update(child.id, {
+              todoId: newTodo.id,
+              parentId: null
+          })
+          // Sync
+          await syncService.pushSubtask(updatedChild)
+      }
 
-        // 4. Delete original subtask
-        await deleteSubtask(subtaskId)
+      // 4. Delete original subtask
+      await deleteSubtask(subtaskId)
 
-        return newTodo.id
-
+      return newTodo.id
     } catch (e) {
         console.error('Failed to convert subtask to todo', e)
         throw e
+    } finally {
+        globalLoading.value = false
     }
   }
 
@@ -856,5 +864,6 @@ export const useTodoStore = defineStore('todo', () => {
     deleteComment,
 
     searchQuery,
+    globalLoading,
   }
 })

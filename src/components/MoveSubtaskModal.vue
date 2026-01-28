@@ -26,7 +26,38 @@ const filteredTasks = computed(() => {
             item.id !== props.currentTodoId &&
             item.title.toLowerCase().includes(query)
         )
-        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .sort((a, b) => {
+            // Sort by completion status first (incomplete first)
+            if (a.status === 'completed' && b.status !== 'completed') return 1
+            if (a.status !== 'completed' && b.status === 'completed') return -1
+            // Then by update time
+            return b.updatedAt - a.updatedAt
+        })
+})
+
+const groupedTasks = computed(() => {
+    const groups: { categoryId: string | null, title: string, tasks: typeof filteredTasks.value }[] = []
+
+    filteredTasks.value.forEach(task => {
+        const catId = task.categoryId || null
+        let group = groups.find(g => g.categoryId === catId)
+
+        if (!group) {
+            const catTitle = catId
+                ? todoStore.categoriesById.get(catId)?.title || t('tasks.categories.none')
+                : t('tasks.categories.none')
+            group = { categoryId: catId, title: catTitle, tasks: [] }
+            groups.push(group)
+        }
+        group.tasks.push(task)
+    })
+
+    // Sort groups: "None" at the bottom if it exists, others alphabetically
+    return groups.sort((a, b) => {
+        if (a.categoryId === null) return 1
+        if (b.categoryId === null) return -1
+        return a.title.localeCompare(b.title)
+    })
 })
 
 const handleMove = (targetTodoId: string) => {
@@ -61,22 +92,29 @@ const handleMove = (targetTodoId: string) => {
                 <div v-if="filteredTasks.length === 0" class="no-results">
                     {{ t('search.noResults') }}
                 </div>
-                <button v-for="task in filteredTasks" :key="task.id" class="task-item" @click="handleMove(task.id)">
-                    <div class="task-info">
-                        <div class="task-line">
-                            <span class="task-name">{{ task.title }}</span>
-                            <span v-if="task.status === 'completed'" class="completed-badge">{{
-                                t('tasks.filters.completed') }}</span>
-                        </div>
-                        <div v-if="task.categoryId" class="task-category-info">
-                            <div class="color-dot"
-                                :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color || '#ccc' }">
-                            </div>
-                            <span class="category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title
-                                }}</span>
-                        </div>
+
+                <div v-for="group in groupedTasks" :key="group.categoryId || 'none'" class="task-group">
+                    <div v-if="groupedTasks.length > 1 || group.categoryId" class="group-header">
+                        {{ group.title }}
                     </div>
-                </button>
+                    <button v-for="task in group.tasks" :key="task.id" class="task-item"
+                        :class="{ 'is-completed': task.status === 'completed' }" @click="handleMove(task.id)">
+                        <div class="task-info">
+                            <div class="task-line">
+                                <span class="task-name">{{ task.title }}</span>
+                                <span v-if="task.status === 'completed'" class="completed-badge">{{
+                                    t('tasks.filters.completed') }}</span>
+                            </div>
+                            <div v-if="task.categoryId" class="task-category-info">
+                                <div class="color-dot"
+                                    :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color || '#ccc' }">
+                                </div>
+                                <span class="category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title
+                                }}</span>
+                            </div>
+                        </div>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -273,12 +311,38 @@ const handleMove = (targetTodoId: string) => {
 .completed-badge {
     font-size: 10px;
     padding: 2px 6px;
-    background: var(--color-status-completed);
-    color: white;
+    background: var(--color-bg-lighter);
+    color: var(--color-text-muted);
     border-radius: 4px;
     margin-left: 8px;
     text-transform: uppercase;
     font-weight: 700;
+}
+
+.task-item.is-completed {
+    opacity: 0.6;
+}
+
+.task-item.is-completed .task-name {
+    text-decoration: line-through;
+    color: var(--color-text-muted);
+}
+
+.task-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: var(--spacing-md);
+}
+
+.group-header {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    margin-top: var(--spacing-xs);
 }
 
 .no-results {

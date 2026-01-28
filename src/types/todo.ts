@@ -20,7 +20,6 @@ export interface TodoItem {
   deadline: number | null
   recurrence?: 'daily' | 'weekly' | 'monthly' | null
   categoryId: string | null
-  location?: { lat: number; lng: number } | null
   createdAt: number
   updatedAt: number
 }
