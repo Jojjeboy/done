@@ -5,9 +5,10 @@ import { useTodoStore } from '@/stores/todo'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
-import { X, Calendar, Flag, MapPin, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles } from 'lucide-vue-next'
+import { X, Calendar, Flag, MapPin, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
+import ConvertTaskModal from '@/components/ConvertTaskModal.vue'
 
 const props = defineProps<{
     id: string
@@ -36,6 +37,7 @@ const showLocationUpdateConfirm = ref(false)
 const showAlertModal = ref(false)
 const alertMessage = ref('')
 const deleteCommentId = ref<string | null>(null)
+const showConvertModal = ref(false)
 
 // Comments State
 const newCommentText = ref('')
@@ -200,6 +202,21 @@ const confirmDelete = async () => {
     }
 }
 
+const handleConvertTask = async (targetTodoId: string) => {
+    try {
+        await todoStore.convertTodoToSubtask(todoId.value, targetTodoId)
+        showConvertModal.value = false
+        emit('deleted', todoId.value)
+        if (!props.isEmbedded) {
+            router.replace(`/task/${targetTodoId}`)
+        } else {
+            emit('close')
+        }
+    } catch (error) {
+        console.error('Failed to convert task:', error)
+    }
+}
+
 const handleLocationClick = () => {
     if (taskLocation.value) {
         showLocationUpdateConfirm.value = true
@@ -304,6 +321,10 @@ const isEditMode = computed(() => !isNew.value)
             </div>
 
             <div class="header-controls">
+                <button v-if="!isNew" class="icon-btn convert-btn" :title="t('modal.convertTask')"
+                    @click="showConvertModal = true">
+                    <ArrowRightLeft :size="18" />
+                </button>
                 <button class="icon-btn delete-btn" :title="t('common.delete')" @click="showDeleteConfirm = true">
                     <Trash2 :size="18" />
                 </button>
@@ -386,7 +407,7 @@ const isEditMode = computed(() => !isNew.value)
                         <span v-if="!taskLocation" class="placeholder">{{ t('tasks.addLocation') }}</span>
                         <span v-else class="location-coords">{{ taskLocation.lat.toFixed(4) }}, {{
                             taskLocation.lng.toFixed(4)
-                        }}</span>
+                            }}</span>
                     </div>
                 </div>
 
@@ -420,7 +441,7 @@ const isEditMode = computed(() => !isNew.value)
                         <div class="comment-meta">
                             <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                                 t('common.user')
-                            }}</span>
+                                }}</span>
                             <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
                             <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                                 v-if="comment.userId === authStore.user?.uid">
@@ -449,7 +470,7 @@ const isEditMode = computed(() => !isNew.value)
 
             <div v-if="isNew" class="create-actions">
                 <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-                }}</button>
+                    }}</button>
             </div>
         </div>
 
@@ -470,6 +491,9 @@ const isEditMode = computed(() => !isNew.value)
             :message="t('common.deleteCommentConfirm')" :confirmText="t('common.delete')"
             :cancelText="t('common.cancel')" type="danger" @confirm="confirmDeleteComment"
             @cancel="deleteCommentId = null" />
+
+        <ConvertTaskModal :isOpen="showConvertModal" :todoId="todoId" :todoTitle="taskTitle"
+            @close="showConvertModal = false" @convert="handleConvertTask" />
     </div>
 </template>
 

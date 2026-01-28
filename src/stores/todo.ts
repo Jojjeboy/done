@@ -606,6 +606,95 @@ export const useTodoStore = defineStore('todo', () => {
     }
   }
 
+  const convertTodoToSubtask = async (todoId: string, targetTodoId: string) => {
+    const todo = todoItems.value.find((i) => i.id === todoId)
+    if (!todo) throw new Error(`Todo with id ${todoId} not found`)
+
+    // 1. Create new subtask in target todo
+    // Determine order: put at end
+    const targetSubtasks = subtasks.value.filter(s => s.todoId === targetTodoId && !s.parentId)
+    const order = targetSubtasks.length > 0 ? Math.max(...targetSubtasks.map(s => s.order)) + 1 : 0
+
+    const newSubtaskId = generateId()
+    const newSubtask: Subtask = {
+        id: newSubtaskId,
+        todoId: targetTodoId,
+        title: todo.title,
+        completed: todo.status === 'completed',
+        parentId: null,
+        order
+    }
+
+    // 2. Gather existing subtasks to move
+    const childSubtasks = subtasks.value.filter(s => s.todoId === todoId)
+    const subtasksToUpdate: Subtask[] = []
+
+    // Flatten logic: All children become children of the new subtask
+    // Note: We ignore the original hierarchy for simplicity as per plan (2-level depth max)
+    // Or we can try to preserve direct children as children of new subtask.
+    // The plan says: "All existing subtasks of Task A (both parents and children) will be flattened to become direct children of 'Subtask A'."
+
+    childSubtasks.forEach((child, index) => {
+        subtasksToUpdate.push({
+            ...child,
+            todoId: targetTodoId,
+            parentId: newSubtaskId,
+            order: index // simple re-ordering
+        })
+    })
+
+    try {
+        const db = getDatabase()
+        await db.transaction('rw', db.table('todoItems'), db.table('subtasks'), db.table('comments'), async () => {
+             // Add new subtask
+             await db.table('subtasks').add(newSubtask)
+
+             // Move children
+             if (subtasksToUpdate.length > 0) {
+                 await db.table('subtasks').bulkPut(subtasksToUpdate)
+             }
+
+             // Delete original todo
+             await db.table('todoItems').delete(todoId)
+        })
+
+        // Clean up local state
+        // Add new subtask
+        subtasks.value.push(newSubtask)
+
+        // Update children in local state
+        subtasksToUpdate.forEach(updated => {
+             const idx = subtasks.value.findIndex(s => s.id === updated.id)
+             if (idx !== -1) subtasks.value[idx] = updated
+        })
+
+        // Remove todo
+        const todoIdx = todoItems.value.findIndex(i => i.id === todoId)
+        if (todoIdx !== -1) todoItems.value.splice(todoIdx, 1)
+
+        // Deleting comments for original todo?
+        // Plan says: "Delete source todo (and its comments)."
+        const relatedComments = comments.value.filter(c => c.todoId === todoId)
+        // Cleanup comments from DB? Not in transaction above, let's just leave orphaned or delete them.
+        // Better to delete.
+        if (relatedComments.length > 0) {
+             await db.table('comments').bulkDelete(relatedComments.map(c => c.id))
+             comments.value = comments.value.filter(c => c.todoId !== todoId)
+        }
+
+        // Sync
+        await syncService.pushSubtask(newSubtask)
+        for (const child of subtasksToUpdate) {
+            await syncService.pushSubtask(child)
+        }
+        await syncService.deleteTodo(todoId)
+
+    } catch (e) {
+        console.error('Failed to convert todo to subtask', e)
+        throw e
+    }
+  }
+
   const handleRecurrence = async (item: TodoItem) => {
       // Calculate new deadline
       // Create new item
@@ -698,6 +787,7 @@ export const useTodoStore = defineStore('todo', () => {
     toggleSubtask,
     reparentSubtask,
     updateSubtasksOrder,
+    convertTodoToSubtask,
     // Comments
     comments,
     commentsByTodoId,

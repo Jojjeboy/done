@@ -83,7 +83,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Main Content Area -->
-    <main class="main-content">
+    <main v-if="isDesktop || !route.params.id" class="main-content">
       <div class="mobile-only">
         <MobileHeader @open-import="showImportModal = true" />
       </div>
@@ -115,13 +115,14 @@ onUnmounted(() => {
       </button>
     </main>
 
-    <!-- Desktop Task Detail Side Panel -->
-    <aside class="desktop-detail-panel">
+    <!-- Task Detail View (Side Panel on Desktop, Full Screen on Mobile) -->
+    <div :class="{ 'desktop-detail-panel': isDesktop, 'mobile-detail-page': !isDesktop }"
+      v-if="isDesktop || route.params.id">
       <RouterView v-slot="{ Component }">
         <template v-if="Component">
           <component :is="Component" :is-embedded="isDesktop" />
         </template>
-        <div v-else class="empty-detail-state">
+        <div v-else-if="isDesktop" class="empty-detail-state">
           <div class="empty-placeholder">
             <div class="placeholder-icon">
               <Sparkles :size="48" />
@@ -134,7 +135,7 @@ onUnmounted(() => {
           </div>
         </div>
       </RouterView>
-    </aside>
+    </div>
 
     <!-- Modals -->
     <SearchModal v-if="showSearchModal" @close="showSearchModal = false" />
@@ -185,6 +186,12 @@ onUnmounted(() => {
 
 .desktop-fab {
   display: none;
+}
+
+.mobile-detail-page {
+  flex: 1;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .desktop-detail-panel {
