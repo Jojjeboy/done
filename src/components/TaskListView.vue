@@ -291,9 +291,12 @@ onMounted(async () => {
             <div class="task-content">
               <div class="task-main-info">
                 <h4 class="task-title">{{ task.title }}</h4>
-                <div class="task-meta">
-                  <span v-if="task.categoryId" class="task-category-dot"
-                    :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span>
+                <div class="task-meta-row">
+                  <div v-if="task.categoryId && todoStore.categoriesById.has(task.categoryId)" class="task-category-info">
+                    <span class="task-category-dot"
+                      :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span>
+                    <span class="task-category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title }}</span>
+                  </div>
                   <div class="task-time" v-if="task.deadline">
                     <Clock :size="12" />
                     <span>{{ formatTime(task.deadline) }}</span>
@@ -338,6 +341,17 @@ onMounted(async () => {
           <div class="task-content">
             <div class="task-main-info">
               <h4 class="task-title">{{ task.title }}</h4>
+              <div class="task-meta-row">
+                <div v-if="task.categoryId && todoStore.categoriesById.has(task.categoryId)" class="task-category-info">
+                  <span class="task-category-dot"
+                    :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span>
+                  <span class="task-category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title }}</span>
+                </div>
+                <div class="task-time" v-if="task.deadline">
+                  <Clock :size="12" />
+                  <span>{{ formatTime(task.deadline) }}</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -671,8 +685,9 @@ onMounted(async () => {
 
 .task-main-info {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .task-title {
@@ -680,16 +695,28 @@ onMounted(async () => {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
   line-height: var(--line-height-normal);
-  flex: 1;
+  width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.task-meta {
+.task-meta-row {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
+}
+
+.task-category-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.task-category-name {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  font-weight: 500;
 }
 
 .task-category-dot {
@@ -703,7 +730,7 @@ onMounted(async () => {
   align-items: center;
   gap: var(--spacing-xs);
   color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
+  font-size: 10px;
 }
 
 .task-subtasks {
@@ -711,7 +738,7 @@ onMounted(async () => {
   align-items: center;
   gap: var(--spacing-xs);
   color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
+  font-size: 10px;
 }
 
 .task-star-btn {
