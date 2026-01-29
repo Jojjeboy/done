@@ -299,6 +299,13 @@ onUnmounted(() => {
   }
 }
 
+@media (min-width: 1301px) {
+  .desktop-detail-panel {
+    width: 600px;
+    /* Increased from 450px */
+  }
+}
+
 .stale-banner {
   background: rgba(245, 158, 11, 0.1);
   border: 1px solid #F59E0B;

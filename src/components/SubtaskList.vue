@@ -8,7 +8,8 @@ import MoveSubtaskModal from './MoveSubtaskModal.vue'
 
 const props = defineProps<{
   todoId?: string | null
-  modelValue?: (Partial<Subtask> & { id: string; title: string; completed: boolean; order: number })[]
+  modelValue?: (Partial<Subtask> & { id: string; title: string; completed: boolean; order: number; status?: 'pending' | 'in-progress' | 'completed' })[]
+  processEnabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -48,7 +49,8 @@ const isAddingKey = ref(false)
 // Sub-adding
 const addingToParentId = ref<string | null>(null)
 const newSubSubtaskTitle = ref('')
-const subSubInputRef = ref<HTMLInputElement | null>(null)
+const subSubInputRef = ref<{ focus: () => void } | null>(null)
+const mainInputRef = ref<{ focus: () => void } | null>(null)
 
 // Editing
 const editingId = ref<string | null>(null)
@@ -182,11 +184,15 @@ const handleAddSubtask = async (parentId: string | null = null) => {
 
     if (parentId) {
       newSubSubtaskTitle.value = ''
-      addingToParentId.value = null
-      // Ensure parent is expanded
-      expandedParents.value.add(parentId)
+      // Keep addingToParentId as is to allow continuous entry
+      nextTick(() => {
+        subSubInputRef.value?.focus()
+      })
     } else {
       newSubtaskTitle.value = ''
+      nextTick(() => {
+        mainInputRef.value?.focus()
+      })
     }
   } catch (error) {
     console.error('Failed to add subtask:', error)
@@ -233,7 +239,7 @@ const toggleSubtask = async (subtask: { id: string; completed: boolean; parentId
           const pIndex = updated.findIndex(s => s.id === subtask.parentId)
           if (pIndex !== -1) {
             const p = updated[pIndex]
-            if (p) updated[pIndex] = { ...p, completed: false }
+            if (p) updated[pIndex] = { ...p, completed: false, status: 'in-progress' }
           }
         } else {
           const siblings = updated.filter(s => s.parentId === subtask.parentId && s.id !== subtask.id)
@@ -241,7 +247,7 @@ const toggleSubtask = async (subtask: { id: string; completed: boolean; parentId
             const pIndex = updated.findIndex(s => s.id === subtask.parentId)
             if (pIndex !== -1) {
               const p = updated[pIndex]
-              if (p) updated[pIndex] = { ...p, completed: true }
+              if (p) updated[pIndex] = { ...p, completed: true, status: 'completed' }
             }
           }
         }
@@ -319,8 +325,8 @@ const saveEditing = async () => {
         @drop="handleDrop(index, 'incomplete')">
         <!-- Parent Row -->
         <div class="subtask-item parent-item">
-          <div class="drag-handle">
-            <GripVertical :size="14" />
+          <div v-if="getChildren(parent.id).length > 0 || incompleteParents.length > 1" class="drag-handle">
+            <GripVertical v-if="incompleteParents.length > 1" :size="14" />
           </div>
           <!-- Expand/Collapse for Parents with children -->
           <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
@@ -328,8 +334,15 @@ const saveEditing = async () => {
             <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
           </button>
 
-          <button @click="toggleSubtask(parent)" class="subtask-checkbox">
-            <div class="empty-circle"></div>
+          <button @click="toggleSubtask(parent)" class="subtask-checkbox"
+            :class="parent.status || (parent.completed ? 'completed' : 'pending')">
+            <div v-if="parent.completed" class="check-circle-wrapper">
+              <Check :size="12" class="check-icon-inner" />
+            </div>
+            <div v-else-if="parent.status === 'in-progress'" class="in-progress-circle">
+              <div class="inner-dot"></div>
+            </div>
+            <div v-else class="empty-circle"></div>
           </button>
 
           <div v-if="editingId === parent.id" class="edit-wrapper">
@@ -366,9 +379,13 @@ const saveEditing = async () => {
             <div class="indent-line">
               <CornerDownRight :size="14" class="corner-icon" />
             </div>
-            <button @click="toggleSubtask(child)" class="subtask-checkbox">
+            <button @click="toggleSubtask(child)" class="subtask-checkbox"
+              :class="child.status || (child.completed ? 'completed' : 'pending')">
               <div v-if="child.completed" class="check-circle-wrapper small">
                 <Check :size="10" class="check-icon-inner" />
+              </div>
+              <div v-else-if="child.status === 'in-progress'" class="in-progress-circle small">
+                <div class="inner-dot"></div>
               </div>
               <div v-else class="empty-circle small"></div>
             </button>
@@ -408,8 +425,8 @@ const saveEditing = async () => {
     <div class="add-subtask">
       <div class="input-wrapper">
         <Plus :size="16" class="plus-icon" />
-        <input v-model="newSubtaskTitle" type="text" :placeholder="t('modal.addSubtask')" class="subtask-input"
-          @keyup.enter="handleAddSubtask(null)" />
+        <input ref="mainInputRef" v-model="newSubtaskTitle" type="text" :placeholder="t('modal.addSubtask')"
+          class="subtask-input" @keyup.enter="handleAddSubtask(null)" />
       </div>
       <button v-if="newSubtaskTitle.trim()" @click="handleAddSubtask(null)" class="add-btn" :disabled="isAddingKey">
         {{ t('common.add') }}
@@ -430,8 +447,8 @@ const saveEditing = async () => {
           draggable="true" @dragstart="handleDragStart($event, index, 'completed')" @dragover="handleDragOver"
           @drop="handleDrop(index, 'completed')">
           <div class="subtask-item parent-item completed">
-            <div class="drag-handle">
-              <GripVertical :size="14" />
+            <div v-if="getChildren(parent.id).length > 0 || completedParents.length > 1" class="drag-handle">
+              <GripVertical v-if="completedParents.length > 1" :size="14" />
             </div>
             <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
               @click="toggleExpand(parent.id)">
@@ -724,6 +741,29 @@ const saveEditing = async () => {
 
 .chevron.open {
   transform: rotate(90deg);
+}
+
+.in-progress-circle {
+  width: 16px;
+  height: 16px;
+  border: 4px solid var(--color-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.in-progress-circle.small {
+  width: 14px;
+  height: 14px;
+  border-width: 3px;
+}
+
+.inner-dot {
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
 }
 
 

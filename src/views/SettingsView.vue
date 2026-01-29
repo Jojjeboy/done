@@ -6,12 +6,11 @@ import BottomNavigation from '@/components/BottomNavigation.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore, type ColorPalette } from '@/stores/theme'
 import { useI18nStore } from '@/stores/i18n'
-import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
 import {
   ArrowLeft, LogOut, Moon, Sun, Globe,
-  ListChecks, RotateCcw, FileText, User,
-  Palette, Zap, Info, ChevronRight, Star, BarChart
+  RotateCcw, FileText, User,
+  Palette, Info, ChevronRight, Star, BarChart
 } from 'lucide-vue-next'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import type { SupportedLocale } from '@/i18n'
@@ -24,7 +23,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const i18nStore = useI18nStore()
-const settingsStore = useSettingsStore()
 const { t, locale } = useI18n()
 
 const { updateServiceWorker } = useRegisterSW()
@@ -200,32 +198,6 @@ const handleCheckForUpdates = async () => {
             </div>
           </div>
 
-          <!-- Behavior Section -->
-          <div class="settings-group">
-            <div class="group-header">
-              <Zap :size="16" />
-              <span>{{ t('settings.behavior') }}</span>
-            </div>
-            <div class="settings-card list-card">
-              <div class="list-item column-on-mobile">
-                <div class="item-info">
-                  <div class="item-icon-circle behavior">
-                    <ListChecks :size="16" />
-                  </div>
-                  <div class="item-text-group">
-                    <span class="item-label">{{ t('settings.threeStepProcess') }}</span>
-                    <span class="item-desc">{{ t('settings.threeStepDesc') }}</span>
-                  </div>
-                </div>
-                <div class="toggle-switch"
-                  @click="settingsStore.setThreeStepEnabled(!settingsStore.isThreeStepEnabled)">
-                  <div :class="['switch-track', { active: settingsStore.isThreeStepEnabled }]">
-                    <div class="switch-thumb"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <!-- About Section -->
           <div class="settings-group">

@@ -24,6 +24,7 @@ export interface TodoItem {
   createdAt: number
   updatedAt: number
   isSticky?: boolean
+  isSubtaskProcessEnabled?: boolean
 }
 
 export interface Subtask {
@@ -31,6 +32,7 @@ export interface Subtask {
   todoId: string
   title: string
   completed: boolean
+  status?: 'pending' | 'in-progress' | 'completed'
   parentId?: string | null
   order: number
 }

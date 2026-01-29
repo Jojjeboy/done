@@ -35,6 +35,29 @@ const showDeleteConfirm = ref(false)
 const deleteCommentId = ref<string | null>(null)
 const showConvertModal = ref(false)
 const taskIsSticky = ref(false)
+const isSubtaskProcessEnabled = ref(false)
+const showDiscardConfirm = ref(false)
+
+// Change Detection
+const initialState = ref('')
+const currentTaskState = computed(() => {
+  return JSON.stringify({
+    title: taskTitle.value,
+    description: taskDescription.value,
+    priority: taskPriority.value,
+    categoryId: taskCategory.value,
+    status: taskStatus.value,
+    isSticky: taskIsSticky.value,
+    isSubtaskProcessEnabled: isSubtaskProcessEnabled.value
+  })
+})
+
+const hasUnsavedChanges = computed(() => {
+  if (isNew.value) {
+    return taskTitle.value.trim() !== '' || taskDescription.value.trim() !== '' || taskCategory.value !== 'none'
+  }
+  return initialState.value !== currentTaskState.value
+})
 
 // Comments State
 const newCommentText = ref('')
@@ -74,6 +97,10 @@ const loadTodoData = () => {
         taskDeadline.value = ''
       }
       taskIsSticky.value = todo.isSticky || false
+      isSubtaskProcessEnabled.value = todo.isSubtaskProcessEnabled || false
+
+      // Capture initial state for change detection
+      initialState.value = currentTaskState.value
     }
   } else {
     resetForm()
@@ -88,7 +115,9 @@ const resetForm = () => {
   taskDeadline.value = ''
   taskStatus.value = 'pending'
   taskIsSticky.value = false
+  isSubtaskProcessEnabled.value = false
   parsedIntent.value = null
+  initialState.value = currentTaskState.value
 }
 
 const saveChanges = async () => {
@@ -114,7 +143,8 @@ const saveChanges = async () => {
         deadline: deadline,
         categoryId: taskCategory.value === 'none' ? null : taskCategory.value,
         status: taskStatus.value,
-        isSticky: taskIsSticky.value
+        isSticky: taskIsSticky.value,
+        isSubtaskProcessEnabled: isSubtaskProcessEnabled.value
       })
 
       // If we used NLP, refresh the UI values to match the cleaned state
@@ -132,11 +162,15 @@ const saveChanges = async () => {
         taskPriority.value,
         deadline,
         taskCategory.value === 'none' ? null : taskCategory.value,
-        null // Recurrence
+        null, // Recurrence
+        false // isSubtaskProcessEnabled (can be added to addTodoItem later if needed)
       )
+      // Update initial state after save
+      initialState.value = currentTaskState.value
+
       // For embedded mode, we might want to stay here or notify parent
       if (!props.isEmbedded) {
-        router.replace(`/task/${newItem.id}`)
+        router.push(`/task/${newItem.id}`)
       }
     }
   } catch (error) {
@@ -188,9 +222,8 @@ const confirmDelete = async () => {
       await todoStore.deleteTodoItem(todoId.value)
     }
     emit('deleted', todoId.value)
-    if (!props.isEmbedded) {
-      router.back()
-    }
+    // Always go to home to clear sidepanel/modal
+    router.push('/')
   } catch (error) {
     console.error('Failed to delete task:', error)
   } finally {
@@ -214,10 +247,16 @@ const handleConvertTask = async (targetTodoId: string) => {
 }
 
 const handleClose = () => {
-  emit('close')
-  if (!props.isEmbedded) {
-    router.push('/')
+  if (hasUnsavedChanges.value) {
+    showDiscardConfirm.value = true
+  } else {
+    forceClose()
   }
+}
+
+const forceClose = () => {
+  emit('close')
+  router.push('/')
 }
 
 // Watchers
@@ -257,15 +296,6 @@ const isEditMode = computed(() => !isNew.value)
           <ArrowLeft v-if="!isEmbedded" :size="18" class="back-arrow" />
           <span class="crumb-text">{{ t('common.back') }}</span>
         </div>
-        <div class="header-separator">/</div>
-        <div class="crumb-category">
-          <select v-model="taskCategory" @change="handleFieldChange" class="crumb-select">
-            <option value="none">{{ t('tasks.categories.none') }}</option>
-            <option v-for="cat in todoStore.categories" :key="cat.id" :value="cat.id">
-              {{ cat.title }}
-            </option>
-          </select>
-        </div>
       </div>
 
       <div class="header-controls">
@@ -273,10 +303,10 @@ const isEditMode = computed(() => !isNew.value)
           @click="showConvertModal = true">
           <ArrowRightLeft :size="18" />
         </button>
-        <button class="icon-btn delete-btn" :title="t('common.delete')" @click="showDeleteConfirm = true">
+        <button v-if="!isNew" class="icon-btn delete-btn" :title="t('common.delete')" @click="showDeleteConfirm = true">
           <Trash2 :size="18" />
         </button>
-        <button v-if="isEmbedded" class="icon-btn close-btn" :title="t('common.close')" @click="handleClose">
+        <button class="icon-btn close-btn" :title="t('common.close')" @click="handleClose">
           <X :size="18" />
         </button>
       </div>
@@ -291,6 +321,10 @@ const isEditMode = computed(() => !isNew.value)
           <Circle v-else :size="24" class="circle-icon" />
         </button>
         <div class="title-details">
+          <div v-if="taskStatus === 'completed'" class="completed-badge">
+            <CheckCircle :size="12" />
+            <span>{{ t('tasks.status.completed') }}</span>
+          </div>
           <input v-model="taskTitle" type="text" class="task-title-input" :placeholder="t('modal.whatTask')"
             @blur="handleFieldChange" @keydown.enter="handleFieldChange">
           <div v-if="parsedIntent" class="intent-badge" @click="saveChanges">
@@ -342,8 +376,15 @@ const isEditMode = computed(() => !isNew.value)
         <!-- Sticky Toggle (Button) -->
         <button class="sticky-toggle-btn" :class="{ active: taskIsSticky }"
           @click="taskIsSticky = !taskIsSticky; handleFieldChange()" :title="t('tasks.sticky')">
-          <Pin :size="14" />
+          <Pin :size="14" :class="{ filled: taskIsSticky }" />
           <span>{{ t('tasks.sticky') }}</span>
+        </button>
+
+        <!-- Subtask Process Toggle -->
+        <button class="sticky-toggle-btn" :class="{ active: isSubtaskProcessEnabled }"
+          @click="isSubtaskProcessEnabled = !isSubtaskProcessEnabled; handleFieldChange()" title="Process">
+          <Sparkles :size="14" />
+          <span>Process</span>
         </button>
       </div>
 
@@ -351,7 +392,7 @@ const isEditMode = computed(() => !isNew.value)
 
       <!-- Subtasks -->
       <div class="subtasks-container">
-        <SubtaskList :todo-id="isNew ? undefined : todoId" />
+        <SubtaskList :todo-id="isNew ? undefined : todoId" :process-enabled="isSubtaskProcessEnabled" />
       </div>
 
       <div class="divider"></div>
@@ -368,7 +409,7 @@ const isEditMode = computed(() => !isNew.value)
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-              }}</span>
+                }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -397,7 +438,7 @@ const isEditMode = computed(() => !isNew.value)
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-        }}</button>
+          }}</button>
       </div>
     </div>
 
@@ -405,6 +446,10 @@ const isEditMode = computed(() => !isNew.value)
     <ConfirmationModal :isOpen="showDeleteConfirm" :title="t('common.deleteTask')" :message="t('common.deleteConfirm')"
       :confirmText="t('common.delete')" :cancelText="t('common.cancel')" type="danger" @confirm="confirmDelete"
       @cancel="showDeleteConfirm = false" />
+
+    <ConfirmationModal :isOpen="showDiscardConfirm" :title="t('common.areYouSure')"
+      :message="t('common.discardChanges')" :confirmText="t('common.discard')" :cancelText="t('common.cancel')"
+      type="danger" @confirm="forceClose" @cancel="showDiscardConfirm = false" />
 
 
     <ConfirmationModal :isOpen="!!deleteCommentId" :title="t('common.deleteComment')"
@@ -573,6 +618,26 @@ const isEditMode = computed(() => !isNew.value)
 
 .task-title-input:focus {
   outline: none;
+}
+
+.completed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-status-completed-light, #ecfdf5);
+  color: var(--color-status-completed, #10b981);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  width: fit-content;
+}
+
+.dark .completed-badge {
+  background: rgba(16, 185, 129, 0.15);
 }
 
 .task-desc-textarea {

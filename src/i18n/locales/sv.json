@@ -26,6 +26,9 @@
     "importTasks": "Importera uppgifter",
     "insights": "Insikter",
     "features": "Funktioner",
+    "discard": "Släng",
+    "areYouSure": "Är du säker?",
+    "discardChanges": "Du har osparade ändringar. Vill du slänga dem?",
     "appName": "Done"
   },
   "focus": {

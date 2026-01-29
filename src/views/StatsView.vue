@@ -75,63 +75,80 @@ const donutChartStyle = computed(() => {
       <button @click="router.push('/')" class="back-button mobile-only" :aria-label="t('common.back')">
         <ArrowLeft :size="18" />
       </button>
-      <h1 class="page-title">{{ t('stats.title') }}</h1>
+      <div class="header-text">
+        <h1 class="page-title">{{ t('stats.title') }}</h1>
+        <p class="page-subtitle">{{ t('stats.overviewSubtitle', 'Ett snabbt översikt av dina framsteg') }}</p>
+      </div>
     </header>
 
     <div class="stats-content">
-      <div class="stats-grid">
-        <!-- Key Metrics with Entrance Animations -->
-        <div class="metric-card fade-in-up" style="animation-delay: 0.1s">
-          <div class="metric-icon success">
-            <CheckCircle :size="24" />
+      <!-- High-Level Metrics Grid -->
+      <div class="metrics-grid">
+        <div class="metric-card success fade-in-up" style="animation-delay: 0.1s">
+          <div class="metric-icon-box">
+            <CheckCircle :size="20" />
           </div>
-          <div class="metric-content">
-            <span class="metric-value">{{ completionRate }}%</span>
+          <div class="metric-data">
             <span class="metric-label">{{ t('stats.completionRate') }}</span>
+            <span class="metric-value">{{ completionRate }}%</span>
+          </div>
+          <div class="metric-progress-base">
+            <div class="metric-progress-bar" :style="{ width: completionRate + '%' }"></div>
           </div>
         </div>
 
-        <div class="metric-card fade-in-up" style="animation-delay: 0.2s">
-          <div class="metric-icon primary">
-            <List :size="24" />
+        <div class="metric-card primary fade-in-up" style="animation-delay: 0.2s">
+          <div class="metric-icon-box">
+            <List :size="20" />
           </div>
-          <div class="metric-content">
-            <span class="metric-value">{{ completedTasks }}</span>
+          <div class="metric-data">
             <span class="metric-label">{{ t('stats.tasksCompleted') }}</span>
+            <span class="metric-value">{{ completedTasks }}</span>
           </div>
+          <div class="metric-subtext">{{ t('stats.totalTasks', { count: totalTasks }) }}</div>
         </div>
 
-        <div class="metric-card fade-in-up" style="animation-delay: 0.3s" v-if="staleTasksCount > 0">
-          <div class="metric-icon warning">
-            <AlertTriangle :size="24" />
+        <div class="metric-card warning fade-in-up" style="animation-delay: 0.3s" v-if="staleTasksCount > 0">
+          <div class="metric-icon-box">
+            <AlertTriangle :size="20" />
           </div>
-          <div class="metric-content">
-            <span class="metric-value">{{ staleTasksCount }}</span>
+          <div class="metric-data">
             <span class="metric-label">{{ t('stats.staleTasks') }}</span>
+            <span class="metric-value">{{ staleTasksCount }}</span>
           </div>
+          <div class="metric-subtext">{{ t('stats.needsAttention', 'Behöver ses över') }}</div>
         </div>
       </div>
 
-      <!-- Category Chart -->
-      <div class="chart-section fade-in-up" style="animation-delay: 0.4s" v-if="totalTasks > 0">
-        <h2 class="section-title">{{ t('stats.categoryBreakdown') }}</h2>
-        <div class="chart-container">
-          <div class="chart-visual">
+      <!-- Main Breakdown Section -->
+      <div class="breakdown-wrapper fade-in-up" style="animation-delay: 0.4s" v-if="totalTasks > 0">
+        <div class="breakdown-header">
+          <h2 class="section-title text-gradient">{{ t('stats.categoryBreakdown') }}</h2>
+        </div>
+
+        <div class="breakdown-container">
+          <div class="chart-visual-wrapper">
             <div class="donut-chart" :style="donutChartStyle">
               <div class="donut-hole">
                 <span class="total-count">{{ totalTasks }}</span>
-                <span class="total-label">Tasks</span>
+                <span class="total-label">Totalt</span>
               </div>
             </div>
           </div>
-          <div class="chart-legend">
-            <div v-for="cat in categoryStats" :key="cat.name" class="legend-item">
-              <span class="legend-color" :style="{ background: cat.color }"></span>
-              <div class="legend-info">
-                <span class="legend-label">{{ cat.name }}</span>
-                <span class="legend-percentage">{{ Math.round((cat.count / totalTasks) * 100) }}%</span>
+
+          <div class="chart-legend-grid">
+            <div v-for="cat in categoryStats" :key="cat.name" class="legend-card" :style="{ '--cat-color': cat.color }">
+              <div class="legend-top">
+                <span class="legend-indicator"></span>
+                <span class="legend-name">{{ cat.name }}</span>
+                <span class="legend-count-val">{{ cat.count }}</span>
               </div>
-              <span class="legend-count">{{ cat.count }}</span>
+              <div class="legend-track">
+                <div class="legend-fill" :style="{ width: Math.round((cat.count / totalTasks) * 100) + '%' }"></div>
+              </div>
+              <div class="legend-bottom">
+                <span class="legend-perc">{{ Math.round((cat.count / totalTasks) * 100) }}% av alla uppgifter</span>
+              </div>
             </div>
           </div>
         </div>
@@ -141,7 +158,8 @@ const donutChartStyle = computed(() => {
         <div class="empty-icon-wrapper">
           <BarChart :size="48" class="empty-icon" />
         </div>
-        <p>{{ t('stats.emptyState') }}</p>
+        <p class="empty-text">{{ t('stats.emptyState') }}</p>
+        <button @click="router.push('/' )" class="btn-primary-ghost">{{ t('stats.getStarted', 'Börja lägga till uppgifter') }}</button>
       </div>
     </div>
   </div>
@@ -149,26 +167,47 @@ const donutChartStyle = computed(() => {
 
 <style scoped>
 .stats-view {
-  max-width: 540px;
-  margin: 1rem;
-  padding-bottom: 2rem;
+  max-width: 1200px;
+  /* Wider for desktop */
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
 }
 
 .stats-header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-2xl);
+  gap: var(--spacing-lg);
+  margin-bottom: 3rem;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.page-title {
+  font-size: 2.25rem;
+  font-weight: 850;
+  color: var(--color-text-primary);
+  letter-spacing: -0.03em;
+}
+
+.page-subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-top: 4px;
 }
 
 .back-button {
   background: var(--color-bg-white);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-sm);
+  border-radius: var(--radius-lg);
+  width: 44px;
+  height: 44px;
   box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  border: none;
+  border: 1px solid var(--color-border-light);
   color: var(--color-text-primary);
   display: flex;
   align-items: center;
@@ -177,149 +216,190 @@ const donutChartStyle = computed(() => {
 
 .dark .back-button {
   background: var(--color-bg-card);
+  border-color: var(--color-border);
 }
 
 .back-button:hover {
-  transform: translateY(-1px);
+  transform: translateX(-4px);
   box-shadow: var(--shadow-md);
+  color: var(--color-primary);
 }
 
-.page-title {
-  font-size: var(--font-size-xl);
-  font-weight: 800;
-  color: var(--color-text-primary);
-}
-
-.stats-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-2xl);
+/* Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
 }
 
 .metric-card {
   background: var(--color-bg-white);
-  padding: var(--spacing-xl);
-  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  border-radius: 20px;
   border: 1px solid var(--color-border-light);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
   display: flex;
-  align-items: center;
-  gap: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-direction: column;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .dark .metric-card {
   background: var(--color-bg-card);
   border-color: var(--color-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .metric-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--color-primary-light);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.12);
 }
 
-.metric-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+.metric-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  margin-bottom: 1rem;
 }
 
-.metric-icon.success {
+.metric-card.success .metric-icon-box {
   background: rgba(16, 185, 129, 0.1);
   color: #10B981;
 }
 
-.metric-icon.primary {
+.metric-card.primary .metric-icon-box {
   background: var(--color-bg-lavender);
   color: var(--color-primary);
 }
 
-.metric-icon.warning {
+.metric-card.warning .metric-icon-box {
   background: rgba(245, 158, 11, 0.1);
   color: #F59E0B;
 }
 
-.metric-content {
+.metric-data {
   display: flex;
   flex-direction: column;
-}
-
-.metric-value {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--color-text-primary);
-  line-height: 1;
+  margin-bottom: 0.5rem;
 }
 
 .metric-label {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  margin-top: 6px;
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
-.chart-section {
+.metric-value {
+  font-size: 2.25rem;
+  font-weight: 850;
+  color: var(--color-text-primary);
+  line-height: 1.1;
+  margin: 4px 0;
+}
+
+.metric-subtext {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.metric-progress-base {
+  height: 6px;
+  background: var(--color-bg-lighter);
+  border-radius: 3px;
+  margin-top: auto;
+  overflow: hidden;
+}
+
+.dark .metric-progress-base {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.metric-progress-bar {
+  height: 100%;
+  background: #10B981;
+  border-radius: 3px;
+  transition: width 1s ease-out;
+}
+
+/* Breakdown Section */
+.breakdown-wrapper {
   background: var(--color-bg-white);
-  padding: var(--spacing-xl);
-  border-radius: var(--radius-2xl);
+  padding: 2rem;
+  border-radius: 24px;
   border: 1px solid var(--color-border-light);
   box-shadow: var(--shadow-sm);
 }
 
-.dark .chart-section {
+.dark .breakdown-wrapper {
   background: var(--color-bg-card);
   border-color: var(--color-border);
 }
 
-.section-title {
-  font-size: var(--font-size-lg);
-  font-weight: 800;
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-xl);
-  letter-spacing: -0.01em;
+.breakdown-header {
+  margin-bottom: 2.5rem;
 }
 
-.chart-container {
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-primary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.breakdown-container {
   display: flex;
   flex-direction: column;
+  gap: 3rem;
   align-items: center;
-  gap: var(--spacing-2xl);
 }
 
-.chart-visual {
+@media (min-width: 900px) {
+  .breakdown-container {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.chart-visual-wrapper {
   flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  width: 100%;
+  padding: 1rem;
 }
 
 .donut-chart {
-  width: 200px;
-  height: 200px;
+  width: 240px;
+  height: 240px;
   border-radius: 50%;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.donut-chart:hover {
+  transform: scale(1.02);
 }
 
 .donut-hole {
-  width: 140px;
-  height: 140px;
+  width: 170px;
+  height: 170px;
   background: var(--color-bg-white);
   border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-sm);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05);
   z-index: 2;
 }
 
@@ -328,84 +408,110 @@ const donutChartStyle = computed(() => {
 }
 
 .total-count {
-  font-size: 2.5rem;
-  font-weight: 800;
+  font-size: 3rem;
+  font-weight: 900;
   color: var(--color-text-primary);
   line-height: 1;
 }
 
 .total-label {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-top: 4px;
+  letter-spacing: 0.1em;
 }
 
-.chart-legend {
+.chart-legend-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
   width: 100%;
+}
+
+.legend-card {
+  padding: 1.25rem;
+  background: var(--color-bg-lighter);
+  border-radius: 16px;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 0.75rem;
+  border: 1px solid transparent;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-md);
-  background: var(--color-bg-lighter);
-  border-radius: var(--radius-lg);
-  transition: all 0.2s ease;
-}
-
-.dark .legend-item {
+.dark .legend-card {
   background: rgba(255, 255, 255, 0.03);
 }
 
-.legend-item:hover {
-  background: var(--color-bg-lavender);
-  transform: translateX(4px);
+.legend-card:hover {
+  transform: scale(1.03);
+  background: var(--color-bg-white);
+  border-color: var(--cat-color);
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.08);
 }
 
-.legend-color {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  flex-shrink: 0;
+.dark .legend-card:hover {
+  background: rgba(255, 255, 255, 0.07);
 }
 
-.legend-info {
-  flex: 1;
+.legend-top {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.legend-label {
-  font-size: var(--font-size-base);
+.legend-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  background-color: var(--cat-color);
+  box-shadow: 0 0 8px var(--cat-color);
+}
+
+.legend-name {
+  font-size: 0.95rem;
   font-weight: 700;
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+.legend-count-val {
+  font-weight: 850;
   color: var(--color-text-primary);
 }
 
-.legend-percentage {
-  font-size: var(--font-size-xs);
+.legend-track {
+  height: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.dark .legend-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.legend-fill {
+  height: 100%;
+  background-color: var(--cat-color);
+  border-radius: 2px;
+}
+
+.legend-bottom {
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
 }
 
-.legend-count {
-  font-size: var(--font-size-lg);
-  font-weight: 800;
-  color: var(--color-text-primary);
-}
-
+/* Empty State */
 .empty-state {
   text-align: center;
-  padding: 4rem 2rem;
+  padding: 6rem 2rem;
   background: var(--color-bg-white);
-  border-radius: var(--radius-2xl);
-  border: 1px dashed var(--color-border);
+  border-radius: 32px;
+  border: 2px dashed var(--color-border);
 }
 
 .dark .empty-state {
@@ -413,36 +519,50 @@ const donutChartStyle = computed(() => {
 }
 
 .empty-icon-wrapper {
-  width: 100px;
-  height: 100px;
-  background: var(--color-bg-lighter);
-  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  background: var(--color-bg-lavender);
+  border-radius: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto var(--spacing-xl);
+  margin: 0 auto 2rem;
+  color: var(--color-primary);
 }
 
-.empty-icon {
-  color: var(--color-text-muted);
+.empty-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 2rem;
 }
 
-.empty-state p {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--color-text-secondary);
+.btn-primary-ghost {
+  background: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  padding: 0.75rem 2rem;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary-ghost:hover {
+  background: var(--color-primary);
+  color: white;
 }
 
 /* Animations */
 .fade-in-up {
   opacity: 0;
-  transform: translateY(20px);
-  animation: fadeInUp 0.5s ease-out forwards;
+  transform: translateY(30px);
+  animation: fadeInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
 .fade-in {
   opacity: 0;
-  animation: fadeIn 0.5s ease-out forwards;
+  animation: fadeIn 0.8s ease-out forwards;
 }
 
 @keyframes fadeInUp {
@@ -458,27 +578,17 @@ const donutChartStyle = computed(() => {
   }
 }
 
-.mobile-only {
-  display: none;
-}
-
 @media (max-width: 768px) {
   .mobile-only {
     display: flex;
   }
-}
 
-@media (max-width: 600px) {
-  .metric-card {
-    padding: var(--spacing-lg);
+  .page-title {
+    font-size: 1.75rem;
   }
 
-  .metric-value {
-    font-size: 1.5rem;
-  }
-
-  .chart-section {
-    padding: var(--spacing-lg);
+  .breakdown-wrapper {
+    padding: 1.25rem;
   }
 }
 </style>

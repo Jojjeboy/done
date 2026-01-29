@@ -1,7 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { getDatabase } from '@/db'
-import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
 import { syncService } from '@/services/sync'
 import type { TodoItem, Subtask, Category, Comment } from '@/types/todo'
@@ -195,10 +194,15 @@ export const useTodoStore = defineStore('todo', () => {
         await db.table('todoItems').bulkPut(itemsToUpdate)
       }
 
-      todoItems.value = migratedItems
+      todoItems.value = migratedItems.map(item => ({
+        ...item,
+        isSubtaskProcessEnabled: item.isSubtaskProcessEnabled ?? false
+      }))
+
       subtasks.value = dbSubtasks.map((s, index) => ({
         ...s,
-        order: typeof s.order === 'number' ? s.order : index
+        order: typeof s.order === 'number' ? s.order : index,
+        status: s.status || (s.completed ? 'completed' : 'pending')
       }))
       comments.value = dbComments || []
       categories.value = finalCategories.map((c, index) => ({
@@ -314,7 +318,8 @@ export const useTodoStore = defineStore('todo', () => {
     priority: TodoItem['priority'] = 'medium',
     deadline: number | null = null,
     categoryId: string | null = null,
-    recurrence: TodoItem['recurrence'] = null
+    recurrence: TodoItem['recurrence'] = null,
+    isSubtaskProcessEnabled: boolean = false
   ) => {
     globalLoading.value = true
     try {
@@ -331,6 +336,7 @@ export const useTodoStore = defineStore('todo', () => {
         createdAt: now,
         updatedAt: now,
         isSticky: false,
+        isSubtaskProcessEnabled,
       }
 
       todoItems.value.push(item)
@@ -568,17 +574,8 @@ export const useTodoStore = defineStore('todo', () => {
     const item = todoItems.value.find(i => i.id === id)
     if (!item) return
 
-    const settingsStore = useSettingsStore()
-
-    // Determine new status
-    let newStatus: TodoItem['status']
-    if (settingsStore.isThreeStepEnabled) {
-        if (item.status === 'pending') newStatus = 'in-progress'
-        else if (item.status === 'in-progress') newStatus = 'completed'
-        else newStatus = 'pending'
-    } else {
-        newStatus = item.status === 'completed' ? 'pending' : 'completed'
-    }
+    // Main tasks are now always binary (pending/completed)
+    const newStatus: TodoItem['status'] = item.status === 'completed' ? 'pending' : 'completed'
 
     // Handle Recurrence on Completion
     if (newStatus === 'completed' && item.recurrence) {
@@ -592,39 +589,57 @@ export const useTodoStore = defineStore('todo', () => {
     const subtask = subtasks.value.find(s => s.id === id)
     if (!subtask) return
 
-    const newCompleted = !subtask.completed
+    const item = todoItems.value.find(i => i.id === subtask.todoId)
+    const isProcessEnabled = item?.isSubtaskProcessEnabled ?? false
+
+    let newStatus: Subtask['status']
+    let newCompleted: boolean
+
+    if (isProcessEnabled) {
+      // 3-step cycle: pending -> in-progress -> completed -> pending
+      const currentStatus = subtask.status || (subtask.completed ? 'completed' : 'pending')
+      if (currentStatus === 'pending') newStatus = 'in-progress'
+      else if (currentStatus === 'in-progress') newStatus = 'completed'
+      else newStatus = 'pending'
+
+      newCompleted = newStatus === 'completed'
+    } else {
+      // 2-step toggle: pending/completed
+      newCompleted = !subtask.completed
+      newStatus = newCompleted ? 'completed' : 'pending'
+    }
+
     const updates: { id: string, changes: Partial<Subtask> }[] = []
+    updates.push({ id, changes: { completed: newCompleted, status: newStatus } })
 
-    updates.push({ id, changes: { completed: newCompleted } })
-
-    // Cascade down: if parent, toggle all children (if strict logic desired, usually yes)
+    // Cascade down: if parent, toggle all children
     if (!subtask.parentId) {
-        const children = subtasks.value.filter(s => s.parentId === id)
-        children.forEach(child => {
-            if (child.completed !== newCompleted) {
-                updates.push({ id: child.id, changes: { completed: newCompleted } })
-            }
-        })
+      const children = subtasks.value.filter(s => s.parentId === id)
+      children.forEach(child => {
+        if (child.completed !== newCompleted || child.status !== newStatus) {
+          updates.push({ id: child.id, changes: { completed: newCompleted, status: newStatus } })
+        }
+      })
     }
 
     // Cascade up: if child...
     if (subtask.parentId) {
-        if (!newCompleted) {
-            // Include parent to uncheck if child unchecked
-            const parent = subtasks.value.find(s => s.id === subtask.parentId)
-            if (parent && parent.completed) {
-                updates.push({ id: parent.id, changes: { completed: false } })
-            }
-        } else {
-             // Check if all siblings are done -> check parent
-             const siblings = subtasks.value.filter(s => s.parentId === subtask.parentId && s.id !== id)
-             if (siblings.every(s => s.completed)) {
-                 const parent = subtasks.value.find(s => s.id === subtask.parentId)
-                 if (parent && !parent.completed) {
-                      updates.push({ id: parent.id, changes: { completed: true } })
-                 }
-             }
+      if (!newCompleted) {
+        // Include parent to uncheck if child unchecked
+        const parent = subtasks.value.find(s => s.id === subtask.parentId)
+        if (parent && parent.completed) {
+          updates.push({ id: parent.id, changes: { completed: false, status: 'in-progress' } })
         }
+      } else {
+        // Check if all siblings are done -> check parent
+        const siblings = subtasks.value.filter(s => s.parentId === subtask.parentId && s.id !== id)
+        if (siblings.every(s => s.completed)) {
+          const parent = subtasks.value.find(s => s.id === subtask.parentId)
+          if (parent && !parent.completed) {
+            updates.push({ id: parent.id, changes: { completed: true, status: 'completed' } })
+          }
+        }
+      }
     }
 
     // Apply updates
