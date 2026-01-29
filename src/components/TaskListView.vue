@@ -94,28 +94,33 @@ const filteredTasks = computed(() => {
 
 const tasksByDate = computed(() => {
   const groups = new Map<string, TodoItem[]>()
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-  filteredTasks.value.forEach((task) => {
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  const getLocalDateKey = (deadline: number) => {
+    const d = new Date(deadline)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+
+  const todayKey = getLocalDateKey(today.getTime())
+  const tomorrowKey = getLocalDateKey(tomorrow.getTime())
+
+  // Filter out sticky tasks from the main groups first to avoid confusion
+  const nonStickyTasks = filteredTasks.value.filter(t => !t.isSticky || t.status === 'completed')
+
+  nonStickyTasks.forEach((task) => {
     let dateKey: string
-
     if (!task.deadline) {
       dateKey = 'no-date'
     } else {
-      const taskDate = new Date(task.deadline)
-      taskDate.setHours(0, 0, 0, 0)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const tomorrow = new Date(today)
-      tomorrow.setDate(tomorrow.getDate() + 1)
-
-      if (taskDate.toDateString() === today.toDateString()) {
-        dateKey = 'today'
-      } else if (taskDate.toDateString() === tomorrow.toDateString()) {
-        dateKey = 'tomorrow'
-      } else {
-        const isoString = taskDate.toISOString().split('T')[0]
-        dateKey = isoString || taskDate.toISOString()
-      }
+      const taskKey = getLocalDateKey(task.deadline)
+      if (taskKey === todayKey) dateKey = 'today'
+      else if (taskKey === tomorrowKey) dateKey = 'tomorrow'
+      else dateKey = taskKey
     }
 
     if (!groups.has(dateKey)) {
@@ -124,73 +129,100 @@ const tasksByDate = computed(() => {
     groups.get(dateKey)!.push(task)
   })
 
-  // Sort groups by date
-  const sortedGroups = new Map<string, { label: string; tasks: TodoItem[] }>()
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // We want an array of groups in the correct order
+  const result: { key: string; label: string; tasks: TodoItem[] }[] = []
 
-  // Add today first
-  const todayTasks = groups.get('today')
-  if (todayTasks) {
-    sortedGroups.set('today', { label: `${t('tasks.today')} ${today.toLocaleDateString(undefined, { weekday: 'long' })}`, tasks: todayTasks })
+  const formatLabel = (date: Date) => {
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', weekday: 'long' }
+    if (date.getFullYear() !== currentYear) {
+      options.year = 'numeric'
+    }
+    return date.toLocaleDateString('sv-SE', options).toUpperCase()
   }
 
-  // Add tomorrow
-  const tomorrowTasks = groups.get('tomorrow')
-  if (tomorrowTasks) {
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    sortedGroups.set('tomorrow', { label: `${t('tasks.tomorrow')} ${tomorrow.toLocaleDateString(undefined, { weekday: 'long' })}`, tasks: tomorrowTasks })
-  }
+  const allDateKeys = Array.from(groups.keys()).filter(k => k !== 'today' && k !== 'tomorrow' && k !== 'no-date')
+  allDateKeys.sort((a, b) => a.localeCompare(b))
 
-  // Add other dates
-  const otherDates = Array.from(groups.entries())
-    .filter(([key]) => key !== 'today' && key !== 'tomorrow' && key !== 'no-date')
-    .sort(([a], [b]) => a.localeCompare(b))
+  const pastKeys = allDateKeys.filter(k => k < todayKey)
+  const futureKeys = allDateKeys.filter(k => k > tomorrowKey)
 
-  otherDates.forEach(([key, tasks]) => {
-    const date = new Date(key)
-    sortedGroups.set(key, {
-      label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'long' }),
-      tasks,
-    })
+  // Sort past keys ASCENDING (oldest first)
+  pastKeys.sort((a, b) => a.localeCompare(b))
+
+  // Sort future keys ASCENDING (closest first)
+  futureKeys.sort((a, b) => a.localeCompare(b))
+
+  // Assemble the map in order: Past -> Today -> Tomorrow -> Future -> No Date
+
+  // Past (Chronological: oldest first)
+  pastKeys.forEach(key => {
+    const tasks = groups.get(key)!
+    const parts = key.split('-').map(Number)
+    if (parts.length === 3 && parts[0] != null && parts[1] != null && parts[2] != null) {
+      const date = new Date(parts[0], parts[1] - 1, parts[2])
+      result.push({
+        key,
+        label: formatLabel(date),
+        tasks
+      })
+    }
   })
 
-  // Add no-date at the end
-  const noDateTasks = groups.get('no-date')
-  if (noDateTasks) {
-    sortedGroups.set('no-date', { label: t('tasks.noDate'), tasks: noDateTasks })
+  // Today
+  if (groups.has('today')) {
+    result.push({
+      key: 'today',
+      label: `${t('tasks.today')} ${today.toLocaleDateString('sv-SE', { weekday: 'long' })}`.toUpperCase(),
+      tasks: groups.get('today')!
+    })
   }
 
-  // Handle Sticky tasks: They move to a special "Sticky" section at the very top
-  // we filter them out from other groups and put them in their own group
+  // Tomorrow
+  if (groups.has('tomorrow')) {
+    result.push({
+      key: 'tomorrow',
+      label: `${t('tasks.tomorrow')} ${tomorrow.toLocaleDateString('sv-SE', { weekday: 'long' })}`.toUpperCase(),
+      tasks: groups.get('tomorrow')!
+    })
+  }
+
+  // Future (Chronological: closest first)
+  futureKeys.forEach(key => {
+    const tasks = groups.get(key)!
+    const parts = key.split('-').map(Number)
+    if (parts.length === 3 && parts[0] != null && parts[1] != null && parts[2] != null) {
+      const date = new Date(parts[0], parts[1] - 1, parts[2])
+      result.push({
+        key,
+        label: formatLabel(date),
+        tasks
+      })
+    }
+  })
+
+  // No Date
+  if (groups.has('no-date')) {
+    result.push({
+      key: 'no-date',
+      label: t('tasks.noDate').toUpperCase(),
+      tasks: groups.get('no-date')!
+    })
+  }
+
+  // Handle Sticky
   const stickyTasks = filteredTasks.value
     .filter(t => t.isSticky && t.status !== 'completed')
-    .sort((a, b) => {
-      if (!a.deadline) return 1
-      if (!b.deadline) return -1
-      return a.deadline - b.deadline
-    })
+    .sort((a, b) => (a.deadline || Infinity) - (b.deadline || Infinity))
 
   if (stickyTasks.length > 0) {
-    const stickyIds = new Set(stickyTasks.map(t => t.id))
-    // Remove from existing groups
-    sortedGroups.forEach(group => {
-      group.tasks = group.tasks.filter(t => !stickyIds.has(t.id))
+    result.unshift({
+      key: 'sticky',
+      label: t('tasks.sticky').toUpperCase(),
+      tasks: stickyTasks
     })
-
-    // Create a new map to prepend sticky group
-    const newGroups = new Map<string, { label: string; tasks: TodoItem[] }>()
-    newGroups.set('sticky', { label: t('tasks.sticky'), tasks: stickyTasks })
-    sortedGroups.forEach((val, key) => {
-      if (val.tasks.length > 0) {
-        newGroups.set(key, val)
-      }
-    })
-    return newGroups
   }
 
-  return sortedGroups
+  return result
 })
 
 const togglePriority = async (task: TodoItem) => {
@@ -204,11 +236,34 @@ const togglePriority = async (task: TodoItem) => {
 
 
 
+/**
+ * Checks if a task is overdue (deadline is today or in the past).
+ * Used for applying red highlighting in the UI.
+ *
+ * @param deadline - The timestamp of the deadline
+ * @returns true if the task is due today or earlier
+ */
+const isOverdue = (deadline: number | null) => {
+  if (!deadline) return false
+  const date = new Date(deadline)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const taskDate = new Date(date)
+  taskDate.setHours(0, 0, 0, 0)
+
+  // If task date is equal to or before today, mark as overdue (red)
+  // Note: Future dates (tomorrow and beyond) will return false
+  return taskDate.getTime() <= today.getTime()
+}
+
 const formatTime = (deadline: number | null) => {
   if (!deadline) return ''
   const date = new Date(deadline)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
 
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
@@ -216,16 +271,19 @@ const formatTime = (deadline: number | null) => {
   const taskDate = new Date(date)
   taskDate.setHours(0, 0, 0, 0)
 
-  let datePrefix = ''
   if (taskDate.getTime() === today.getTime()) {
-    datePrefix = ''
+    return t('tasks.today')
+  } else if (taskDate.getTime() === yesterday.getTime()) {
+    return t('tasks.yesterday')
   } else if (taskDate.getTime() === tomorrow.getTime()) {
-    datePrefix = t('tasks.tomorrow') + ' '
+    return t('tasks.tomorrow')
   } else {
-    datePrefix = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+    if (date.getFullYear() !== today.getFullYear()) {
+      options.year = 'numeric'
+    }
+    return date.toLocaleDateString('sv-SE', options)
   }
-
-  return datePrefix
 }
 
 const handleTaskClick = (task: TodoItem) => {
@@ -286,7 +344,7 @@ onMounted(async () => {
     </div>
 
     <TransitionGroup name="list" tag="div" class="task-sections">
-      <div v-for="[dateKey, group] in tasksByDate" :key="dateKey" class="task-section">
+      <div v-for="group in tasksByDate" :key="group.key" class="task-section">
         <h3 class="section-title">{{ group.label }}</h3>
         <TransitionGroup name="list" tag="div" class="tasks">
           <div v-for="task in group.tasks" :key="task.id" class="task-card" :class="{
@@ -319,17 +377,16 @@ onMounted(async () => {
             <div class="task-content">
               <div class="task-main-info">
                 <div class="task-title-row">
-                  <Pin v-if="task.isSticky" :size="14" class="sticky-icon" />
                   <h4 class="task-title">{{ task.title }}</h4>
                 </div>
                 <div class="task-meta-row">
                   <div v-if="task.categoryId && todoStore.categoriesById.has(task.categoryId)"
                     class="task-category-info">
                     <span class="task-category-dot"
-                      :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span>
+                      :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span> &nbsp;
                     <span class="task-category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title }}</span>
                   </div>
-                  <div class="task-time" v-if="task.deadline">
+                  <div class="task-time" v-if="task.deadline" :class="{ 'is-today': isOverdue(task.deadline) }">
                     <Clock :size="12" />
                     <span>{{ formatTime(task.deadline) }}</span>
                   </div>
@@ -344,10 +401,13 @@ onMounted(async () => {
               </div>
             </div>
 
-            <button class="task-star-btn" @click.stop="togglePriority(task)"
-              :class="{ active: task.priority === 'high' }">
-              <Star :size="20" :class="{ 'star-filled': task.priority === 'high' }" />
-            </button>
+            <div class="task-actions">
+              <Pin v-if="task.isSticky" :size="16" class="sticky-icon" fill="currentColor" />
+              <button class="task-star-btn" @click.stop="togglePriority(task)"
+                :class="{ active: task.priority === 'high' }">
+                <Star :size="20" :class="{ 'star-filled': task.priority === 'high' }" />
+              </button>
+            </div>
           </div>
         </TransitionGroup>
       </div>
@@ -379,7 +439,7 @@ onMounted(async () => {
                     :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span>
                   <span class="task-category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title }}</span>
                 </div>
-                <div class="task-time" v-if="task.deadline">
+                <div class="task-time" v-if="task.deadline" :class="{ 'is-today': isOverdue(task.deadline) }">
                   <Clock :size="12" />
                   <span>{{ formatTime(task.deadline) }}</span>
                 </div>
@@ -387,10 +447,13 @@ onMounted(async () => {
             </div>
           </div>
 
-          <button class="task-star-btn" @click.stop="togglePriority(task)"
-            :class="{ active: task.priority === 'high' }">
-            <Star :size="20" :class="{ 'star-filled': task.priority === 'high' }" />
-          </button>
+          <div class="task-actions">
+            <Pin v-if="task.isSticky" :size="16" class="sticky-icon" fill="currentColor" />
+            <button class="task-star-btn" @click.stop="togglePriority(task)"
+              :class="{ active: task.priority === 'high' }">
+              <Star :size="20" :class="{ 'star-filled': task.priority === 'high' }" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -780,6 +843,14 @@ onMounted(async () => {
   font-size: 10px;
 }
 
+.task-time.is-today {
+  color: #ff4757;
+}
+
+.task-time.is-today span {
+  font-weight: 600;
+}
+
 .task-subtasks {
   display: flex;
   align-items: center;
@@ -798,6 +869,14 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   transition: all var(--transition-base);
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-left: auto;
+  align-self: center;
 }
 
 .task-star-btn:hover {

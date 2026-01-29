@@ -253,20 +253,18 @@ const isEditMode = computed(() => !isNew.value)
     <!-- Header -->
     <div class="modal-header">
       <div class="header-left">
-        <button v-if="!isEmbedded" class="icon-btn" :title="t('common.back')" @click="handleClose">
-          <ArrowLeft :size="18" />
-        </button>
-        <div class="breadcrumbs">
-          <span class="crumb-text">{{ t('tasks.title') }}</span>
-          <span class="crumb-separator">/</span>
-          <div class="crumb-category">
-            <select v-model="taskCategory" @change="handleFieldChange" class="crumb-select">
-              <option value="none">{{ t('tasks.categories.none') }}</option>
-              <option v-for="cat in todoStore.categories" :key="cat.id" :value="cat.id">
-                {{ cat.title }}
-              </option>
-            </select>
-          </div>
+        <div class="breadcrumbs clickable" @click="handleClose">
+          <ArrowLeft v-if="!isEmbedded" :size="18" class="back-arrow" />
+          <span class="crumb-text">{{ t('common.back') }}</span>
+        </div>
+        <div class="header-separator">/</div>
+        <div class="crumb-category">
+          <select v-model="taskCategory" @change="handleFieldChange" class="crumb-select">
+            <option value="none">{{ t('tasks.categories.none') }}</option>
+            <option v-for="cat in todoStore.categories" :key="cat.id" :value="cat.id">
+              {{ cat.title }}
+            </option>
+          </select>
         </div>
       </div>
 
@@ -370,7 +368,7 @@ const isEditMode = computed(() => !isNew.value)
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-                }}</span>
+              }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -399,7 +397,7 @@ const isEditMode = computed(() => !isNew.value)
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-          }}</button>
+        }}</button>
       </div>
     </div>
 
@@ -448,23 +446,47 @@ const isEditMode = computed(() => !isNew.value)
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.breadcrumbs {
+.breadcrumbs.clickable {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  transition: background 0.2s;
   color: var(--color-text-secondary);
+}
+
+.breadcrumbs.clickable:hover {
+  background: var(--color-bg-lighter);
+  color: var(--color-text-primary);
+}
+
+.back-arrow {
+  margin-right: -4px;
+}
+
+.header-separator {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin: 0 4px;
+}
+
+.crumb-text {
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .crumb-select {
   border: none;
   background: transparent;
   color: var(--color-text-primary);
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
+  padding: 4px 0;
   font-size: 0.9rem;
 }
 
