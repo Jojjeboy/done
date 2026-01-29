@@ -78,6 +78,8 @@
     "noTasks": "No tasks to show",
     "dueDate": "Due date",
     "subtasks": "Subtasks",
+    "twoStep": "Two step",
+    "threeStep": "Three step",
     "recurrence": {
       "none": "Never",
       "daily": "Daily",

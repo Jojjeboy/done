@@ -292,7 +292,7 @@ const isEditMode = computed(() => !isNew.value)
     <!-- Header -->
     <div class="modal-header">
       <div class="header-left">
-        <div class="breadcrumbs clickable" @click="handleClose">
+        <div class="breadcrumbs clickable mobile-only" @click="handleClose">
           <ArrowLeft v-if="!isEmbedded" :size="18" class="back-arrow" />
           <span class="crumb-text">{{ t('common.back') }}</span>
         </div>
@@ -380,12 +380,18 @@ const isEditMode = computed(() => !isNew.value)
           <span>{{ t('tasks.sticky') }}</span>
         </button>
 
-        <!-- Subtask Process Toggle -->
-        <button class="sticky-toggle-btn" :class="{ active: isSubtaskProcessEnabled }"
-          @click="isSubtaskProcessEnabled = !isSubtaskProcessEnabled; handleFieldChange()" title="Process">
-          <Sparkles :size="14" />
-          <span>Process</span>
-        </button>
+        <!-- Subtask Process Toggle (Segmented Control) -->
+        <div class="segmented-control">
+          <div class="selection-bg" :class="{ 'pos-right': isSubtaskProcessEnabled }"></div>
+          <button @click="isSubtaskProcessEnabled = false; handleFieldChange()"
+            :class="{ active: !isSubtaskProcessEnabled }">
+            {{ t('tasks.twoStep') }}
+          </button>
+          <button @click="isSubtaskProcessEnabled = true; handleFieldChange()"
+            :class="{ active: isSubtaskProcessEnabled }">
+            {{ t('tasks.threeStep') }}
+          </button>
+        </div>
       </div>
 
       <div class="divider"></div>
@@ -409,7 +415,7 @@ const isEditMode = computed(() => !isNew.value)
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-                }}</span>
+              }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -438,7 +444,7 @@ const isEditMode = computed(() => !isNew.value)
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-          }}</button>
+        }}</button>
       </div>
     </div>
 
@@ -503,6 +509,12 @@ const isEditMode = computed(() => !isNew.value)
   border-radius: var(--radius-md);
   transition: background 0.2s;
   color: var(--color-text-secondary);
+}
+
+@media (min-width: 768px) {
+  .breadcrumbs.clickable.mobile-only {
+    display: none;
+  }
 }
 
 .breadcrumbs.clickable:hover {
@@ -667,7 +679,7 @@ const isEditMode = computed(() => !isNew.value)
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
 }
 
 .property-item {
@@ -704,31 +716,61 @@ const isEditMode = computed(() => !isNew.value)
   outline: none;
 }
 
-.sticky-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: var(--color-bg-lighter);
-  border: none;
-  padding: 6px 14px;
-  border-radius: var(--radius-md);
-  transition: all 0.2s;
-  min-height: 36px;
-  box-sizing: border-box;
-  width: 100%;
-}
-
-.sticky-toggle-btn.active {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
 .sticky-toggle-btn:hover {
   filter: brightness(0.95);
+}
+
+/* Segmented Control */
+.segmented-control {
+  grid-column: span 2;
+  display: flex;
+  background: var(--color-bg-lighter);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 4px;
+  position: relative;
+  min-height: 40px;
+  align-items: stretch;
+  margin-top: 12px;
+}
+
+.selection-bg {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 6px);
+  bottom: 4px;
+  background: var(--color-primary);
+  border-radius: calc(var(--radius-md) - 2px);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 0;
+}
+
+.selection-bg.pos-right {
+  transform: translateX(calc(100% + 4px));
+}
+
+.segmented-control button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 1;
+  transition: color 0.2s;
+  padding: 8px 12px;
+  border-radius: calc(var(--radius-md) - 2px);
+}
+
+.segmented-control button.active {
+  color: white;
+}
+
+.dark .segmented-control {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 

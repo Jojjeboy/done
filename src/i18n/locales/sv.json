@@ -79,6 +79,8 @@
     "noTasks": "Inga uppgifter att visa",
     "dueDate": "Förfallodatum",
     "subtasks": "Deluppgifter",
+    "twoStep": "Two step",
+    "threeStep": "Three step",
     "recurrence": {
       "none": "Aldrig",
       "daily": "Dagligen",
