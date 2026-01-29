@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
-import { Check, Clock, Star, List, ChevronRight, Search, X } from 'lucide-vue-next'
+import { Check, Clock, Star, List, ChevronRight, Search, X, Pin } from 'lucide-vue-next'
 import type { TodoItem } from '@/types/todo'
 import FilterModal from '@/components/FilterModal.vue'
 
@@ -162,6 +162,34 @@ const tasksByDate = computed(() => {
     sortedGroups.set('no-date', { label: t('tasks.noDate'), tasks: noDateTasks })
   }
 
+  // Handle Sticky tasks: They move to a special "Sticky" section at the very top
+  // we filter them out from other groups and put them in their own group
+  const stickyTasks = filteredTasks.value
+    .filter(t => t.isSticky && t.status !== 'completed')
+    .sort((a, b) => {
+      if (!a.deadline) return 1
+      if (!b.deadline) return -1
+      return a.deadline - b.deadline
+    })
+
+  if (stickyTasks.length > 0) {
+    const stickyIds = new Set(stickyTasks.map(t => t.id))
+    // Remove from existing groups
+    sortedGroups.forEach(group => {
+      group.tasks = group.tasks.filter(t => !stickyIds.has(t.id))
+    })
+
+    // Create a new map to prepend sticky group
+    const newGroups = new Map<string, { label: string; tasks: TodoItem[] }>()
+    newGroups.set('sticky', { label: t('tasks.sticky'), tasks: stickyTasks })
+    sortedGroups.forEach((val, key) => {
+      if (val.tasks.length > 0) {
+        newGroups.set(key, val)
+      }
+    })
+    return newGroups
+  }
+
   return sortedGroups
 })
 
@@ -290,9 +318,13 @@ onMounted(async () => {
 
             <div class="task-content">
               <div class="task-main-info">
-                <h4 class="task-title">{{ task.title }}</h4>
+                <div class="task-title-row">
+                  <Pin v-if="task.isSticky" :size="14" class="sticky-icon" />
+                  <h4 class="task-title">{{ task.title }}</h4>
+                </div>
                 <div class="task-meta-row">
-                  <div v-if="task.categoryId && todoStore.categoriesById.has(task.categoryId)" class="task-category-info">
+                  <div v-if="task.categoryId && todoStore.categoriesById.has(task.categoryId)"
+                    class="task-category-info">
                     <span class="task-category-dot"
                       :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span>
                     <span class="task-category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title }}</span>
@@ -591,7 +623,8 @@ onMounted(async () => {
   padding: var(--spacing-md) var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  /* Changed from center to flex-start */
   gap: var(--spacing-md);
   transition: all var(--transition-base);
   border: 1px solid var(--color-border-light);
@@ -627,7 +660,8 @@ onMounted(async () => {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 0 0 0;
+  /* Add top padding to align with title */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -688,6 +722,19 @@ onMounted(async () => {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
+  width: 100%;
+}
+
+.task-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.sticky-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .task-title {

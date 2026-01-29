@@ -96,7 +96,8 @@
     "selectTask": "Select a task",
     "selectTaskOr": "Select a task or",
     "createNew": "create a new",
-    "selectTaskDesc": "Choose a task from the list to view and edit its details."
+    "selectTaskDesc": "Choose a task from the list to view and edit its details.",
+    "sticky": "Sticky"
   },
   "settings": {
     "title": "Settings",

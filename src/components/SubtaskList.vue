@@ -525,7 +525,8 @@ const saveEditing = async () => {
 
 .subtask-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  /* Changed from center to flex-start */
   gap: 6px;
   padding: var(--spacing-sm) 0;
   transition: all var(--transition-base);
@@ -568,7 +569,8 @@ const saveEditing = async () => {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 0 0 0;
+  /* Add top padding to align with text */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -661,6 +663,11 @@ const saveEditing = async () => {
   opacity: 1;
 }
 
+.action-btn {
+  margin-top: 2px;
+  /* Align with top-aligned text */
+}
+
 .delete-btn:hover {
   color: #EF4444;
 }
@@ -697,7 +704,8 @@ const saveEditing = async () => {
 .expand-btn {
   background: transparent;
   border: none;
-  padding: 0;
+  padding: 4px 0 0 0;
+  /* Align with top */
   cursor: pointer;
   color: var(--color-text-muted);
   display: flex;

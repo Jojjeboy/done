@@ -23,6 +23,7 @@ export interface TodoItem {
   categoryId: string | null
   createdAt: number
   updatedAt: number
+  isSticky?: boolean
 }
 
 export interface Subtask {

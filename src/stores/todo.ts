@@ -330,6 +330,7 @@ export const useTodoStore = defineStore('todo', () => {
         categoryId,
         createdAt: now,
         updatedAt: now,
+        isSticky: false,
       }
 
       todoItems.value.push(item)

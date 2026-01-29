@@ -96,7 +96,8 @@
     "selectTask": "Välj en uppgift",
     "selectTaskOr": "Välj en uppgift eller",
     "createNew": "Skapa en ny",
-    "selectTaskDesc": "Välj en uppgift från listan för att visa och redigera dess detaljer."
+    "selectTaskDesc": "Välj en uppgift från listan för att visa och redigera dess detaljer.",
+    "sticky": "Fäst vid toppen"
   },
   "settings": {
     "title": "Inställningar",
