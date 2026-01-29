@@ -415,7 +415,7 @@ const isEditMode = computed(() => !isNew.value)
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-                }}</span>
+              }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -444,7 +444,7 @@ const isEditMode = computed(() => !isNew.value)
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-          }}</button>
+        }}</button>
       </div>
     </div>
 
@@ -714,6 +714,29 @@ const isEditMode = computed(() => !isNew.value)
 .clean-select:focus,
 .clean-date-input:focus {
   outline: none;
+}
+
+.sticky-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-bg-lighter);
+  border: none;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+  min-height: 36px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.sticky-toggle-btn.active {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .sticky-toggle-btn:hover {
