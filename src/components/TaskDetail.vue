@@ -415,7 +415,7 @@ const isEditMode = computed(() => !isNew.value)
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-              }}</span>
+                }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -444,7 +444,7 @@ const isEditMode = computed(() => !isNew.value)
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-        }}</button>
+          }}</button>
       </div>
     </div>
 
@@ -722,16 +722,15 @@ const isEditMode = computed(() => !isNew.value)
 
 /* Segmented Control */
 .segmented-control {
-  grid-column: span 2;
   display: flex;
   background: var(--color-bg-lighter);
   border-radius: var(--radius-md);
   padding: 4px;
   gap: 4px;
   position: relative;
-  min-height: 40px;
+  min-height: 36px;
   align-items: stretch;
-  margin-top: 12px;
+  box-sizing: border-box;
 }
 
 .selection-bg {
@@ -755,14 +754,17 @@ const isEditMode = computed(() => !isNew.value)
   flex: 1;
   border: none;
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   z-index: 1;
   transition: color 0.2s;
-  padding: 8px 12px;
+  padding: 4px 8px;
   border-radius: calc(var(--radius-md) - 2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .segmented-control button.active {
