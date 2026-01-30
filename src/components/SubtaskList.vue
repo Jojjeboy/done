@@ -158,6 +158,16 @@ watch(() => allSubtasks.value, () => {
 }, { deep: true })
 
 // Actions
+const focusSubSubInput = () => {
+  const el = subSubInputRef.value
+  if (Array.isArray(el)) {
+    // If it's an array (inside v-for), pick the first one (since only one is visible via v-if)
+    el[0]?.focus()
+  } else {
+    el?.focus()
+  }
+}
+
 const handleAddSubtask = async (parentId: string | null = null) => {
   const title = parentId ? newSubSubtaskTitle.value.trim() : newSubtaskTitle.value.trim()
   if (!title) {
@@ -215,16 +225,6 @@ const handleAddSubtask = async (parentId: string | null = null) => {
     if (parentId) isSubmittingSubtask.value = false
   } finally {
     if (!parentId) isAddingKey.value = false
-  }
-}
-
-const focusSubSubInput = () => {
-  const el = subSubInputRef.value
-  if (Array.isArray(el)) {
-    // If it's an array (inside v-for), pick the first one (since only one is visible via v-if)
-    el[0]?.focus()
-  } else {
-    el?.focus()
   }
 }
 
@@ -336,6 +336,32 @@ const saveEditing = async () => {
     console.error('Failed to update subtask', e)
   }
 }
+
+const handleIndent = async (subtask: Subtask, index: number) => {
+  // Find predecessor in the *incompleteParents* list (assuming we are in that list currently)
+  if (index <= 0) return
+
+  const prevSibling = incompleteParents.value[index - 1]
+  if (!prevSibling) return
+
+  try {
+    if (isLocalMode.value) {
+      const updated = [...(props.modelValue || [])]
+      const sIndex = updated.findIndex(s => s.id === subtask.id)
+      if (sIndex !== -1) {
+        updated[sIndex] = { ...updated[sIndex], parentId: prevSibling.id } as Partial<Subtask> & { id: string; title: string; completed: boolean; order: number }
+        emit('update:modelValue', updated)
+      }
+    } else {
+      // Update parentId
+      await todoStore.updateSubtask(subtask.id, { parentId: prevSibling.id })
+      // Also expand the new parent so we see the moved item
+      expandedParents.value.add(prevSibling.id)
+    }
+  } catch (e) {
+    console.error('Failed to indent subtask', e)
+  }
+}
 </script>
 
 <template>
@@ -372,31 +398,37 @@ const saveEditing = async () => {
           </div>
           <span v-else class="subtask-text" @click="startEditing(parent)">{{ parent.title }}</span>
 
-          <!-- Expand Button (Moved to right) -->
-          <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
-            @click="toggleExpand(parent.id)">
-            <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
-          </button>
+          <!-- Actions Group -->
+          <div class="actions-group">
+            <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
+              @click="toggleExpand(parent.id)">
+              <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
+            </button>
 
-          <!-- Add Sub-subtask Action -->
-          <button class="action-btn add-child-btn" @click="startAddingSubSubtask(parent.id)"
-            :title="t('modal.addSubtask')">
-            <Plus :size="14" />
-          </button>
+            <button v-if="index > 0" class="action-btn indent-btn" @click="handleIndent(parent as Subtask, index)"
+              :title="t('modal.indentSubtask')">
+              <CornerDownRight :size="14" />
+            </button>
 
-          <button v-if="!isLocalMode" class="action-btn convert-task-btn"
-            @click="todoStore.convertSubtaskToTodo(parent.id)" :title="t('modal.convertSubtaskToTask')">
-            <ArrowUp :size="14" />
-          </button>
+            <button class="action-btn add-child-btn" @click="startAddingSubSubtask(parent.id)"
+              :title="t('modal.addSubtask')">
+              <Plus :size="14" />
+            </button>
 
-          <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(parent)"
-            :title="t('modal.moveSubtask')">
-            <ArrowRightLeft :size="14" />
-          </button>
+            <button v-if="!isLocalMode" class="action-btn convert-task-btn"
+              @click="todoStore.convertSubtaskToTodo(parent.id)" :title="t('modal.convertSubtaskToTask')">
+              <ArrowUp :size="14" />
+            </button>
 
-          <button @click="deleteSubtask(parent.id)" class="action-btn delete-btn">
-            <Trash2 :size="14" />
-          </button>
+            <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(parent as Subtask)"
+              :title="t('modal.moveSubtask')">
+              <ArrowRightLeft :size="14" />
+            </button>
+
+            <button @click="deleteSubtask(parent.id)" class="action-btn delete-btn">
+              <Trash2 :size="14" />
+            </button>
+          </div>
         </div>
 
         <!-- Children Row (Indented) -->
@@ -423,18 +455,20 @@ const saveEditing = async () => {
             </div>
             <span v-else class="subtask-text" @click="startEditing(child)">{{ child.title }}</span>
 
-            <button v-if="!isLocalMode" class="action-btn convert-task-btn"
-              @click="todoStore.convertSubtaskToTodo(child.id)" :title="t('modal.convertSubtaskToTask')">
-              <ArrowUp :size="14" />
-            </button>
+            <div class="actions-group">
+              <button v-if="!isLocalMode" class="action-btn convert-task-btn"
+                @click="todoStore.convertSubtaskToTodo(child.id)" :title="t('modal.convertSubtaskToTask')">
+                <ArrowUp :size="14" />
+              </button>
 
-            <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(child)"
-              :title="t('modal.moveSubtask')">
-              <ArrowRightLeft :size="14" />
-            </button>
-            <button @click="deleteSubtask(child.id)" class="action-btn delete-btn">
-              <Trash2 :size="14" />
-            </button>
+              <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(child as Subtask)"
+                :title="t('modal.moveSubtask')">
+                <ArrowRightLeft :size="14" />
+              </button>
+              <button @click="deleteSubtask(child.id)" class="action-btn delete-btn">
+                <Trash2 :size="14" />
+              </button>
+            </div>
           </div>
 
           <!-- Input for new child -->
@@ -490,23 +524,25 @@ const saveEditing = async () => {
             </div>
             <span v-else class="subtask-text" @click="startEditing(parent)">{{ parent.title }}</span>
 
-            <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
-              @click="toggleExpand(parent.id)">
-              <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
-            </button>
+            <div class="actions-group">
+              <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
+                @click="toggleExpand(parent.id)">
+                <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
+              </button>
 
-            <button v-if="!isLocalMode" class="action-btn convert-task-btn"
-              @click="todoStore.convertSubtaskToTodo(parent.id)" :title="t('modal.convertSubtaskToTask')">
-              <ArrowUp :size="14" />
-            </button>
+              <button v-if="!isLocalMode" class="action-btn convert-task-btn"
+                @click="todoStore.convertSubtaskToTodo(parent.id)" :title="t('modal.convertSubtaskToTask')">
+                <ArrowUp :size="14" />
+              </button>
 
-            <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(parent)"
-              :title="t('modal.moveSubtask')">
-              <ArrowRightLeft :size="14" />
-            </button>
-            <button @click="deleteSubtask(parent.id)" class="action-btn delete-btn">
-              <Trash2 :size="14" />
-            </button>
+              <button v-if="!isLocalMode" class="action-btn move-btn" @click="openMoveModal(parent as Subtask)"
+                :title="t('modal.moveSubtask')">
+                <ArrowRightLeft :size="14" />
+              </button>
+              <button @click="deleteSubtask(parent.id)" class="action-btn delete-btn">
+                <Trash2 :size="14" />
+              </button>
+            </div>
           </div>
 
           <!-- Children of completed parents -->
@@ -519,10 +555,12 @@ const saveEditing = async () => {
                 </div>
               </button>
               <span class="subtask-text">{{ child.title }}</span>
-              <button v-if="!isLocalMode" class="action-btn convert-task-btn"
-                @click="todoStore.convertSubtaskToTodo(child.id)" :title="t('modal.convertSubtaskToTask')">
-                <ArrowUp :size="14" />
-              </button>
+              <div class="actions-group">
+                <button v-if="!isLocalMode" class="action-btn convert-task-btn"
+                  @click="todoStore.convertSubtaskToTodo(child.id)" :title="t('modal.convertSubtaskToTask')">
+                  <ArrowUp :size="14" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -693,6 +731,15 @@ const saveEditing = async () => {
 }
 
 /* Actions */
+.actions-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* Tighter gap for icons */
+  margin-top: 2px;
+  /* Align with text */
+}
+
 .action-btn {
   background: transparent;
   border: none;
@@ -709,10 +756,10 @@ const saveEditing = async () => {
   opacity: 1;
 }
 
-.action-btn {
+/* Removed margin-top: 2px from here since it's on .actions-group now */
+/*.action-btn {
   margin-top: 2px;
-  /* Align with top-aligned text */
-}
+}*/
 
 .delete-btn:hover {
   color: #EF4444;
@@ -750,7 +797,7 @@ const saveEditing = async () => {
 .expand-btn {
   background: transparent;
   border: none;
-  padding: 4px 0 0 0;
+  padding: 0;
   /* Align with top */
   cursor: pointer;
   color: var(--color-text-muted);
@@ -872,12 +919,12 @@ const saveEditing = async () => {
   border-radius: var(--radius-md);
   color: var(--color-primary);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
+  font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-base);
 }
 
-.add-btn:hover:not(:disabled) {
+.add-btn:hover {
   background: var(--color-primary);
   color: white;
 }
@@ -887,36 +934,32 @@ const saveEditing = async () => {
   cursor: not-allowed;
 }
 
-/* Completed Accordion Styles */
+/* Completed Accordion */
 .completed-accordion {
   margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-md);
   border-top: 1px solid var(--color-border-light);
 }
 
 .accordion-header {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
+  padding: var(--spacing-sm) 0;
   background: transparent;
   border: none;
-  padding: var(--spacing-sm) 0;
   cursor: pointer;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
 }
 
 .accordion-title {
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .accordion-icon {
-  transition: transform 0.2s ease;
-  display: flex;
-  align-items: center;
+  transition: transform 0.2s;
 }
 
 .accordion-icon.open {
@@ -924,22 +967,10 @@ const saveEditing = async () => {
 }
 
 .accordion-content {
-  margin-top: var(--spacing-sm);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  animation: slideDown 0.2s ease-out;
+  padding-top: var(--spacing-xs);
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.completed-group {
+  opacity: 0.6;
 }
 </style>
