@@ -198,8 +198,7 @@ const handleAddSubtask = async (parentId: string | null = null) => {
       newSubSubtaskTitle.value = ''
       // Re-focus for continuous entry
       nextTick(() => {
-        const inputEl = Array.isArray(subSubInputRef.value) ? subSubInputRef.value[0] : subSubInputRef.value
-        inputEl?.focus()
+        focusSubSubInput()
         // Reset flag after focus is restored
         setTimeout(() => {
           isSubmittingSubtask.value = false
@@ -219,13 +218,22 @@ const handleAddSubtask = async (parentId: string | null = null) => {
   }
 }
 
+const focusSubSubInput = () => {
+  const el = subSubInputRef.value
+  if (Array.isArray(el)) {
+    // If it's an array (inside v-for), pick the first one (since only one is visible via v-if)
+    el[0]?.focus()
+  } else {
+    el?.focus()
+  }
+}
+
 const startAddingSubSubtask = (parentId: string) => {
   addingToParentId.value = parentId
   newSubSubtaskTitle.value = ''
   expandedParents.value.add(parentId)
   nextTick(() => {
-    // We already have subSubInputRef, let's use it
-    subSubInputRef.value?.focus()
+    focusSubSubInput()
   })
 }
 
