@@ -28,6 +28,7 @@
     "features": "Features",
     "discard": "Discard",
     "areYouSure": "Are you sure?",
+    "convert": "Convert",
     "discardChanges": "You have unsaved changes. Do you want to discard them?",
     "appName": "Done"
   },
@@ -174,7 +175,10 @@
     "addSubtask": "Add subtask...",
     "moveSubtask": "Move Subtask",
     "movingSubtask": "Moving",
+    "indentSubtask": "Indent subtask",
+    "promoteSubtask": "Promote to top-level task",
     "convertTask": "Convert to Subtask",
+    "convertSubtaskConfirm": "Are you sure you want to convert this subtask into a new main task?",
     "convertingTask": "Converting",
     "selectingTarget": "Select target task",
     "convertSubtaskToTask": "Convert to top-level task",

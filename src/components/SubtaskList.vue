@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import type { Subtask } from '@/types/todo'
 import { Plus, Trash2, Check, ChevronRight, CornerDownRight, ArrowRightLeft, GripVertical, ArrowUp } from 'lucide-vue-next'
 import MoveSubtaskModal from './MoveSubtaskModal.vue'
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
 
 const props = defineProps<{
   todoId?: string | null
@@ -362,6 +363,47 @@ const handleIndent = async (subtask: Subtask, index: number) => {
     console.error('Failed to indent subtask', e)
   }
 }
+
+// Promoting / Converting
+const showConvertConfirm = ref(false)
+const subtaskToConvert = ref<Subtask | null>(null)
+
+const handlePromoteSubtask = async (subtask: Subtask) => {
+  // "Red Ring" action: Promote child to top-level subtask
+  try {
+    if (isLocalMode.value) {
+      const updated = [...(props.modelValue || [])]
+      const sIndex = updated.findIndex(s => s.id === subtask.id)
+      if (sIndex !== -1) {
+        updated[sIndex] = { ...updated[sIndex], parentId: null } as Partial<Subtask> & { id: string; title: string; completed: boolean; order: number }
+        emit('update:modelValue', updated)
+      }
+    } else {
+      // Expand the subtask itself if it has children?
+      // When moved to top, it might have children.
+      await todoStore.updateSubtask(subtask.id, { parentId: null })
+    }
+  } catch (e) {
+    console.error('Failed to promote subtask', e)
+  }
+}
+
+const confirmConvert = (subtask: Subtask) => {
+  subtaskToConvert.value = subtask
+  showConvertConfirm.value = true
+}
+
+const executeConvert = async () => {
+  if (!subtaskToConvert.value) return
+
+  try {
+    await todoStore.convertSubtaskToTodo(subtaskToConvert.value.id)
+    showConvertConfirm.value = false
+    subtaskToConvert.value = null
+  } catch (e) {
+    console.error('Failed to convert subtask', e)
+  }
+}
 </script>
 
 <template>
@@ -415,8 +457,10 @@ const handleIndent = async (subtask: Subtask, index: number) => {
               <Plus :size="14" />
             </button>
 
-            <button v-if="!isLocalMode" class="action-btn convert-task-btn"
-              @click="todoStore.convertSubtaskToTodo(parent.id)" :title="t('modal.convertSubtaskToTask')">
+
+
+            <button v-if="!isLocalMode" class="action-btn convert-task-btn" @click="confirmConvert(parent as Subtask)"
+              :title="t('modal.convertSubtaskToTask')">
               <ArrowUp :size="14" />
             </button>
 
@@ -456,8 +500,8 @@ const handleIndent = async (subtask: Subtask, index: number) => {
             <span v-else class="subtask-text" @click="startEditing(child)">{{ child.title }}</span>
 
             <div class="actions-group">
-              <button v-if="!isLocalMode" class="action-btn convert-task-btn"
-                @click="todoStore.convertSubtaskToTodo(child.id)" :title="t('modal.convertSubtaskToTask')">
+              <button class="action-btn convert-task-btn" @click="handlePromoteSubtask(child as Subtask)"
+                :title="t('modal.promoteSubtask')">
                 <ArrowUp :size="14" />
               </button>
 
@@ -570,6 +614,10 @@ const handleIndent = async (subtask: Subtask, index: number) => {
     <!-- Move Modal -->
     <MoveSubtaskModal v-if="!isLocalMode && props.todoId" :is-open="isMoveModalOpen" :current-todo-id="props.todoId"
       :subtask-title="subtaskToMove?.title || ''" @close="isMoveModalOpen = false" @move="handleMove" />
+
+    <ConfirmationModal :isOpen="showConvertConfirm" :title="t('modal.convertSubtaskToTask')"
+      :message="t('modal.convertSubtaskConfirm')" :confirmText="t('common.convert')" :cancelText="t('common.cancel')"
+      type="neutral" @confirm="executeConvert" @cancel="showConvertConfirm = false" />
   </div>
 </template>
 

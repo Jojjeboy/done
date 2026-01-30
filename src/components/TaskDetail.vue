@@ -5,6 +5,7 @@ import { useTodoStore } from '@/stores/todo'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
+import type { Subtask } from '@/types/todo'
 import { X, Calendar, Flag, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft, Pin, ChevronRight, MessageSquarePlus, Layers } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
@@ -39,6 +40,7 @@ const isSubtaskProcessEnabled = ref(false)
 const showDiscardConfirm = ref(false)
 const isPropertiesOpen = ref(false)
 const showCommentInput = ref(false)
+const localSubtasks = ref<Subtask[]>([])
 
 // Change Detection
 const initialState = ref('')
@@ -167,6 +169,53 @@ const saveChanges = async () => {
         null, // Recurrence
         false // isSubtaskProcessEnabled (can be added to addTodoItem later if needed)
       )
+
+      // Persist subtasks for new task
+      if (localSubtasks.value.length > 0) {
+        const idMap = new Map<string, string>()
+
+        // 1. Filter and add parents first to get their new IDs
+        const parents = localSubtasks.value.filter(s => !s.parentId)
+        // Sort by order to preserve sequence
+        parents.sort((a, b) => (a.order || 0) - (b.order || 0))
+
+        for (const p of parents) {
+          try {
+            const newSub = await todoStore.addSubtask(newItem.id, p.title)
+            idMap.set(p.id, newSub.id)
+
+            // If the local subtask was marked completed, toggle it
+            // (addSubtask creates it as pending by default)
+            if (p.completed) {
+              await todoStore.toggleSubtask(newSub.id)
+            }
+          } catch (e) {
+            console.error('Failed to persist parent subtask', e)
+          }
+        }
+
+        // 2. Filter and add children using mapped parent IDs
+        const children = localSubtasks.value.filter(s => s.parentId)
+        // Sort by order
+        children.sort((a, b) => (a.order || 0) - (b.order || 0))
+
+        for (const c of children) {
+          if (c.parentId) {
+            const newParentId = idMap.get(c.parentId)
+            if (newParentId) {
+              try {
+                const newChild = await todoStore.addSubtask(newItem.id, c.title, newParentId)
+                if (c.completed) {
+                  await todoStore.toggleSubtask(newChild.id)
+                }
+              } catch (e) {
+                console.error('Failed to persist child subtask', e)
+              }
+            }
+          }
+        }
+      }
+
       // Update initial state after save
       initialState.value = currentTaskState.value
 
@@ -460,7 +509,10 @@ const metaItems = computed(() => {
 
       <!-- Subtasks -->
       <div class="subtasks-container">
-        <SubtaskList :todo-id="isNew ? undefined : todoId" :process-enabled="isSubtaskProcessEnabled" />
+        <div class="subtasks-container">
+          <SubtaskList :todo-id="isNew ? undefined : todoId" :process-enabled="isSubtaskProcessEnabled"
+            v-model="localSubtasks" />
+        </div>
       </div>
 
       <div class="divider" v-if="!isNew && (comments.length > 0 || showCommentInput)"></div>

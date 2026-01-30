@@ -28,6 +28,7 @@
     "features": "Funktioner",
     "discard": "Släng",
     "areYouSure": "Är du säker?",
+    "convert": "Konvertera",
     "discardChanges": "Du har osparade ändringar. Vill du slänga dem?",
     "appName": "Done"
   },
@@ -175,7 +176,10 @@
     "addSubtask": "Lägg till deluppgift...",
     "moveSubtask": "Flytta deluppgift",
     "movingSubtask": "Flyttar",
+    "indentSubtask": "Gör till underuppgift",
+    "promoteSubtask": "Omvandla till huvuduppgift",
     "convertTask": "Konvertera till deluppgift",
+    "convertSubtaskConfirm": "Är du säker på att du vill konvertera denna deluppgift till en huvuduppgift?",
     "convertingTask": "Konverterar",
     "selectingTarget": "Välj måluppgift",
     "convertSubtaskToTask": "Konvertera till huvuduppgift",
