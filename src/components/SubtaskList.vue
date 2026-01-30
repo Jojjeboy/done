@@ -45,11 +45,10 @@ const getChildren = (parentId: string) => {
 // State
 const newSubtaskTitle = ref('') // Top level input
 const isAddingKey = ref(false)
-
-// Sub-adding
+const isSubmittingSubtask = ref(false)
 const addingToParentId = ref<string | null>(null)
 const newSubSubtaskTitle = ref('')
-const subSubInputRef = ref<{ focus: () => void } | null>(null)
+const subSubInputRef = ref<HTMLInputElement | HTMLInputElement[] | null>(null)
 const mainInputRef = ref<{ focus: () => void } | null>(null)
 
 // Editing
@@ -161,7 +160,20 @@ watch(() => allSubtasks.value, () => {
 // Actions
 const handleAddSubtask = async (parentId: string | null = null) => {
   const title = parentId ? newSubSubtaskTitle.value.trim() : newSubtaskTitle.value.trim()
-  if (!title) return
+  if (!title) {
+    // If empty title and adding sub-subtask transparently, maybe close?
+    // Users might hit enter to close.
+    if (parentId) {
+      addingToParentId.value = null
+    }
+    return
+  }
+
+  // Prevent blur from closing
+  if (parentId) {
+    isSubmittingSubtask.value = true
+  }
+
   try {
     if (parentId) {
       // Adding sub-subtask
@@ -184,9 +196,14 @@ const handleAddSubtask = async (parentId: string | null = null) => {
 
     if (parentId) {
       newSubSubtaskTitle.value = ''
-      // Keep addingToParentId as is to allow continuous entry
+      // Re-focus for continuous entry
       nextTick(() => {
-        subSubInputRef.value?.focus()
+        const inputEl = Array.isArray(subSubInputRef.value) ? subSubInputRef.value[0] : subSubInputRef.value
+        inputEl?.focus()
+        // Reset flag after focus is restored
+        setTimeout(() => {
+          isSubmittingSubtask.value = false
+        }, 100)
       })
     } else {
       newSubtaskTitle.value = ''
@@ -196,8 +213,9 @@ const handleAddSubtask = async (parentId: string | null = null) => {
     }
   } catch (error) {
     console.error('Failed to add subtask:', error)
+    if (parentId) isSubmittingSubtask.value = false
   } finally {
-    isAddingKey.value = false
+    if (!parentId) isAddingKey.value = false
   }
 }
 
@@ -416,7 +434,7 @@ const saveEditing = async () => {
             <div class="indent-line"></div>
             <input ref="subSubInputRef" v-model="newSubSubtaskTitle" class="child-input"
               :placeholder="t('modal.addSubtask')" @keyup.enter="handleAddSubtask(parent.id)"
-              @blur="addingToParentId = null" @keyup.escape="addingToParentId = null" />
+              @blur="!isSubmittingSubtask && (addingToParentId = null)" @keyup.escape="addingToParentId = null" />
           </div>
         </div>
       </div>
