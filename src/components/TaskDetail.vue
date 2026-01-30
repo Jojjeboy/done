@@ -5,7 +5,7 @@ import { useTodoStore } from '@/stores/todo'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
-import { X, Calendar, Flag, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft, Pin } from 'lucide-vue-next'
+import { X, Calendar, Flag, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft, Pin, ChevronRight, MessageSquarePlus, Layers } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import ConvertTaskModal from '@/components/ConvertTaskModal.vue'
@@ -37,6 +37,8 @@ const showConvertModal = ref(false)
 const taskIsSticky = ref(false)
 const isSubtaskProcessEnabled = ref(false)
 const showDiscardConfirm = ref(false)
+const isPropertiesOpen = ref(false)
+const showCommentInput = ref(false)
 
 // Change Detection
 const initialState = ref('')
@@ -285,6 +287,39 @@ onMounted(async () => {
 })
 
 const isEditMode = computed(() => !isNew.value)
+
+const metaItems = computed(() => {
+  const items = []
+
+  // Category
+  if (taskCategory.value && taskCategory.value !== 'none') {
+    const cat = todoStore.categories.find(c => c.id === taskCategory.value)
+    if (cat) items.push({ icon: Hash, text: cat.title })
+  }
+
+  // Priority
+  if (taskPriority.value) {
+    const priorityLabel = t(`tasks.priority.${taskPriority.value}`)
+    items.push({ icon: Flag, text: priorityLabel })
+  }
+
+  // Process
+  if (isSubtaskProcessEnabled.value) {
+    items.push({ icon: Layers, text: t('tasks.threeStep') })
+  }
+
+  // Sticky
+  if (taskIsSticky.value) {
+    items.push({ icon: Pin, text: t('tasks.sticky') })
+  }
+
+  // Date
+  if (taskDeadline.value) {
+    items.push({ icon: Calendar, text: taskDeadline.value })
+  }
+
+  return items
+})
 </script>
 
 <template>
@@ -338,59 +373,86 @@ const isEditMode = computed(() => !isNew.value)
 
       <div class="divider"></div>
 
-      <!-- Properties Row (Compact) -->
-      <div class="properties-grid">
-        <!-- Category -->
-        <div class="property-item" :title="t('modal.category')">
-          <div class="prop-icon">
-            <Hash :size="14" />
+      <!-- Properties Accordion -->
+      <div class="properties-section">
+        <button class="accordion-header" @click="isPropertiesOpen = !isPropertiesOpen">
+          <div class="accordion-title-wrapper" v-if="metaItems.length > 0">
+            <template v-for="(item, index) in metaItems" :key="index">
+              <div class="meta-pill">
+                <component :is="item.icon" :size="12" />
+                <span>{{ item.text }}</span>
+              </div>
+              <span v-if="index < metaItems.length - 1" class="meta-divider">·</span>
+            </template>
           </div>
-          <select v-model="taskCategory" @change="handleFieldChange" class="clean-select">
-            <option value="none">{{ t('tasks.categories.none') }}</option>
-            <option v-for="cat in todoStore.categories" :key="cat.id" :value="cat.id">
-              {{ cat.title }}
-            </option>
-          </select>
-        </div>
+          <span v-else class="accordion-title">{{ t('modal.details') }}</span>
 
-        <!-- Date -->
-        <div class="property-item" :title="t('modal.dueDate')">
-          <div class="prop-icon">
-            <Calendar :size="14" />
-          </div>
-          <input type="date" v-model="taskDeadline" @change="handleFieldChange" class="clean-date-input">
-        </div>
-
-        <!-- Priority -->
-        <div class="property-item" :title="t('modal.priority')">
-          <div class="prop-icon">
-            <Flag :size="14" />
-          </div>
-          <select v-model="taskPriority" @change="handleFieldChange" class="clean-select">
-            <option value="low">{{ t('tasks.priority.low') }}</option>
-            <option value="medium">{{ t('tasks.priority.medium') }}</option>
-            <option value="high">{{ t('tasks.priority.high') }}</option>
-          </select>
-        </div>
-
-        <!-- Sticky Toggle (Button) -->
-        <button class="sticky-toggle-btn" :class="{ active: taskIsSticky }"
-          @click="taskIsSticky = !taskIsSticky; handleFieldChange()" :title="t('tasks.sticky')">
-          <Pin :size="14" :class="{ filled: taskIsSticky }" />
-          <span>{{ t('tasks.sticky') }}</span>
+          <ChevronRight :size="16" class="chevron" :class="{ open: isPropertiesOpen }" />
         </button>
 
-        <!-- Subtask Process Toggle (Segmented Control) -->
-        <div class="segmented-control">
-          <div class="selection-bg" :class="{ 'pos-right': isSubtaskProcessEnabled }"></div>
-          <button @click="isSubtaskProcessEnabled = false; handleFieldChange()"
-            :class="{ active: !isSubtaskProcessEnabled }">
-            {{ t('tasks.twoStep') }}
-          </button>
-          <button @click="isSubtaskProcessEnabled = true; handleFieldChange()"
-            :class="{ active: isSubtaskProcessEnabled }">
-            {{ t('tasks.threeStep') }}
-          </button>
+        <div v-show="isPropertiesOpen" class="properties-content">
+          <!-- Properties Grid (Organized Grid) -->
+          <div class="properties-grid">
+            <!-- Category -->
+            <div class="property-item" :title="t('modal.category')">
+              <div class="prop-icon">
+                <Hash :size="14" />
+              </div>
+              <select v-model="taskCategory" @change="handleFieldChange" class="clean-select">
+                <option value="none">{{ t('tasks.categories.none') }}</option>
+                <option v-for="cat in todoStore.categories" :key="cat.id" :value="cat.id">
+                  {{ cat.title }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Date -->
+            <div class="property-item" :title="t('modal.dueDate')">
+              <div class="prop-icon">
+                <Calendar :size="14" />
+              </div>
+              <input type="date" v-model="taskDeadline" @change="handleFieldChange" class="clean-date-input">
+            </div>
+
+            <!-- Priority -->
+            <div class="property-item" :title="t('modal.priority')">
+              <div class="prop-icon">
+                <Flag :size="14" />
+              </div>
+              <select v-model="taskPriority" @change="handleFieldChange" class="clean-select">
+                <option value="low">{{ t('tasks.priority.low') }}</option>
+                <option value="medium">{{ t('tasks.priority.medium') }}</option>
+                <option value="high">{{ t('tasks.priority.high') }}</option>
+              </select>
+            </div>
+
+            <!-- Sticky Toggle (Button) -->
+            <button class="sticky-toggle-btn" :class="{ active: taskIsSticky }"
+              @click="taskIsSticky = !taskIsSticky; handleFieldChange()" :title="t('tasks.sticky')">
+              <Pin :size="14" :class="{ filled: taskIsSticky }" />
+              <span>{{ t('tasks.sticky') }}</span>
+            </button>
+
+            <!-- Subtask Process Toggle (Segmented Control) -->
+            <div class="segmented-control">
+              <div class="selection-bg" :class="{ 'pos-right': isSubtaskProcessEnabled }"></div>
+              <button @click="isSubtaskProcessEnabled = false; handleFieldChange()"
+                :class="{ active: !isSubtaskProcessEnabled }">
+                {{ t('tasks.twoStep') }}
+              </button>
+              <button @click="isSubtaskProcessEnabled = true; handleFieldChange()"
+                :class="{ active: isSubtaskProcessEnabled }">
+                {{ t('tasks.threeStep') }}
+              </button>
+            </div>
+
+            <!-- Comment Toggle Button -->
+            <button class="sticky-toggle-btn" :class="{ active: showCommentInput }"
+              @click="showCommentInput = !showCommentInput" :title="t('tasks.comments')">
+              <MessageSquarePlus :size="14" :class="{ filled: showCommentInput }" />
+              <span>{{ t('tasks.comments') }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -401,7 +463,7 @@ const isEditMode = computed(() => !isNew.value)
         <SubtaskList :todo-id="isNew ? undefined : todoId" :process-enabled="isSubtaskProcessEnabled" />
       </div>
 
-      <div class="divider"></div>
+      <div class="divider" v-if="!isNew && (comments.length > 0 || showCommentInput)"></div>
 
       <!-- Comments -->
       <div class="comments-section" v-if="!isNew">
@@ -427,14 +489,14 @@ const isEditMode = computed(() => !isNew.value)
         </div>
 
         <!-- New Comment Input -->
-        <div class="new-comment-row">
+        <div class="new-comment-row" v-if="showCommentInput">
           <div class="comment-avatar">
             <img v-if="currentUserAvatar" :src="currentUserAvatar" alt="User">
             <div v-else class="avatar-placeholder">{{ currentUserName.charAt(0) }}</div>
           </div>
           <div class="comment-input-wrapper">
             <input v-model="newCommentText" type="text" :placeholder="t('tasks.writeComment')" class="comment-input"
-              @keydown.enter="postComment">
+              @keydown.enter="postComment" ref="commentInputRef">
             <button class="attach-btn" :disabled="!newCommentText.trim()" @click="postComment">
               <span class="send-icon">➤</span>
             </button>
@@ -620,7 +682,7 @@ const isEditMode = computed(() => !isNew.value)
 
 .task-title-input {
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 600;
   border: none;
   background: transparent;
   width: 100%;
@@ -674,12 +736,85 @@ const isEditMode = computed(() => !isNew.value)
   margin: 16px 0;
 }
 
-/* Properties Grid (Organized Grid) */
+/* Properties Section */
+.properties-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* Move chevron to right? Or left? Usually left or right. */
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  width: 100%;
+}
+
+.accordion-title {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.accordion-header .chevron {
+  transition: transform 0.2s;
+  color: var(--color-text-muted);
+}
+
+.accordion-header:hover .accordion-title {
+  color: var(--color-text-primary);
+}
+
+.accordion-title-wrapper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meta-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--color-bg-lighter);
+  padding: 2px 8px;
+  border-radius: 12px;
+  /* Pill shape */
+  border: 1px solid transparent;
+}
+
+.dark .meta-pill {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.accordion-header .chevron.open {
+  transform: rotate(90deg);
+}
+
+.properties-content {
+  margin-top: 8px;
+}
+
+/* Properties Grid (Restored Grid) */
 .properties-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  margin-bottom: 24px;
 }
 
 .property-item {
@@ -691,12 +826,14 @@ const isEditMode = computed(() => !isNew.value)
   gap: 10px;
   min-height: 36px;
   box-sizing: border-box;
+  color: var(--color-text-primary);
 }
 
 .prop-icon {
   display: flex;
   align-items: center;
   color: var(--color-text-muted);
+  opacity: 1;
 }
 
 .clean-select,
@@ -709,6 +846,11 @@ const isEditMode = computed(() => !isNew.value)
   cursor: pointer;
   padding: 0;
   width: 100%;
+}
+
+.clean-select:hover,
+.clean-date-input:hover {
+  color: var(--color-text-primary);
 }
 
 .clean-select:focus,
@@ -737,10 +879,16 @@ const isEditMode = computed(() => !isNew.value)
 .sticky-toggle-btn.active {
   background: var(--color-primary-light);
   color: var(--color-primary);
+  font-weight: 500;
 }
 
 .sticky-toggle-btn:hover {
   filter: brightness(0.95);
+  color: var(--color-text-muted);
+}
+
+.sticky-toggle-btn.active:hover {
+  color: var(--color-primary);
 }
 
 /* Segmented Control */
@@ -754,6 +902,7 @@ const isEditMode = computed(() => !isNew.value)
   min-height: 36px;
   align-items: stretch;
   box-sizing: border-box;
+  margin-left: 0;
 }
 
 .selection-bg {
@@ -767,6 +916,11 @@ const isEditMode = computed(() => !isNew.value)
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 0;
+}
+
+.dark .selection-bg {
+  background: var(--color-primary);
+  /* Revert dark mode override if needed, or keep consistent */
 }
 
 .selection-bg.pos-right {
@@ -788,14 +942,12 @@ const isEditMode = computed(() => !isNew.value)
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: auto;
 }
 
 .segmented-control button.active {
   color: white;
-}
-
-.dark .segmented-control {
-  background: rgba(255, 255, 255, 0.05);
+  font-weight: 500;
 }
 
 

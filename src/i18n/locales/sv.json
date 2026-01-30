@@ -150,6 +150,7 @@
     "clear": "Rensa sökning"
   },
   "modal": {
+    "details": "Detaljer",
     "newTask": "Ny uppgift",
     "whatTask": "Vad är uppgiften?",
     "taskPlaceholder": "t.ex. Handla mat",

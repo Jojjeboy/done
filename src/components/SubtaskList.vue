@@ -328,16 +328,11 @@ const saveEditing = async () => {
           <div v-if="getChildren(parent.id).length > 0 || incompleteParents.length > 1" class="drag-handle">
             <GripVertical v-if="incompleteParents.length > 1" :size="14" />
           </div>
-          <!-- Expand/Collapse for Parents with children -->
-          <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
-            @click="toggleExpand(parent.id)">
-            <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
-          </button>
 
           <button @click="toggleSubtask(parent)" class="subtask-checkbox"
             :class="parent.status || (parent.completed ? 'completed' : 'pending')">
             <div v-if="parent.completed" class="check-circle-wrapper">
-              <Check :size="12" class="check-icon-inner" />
+              <Check :size="14" class="check-icon-inner" />
             </div>
             <div v-else-if="parent.status === 'in-progress'" class="in-progress-circle">
               <div class="inner-dot"></div>
@@ -350,6 +345,12 @@ const saveEditing = async () => {
               @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
           </div>
           <span v-else class="subtask-text" @click="startEditing(parent)">{{ parent.title }}</span>
+
+          <!-- Expand Button (Moved to right) -->
+          <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
+            @click="toggleExpand(parent.id)">
+            <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
+          </button>
 
           <!-- Add Sub-subtask Action -->
           <button class="action-btn add-child-btn" @click="startAddingSubSubtask(parent.id)"
@@ -382,7 +383,7 @@ const saveEditing = async () => {
             <button @click="toggleSubtask(child)" class="subtask-checkbox"
               :class="child.status || (child.completed ? 'completed' : 'pending')">
               <div v-if="child.completed" class="check-circle-wrapper small">
-                <Check :size="10" class="check-icon-inner" />
+                <Check :size="12" class="check-icon-inner" />
               </div>
               <div v-else-if="child.status === 'in-progress'" class="in-progress-circle small">
                 <div class="inner-dot"></div>
@@ -450,14 +451,10 @@ const saveEditing = async () => {
             <div v-if="getChildren(parent.id).length > 0 || completedParents.length > 1" class="drag-handle">
               <GripVertical v-if="completedParents.length > 1" :size="14" />
             </div>
-            <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
-              @click="toggleExpand(parent.id)">
-              <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
-            </button>
 
             <button @click="toggleSubtask(parent)" class="subtask-checkbox">
               <div class="check-circle-wrapper">
-                <Check :size="12" class="check-icon-inner" />
+                <Check :size="14" class="check-icon-inner" />
               </div>
             </button>
 
@@ -466,6 +463,11 @@ const saveEditing = async () => {
                 @keyup.enter="saveEditing" @keyup.escape="cancelEditing" />
             </div>
             <span v-else class="subtask-text" @click="startEditing(parent)">{{ parent.title }}</span>
+
+            <button class="expand-btn" :class="{ invisible: getChildren(parent.id).length === 0 }"
+              @click="toggleExpand(parent.id)">
+              <ChevronRight :size="16" class="chevron" :class="{ open: isExpanded(parent.id) }" />
+            </button>
 
             <button v-if="!isLocalMode" class="action-btn convert-task-btn"
               @click="todoStore.convertSubtaskToTodo(parent.id)" :title="t('modal.convertSubtaskToTask')">
@@ -487,7 +489,7 @@ const saveEditing = async () => {
               <div class="indent-line"></div>
               <button @click="toggleSubtask(child)" class="subtask-checkbox">
                 <div class="check-circle-wrapper small">
-                  <Check :size="10" class="check-icon-inner" />
+                  <Check :size="12" class="check-icon-inner" />
                 </div>
               </button>
               <span class="subtask-text">{{ child.title }}</span>
@@ -544,10 +546,10 @@ const saveEditing = async () => {
   display: flex;
   align-items: flex-start;
   /* Changed from center to flex-start */
-  gap: 6px;
-  padding: var(--spacing-sm) 0;
+  gap: 12px;
+  padding: 10px 0;
   transition: all var(--transition-base);
-  min-height: 32px;
+  min-height: 48px;
 }
 
 .parent-item {
@@ -595,16 +597,16 @@ const saveEditing = async () => {
 }
 
 .empty-circle {
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   border: 2px solid currentColor;
   border-radius: 50%;
   transition: all var(--transition-base);
 }
 
 .empty-circle.small {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-width: 1.5px;
 }
 
@@ -613,8 +615,8 @@ const saveEditing = async () => {
 }
 
 .check-circle-wrapper {
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   background-color: var(--color-primary);
   border-radius: 50%;
   display: flex;
@@ -623,8 +625,8 @@ const saveEditing = async () => {
 }
 
 .check-circle-wrapper.small {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
 }
 
 .check-icon-inner {
@@ -633,7 +635,8 @@ const saveEditing = async () => {
 
 .subtask-text {
   flex: 1;
-  font-size: var(--font-size-sm);
+  font-size: 1.125rem;
+  line-height: 1.4;
   color: var(--color-text-primary);
   transition: all var(--transition-base);
   cursor: text;
@@ -669,7 +672,7 @@ const saveEditing = async () => {
   border: none;
   cursor: pointer;
   color: var(--color-text-muted);
-  opacity: 0;
+  opacity: 1;
   transition: all var(--transition-base);
   padding: var(--spacing-xs);
   display: flex;
@@ -744,8 +747,8 @@ const saveEditing = async () => {
 }
 
 .in-progress-circle {
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   border: 4px solid var(--color-primary);
   border-radius: 50%;
   display: flex;
@@ -754,8 +757,8 @@ const saveEditing = async () => {
 }
 
 .in-progress-circle.small {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-width: 3px;
 }
 

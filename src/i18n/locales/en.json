@@ -149,6 +149,7 @@
     "clear": "Clear search"
   },
   "modal": {
+    "details": "Details",
     "newTask": "New Task",
     "whatTask": "What's the task?",
     "taskPlaceholder": "e.g. Buy groceries",
