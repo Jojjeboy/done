@@ -21,8 +21,8 @@ const staleTasksCount = computed(() => {
   return todoStore.todoItems.filter(t => t.status === 'pending' && t.updatedAt < thirtyDaysAgo).length
 })
 
-// Category Breakdown
-const categoryStats = computed(() => {
+// Project Breakdown
+const projectStats = computed(() => {
   const stats = new Map<string, number>()
   let unclassified = 0
 
@@ -36,14 +36,14 @@ const categoryStats = computed(() => {
 
   const result = []
   stats.forEach((count, id) => {
-    const category = todoStore.categoriesById.get(id)
-    if (category) {
-      result.push({ name: category.title, count, color: category.color || '#ccc' })
+    const project = todoStore.projectsById.get(id)
+    if (project) {
+      result.push({ name: project.title, count, color: project.color || '#ccc' })
     }
   })
 
   if (unclassified > 0) {
-    result.push({ name: t('stats.uncategorized'), count: unclassified, color: '#9ca3af' })
+    result.push({ name: t('stats.unclassified'), count: unclassified, color: '#9ca3af' })
   }
 
   return result.sort((a, b) => b.count - a.count)
@@ -55,7 +55,7 @@ const donutChartStyle = computed(() => {
   const total = totalTasks.value
   if (total === 0) return { background: '#e5e7eb' }
 
-  const segments = categoryStats.value.map(cat => {
+  const segments = projectStats.value.map(cat => {
     const percentage = cat.count / total
     const degrees = percentage * 360
     const start = currentAngle
@@ -123,7 +123,7 @@ const donutChartStyle = computed(() => {
       <!-- Main Breakdown Section -->
       <div class="breakdown-wrapper fade-in-up" style="animation-delay: 0.4s" v-if="totalTasks > 0">
         <div class="breakdown-header">
-          <h2 class="section-title text-gradient">{{ t('stats.categoryBreakdown') }}</h2>
+          <h2 class="section-title text-gradient">{{ t('stats.projectBreakdown') }}</h2>
         </div>
 
         <div class="breakdown-container">
@@ -137,7 +137,7 @@ const donutChartStyle = computed(() => {
           </div>
 
           <div class="chart-legend-grid">
-            <div v-for="cat in categoryStats" :key="cat.name" class="legend-card" :style="{ '--cat-color': cat.color }">
+            <div v-for="cat in projectStats" :key="cat.name" class="legend-card" :style="{ '--cat-color': cat.color }">
               <div class="legend-top">
                 <span class="legend-indicator"></span>
                 <span class="legend-name">{{ cat.name }}</span>
@@ -159,7 +159,8 @@ const donutChartStyle = computed(() => {
           <BarChart :size="48" class="empty-icon" />
         </div>
         <p class="empty-text">{{ t('stats.emptyState') }}</p>
-        <button @click="router.push('/' )" class="btn-primary-ghost">{{ t('stats.getStarted', 'Börja lägga till uppgifter') }}</button>
+        <button @click="router.push('/')" class="btn-primary-ghost">
+          {{ t('stats.getStarted', 'Börja lägga till uppgifter') }}</button>
       </div>
     </div>
   </div>

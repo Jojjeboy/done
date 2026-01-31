@@ -36,17 +36,17 @@ const filteredTasks = computed(() => {
 })
 
 const groupedTasks = computed(() => {
-    const groups: { categoryId: string | null, title: string, tasks: typeof filteredTasks.value }[] = []
+    const groups: { projectId: string | null, title: string, tasks: typeof filteredTasks.value }[] = []
 
     filteredTasks.value.forEach(task => {
-        const catId = task.categoryId || null
-        let group = groups.find(g => g.categoryId === catId)
+        const projId = task.categoryId || null
+        let group = groups.find(g => g.projectId === projId)
 
         if (!group) {
-            const catTitle = catId
-                ? todoStore.categoriesById.get(catId)?.title || t('tasks.categories.none')
+            const projTitle = projId
+                ? todoStore.projectsById.get(projId)?.title || t('tasks.categories.none')
                 : t('tasks.categories.none')
-            group = { categoryId: catId, title: catTitle, tasks: [] }
+            group = { projectId: projId, title: projTitle, tasks: [] }
             groups.push(group)
         }
         group.tasks.push(task)
@@ -54,8 +54,8 @@ const groupedTasks = computed(() => {
 
     // Sort groups: "None" at the bottom if it exists, others alphabetically
     return groups.sort((a, b) => {
-        if (a.categoryId === null) return 1
-        if (b.categoryId === null) return -1
+        if (a.projectId === null) return 1
+        if (b.projectId === null) return -1
         return a.title.localeCompare(b.title)
     })
 })
@@ -93,8 +93,8 @@ const handleMove = (targetTodoId: string) => {
                     {{ t('search.noResults') }}
                 </div>
 
-                <div v-for="group in groupedTasks" :key="group.categoryId || 'none'" class="task-group">
-                    <div v-if="groupedTasks.length > 1 || group.categoryId" class="group-header">
+                <div v-for="group in groupedTasks" :key="group.projectId || 'none'" class="task-group">
+                    <div v-if="groupedTasks.length > 1 || group.projectId" class="group-header">
                         {{ group.title }}
                     </div>
                     <button v-for="task in group.tasks" :key="task.id" class="task-item"
@@ -107,10 +107,10 @@ const handleMove = (targetTodoId: string) => {
                             </div>
                             <div v-if="task.categoryId" class="task-category-info">
                                 <div class="color-dot"
-                                    :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color || '#ccc' }">
+                                    :style="{ backgroundColor: todoStore.projectsById.get(task.categoryId)?.color || '#ccc' }">
                                 </div>
-                                <span class="category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title
-                                }}</span>
+                                <span class="category-name">{{ todoStore.projectsById.get(task.categoryId)?.title
+                                    }}</span>
                             </div>
                         </div>
                     </button>

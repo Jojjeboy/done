@@ -8,7 +8,7 @@ import {
   type Unsubscribe
 } from 'firebase/firestore'
 import { useTodoStore } from '@/stores/todo'
-import type { TodoItem, Category, Subtask } from '@/types/todo'
+import type { TodoItem, Project, Subtask } from '@/types/todo'
 import { getDatabase } from '@/db'
 
 class SyncService {
@@ -68,29 +68,29 @@ class SyncService {
       }
     }))
 
-    // 2. Listen to Categories
+    // 2. Listen to Projects (Firestore collection still named 'categories' for migration)
     const categoriesQuery = collection(db, `users/${this.userId}/categories`)
     this.unsubscribers.push(onSnapshot(categoriesQuery, async (snapshot) => {
         this.isSyncing = true
         try {
             const changes = snapshot.docChanges()
             for (const change of changes) {
-                const data = change.doc.data() as Category
+                const data = change.doc.data() as Project
                 if (change.type === 'added' || change.type === 'modified') {
                     await dexieDb.table('categories').put(data)
-                    const index = todoStore.categories.findIndex(c => c.id === data.id)
+                    const index = todoStore.projects.findIndex(p => p.id === data.id)
                     if (index !== -1) {
-                        const existing = todoStore.categories[index]
+                        const existing = todoStore.projects[index]
                         if (existing) {
-                            todoStore.categories[index] = data
+                            todoStore.projects[index] = data
                         }
                     } else {
-                        todoStore.categories.push(data)
+                        todoStore.projects.push(data)
                     }
                 } else if (change.type === 'removed') {
                     await dexieDb.table('categories').delete(change.doc.id)
-                    const index = todoStore.categories.findIndex(c => c.id === change.doc.id)
-                    if (index !== -1) todoStore.categories.splice(index, 1)
+                    const index = todoStore.projects.findIndex(p => p.id === change.doc.id)
+                    if (index !== -1) todoStore.projects.splice(index, 1)
                 }
             }
         } finally {
@@ -145,15 +145,15 @@ class SyncService {
     await deleteDoc(doc(db, `users/${this.userId}/todos`, todoId))
   }
 
-  public async pushCategory(category: Category) {
+  public async pushProject(project: Project) {
     if (!this.userId) return
-    const data = JSON.parse(JSON.stringify(category))
-    await setDoc(doc(db, `users/${this.userId}/categories`, category.id), data)
+    const data = JSON.parse(JSON.stringify(project))
+    await setDoc(doc(db, `users/${this.userId}/categories`, project.id), data)
   }
 
-  public async deleteCategory(categoryId: string) {
+  public async deleteProject(projectId: string) {
     if (!this.userId) return
-    await deleteDoc(doc(db, `users/${this.userId}/categories`, categoryId))
+    await deleteDoc(doc(db, `users/${this.userId}/categories`, projectId))
   }
 
   public async pushSubtask(subtask: Subtask) {

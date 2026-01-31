@@ -27,7 +27,7 @@ const { t } = useI18n()
 const taskTitle = ref('')
 const taskDescription = ref('')
 const taskPriority = ref<'low' | 'medium' | 'high'>('medium')
-const taskCategory = ref<string>('none')
+const taskProject = ref<string>('none')
 const taskDeadline = ref<string>('')
 const taskStatus = ref<'pending' | 'in-progress' | 'completed'>('pending')
 const parsedIntent = ref<DateParseResult | null>(null)
@@ -49,7 +49,7 @@ const currentTaskState = computed(() => {
     title: taskTitle.value,
     description: taskDescription.value,
     priority: taskPriority.value,
-    categoryId: taskCategory.value,
+    categoryId: taskProject.value,
     status: taskStatus.value,
     isSticky: taskIsSticky.value,
     isSubtaskProcessEnabled: isSubtaskProcessEnabled.value
@@ -58,7 +58,7 @@ const currentTaskState = computed(() => {
 
 const hasUnsavedChanges = computed(() => {
   if (isNew.value) {
-    return taskTitle.value.trim() !== '' || taskDescription.value.trim() !== '' || taskCategory.value !== 'none'
+    return taskTitle.value.trim() !== '' || taskDescription.value.trim() !== '' || taskProject.value !== 'none'
   }
   return initialState.value !== currentTaskState.value
 })
@@ -93,7 +93,7 @@ const loadTodoData = () => {
       taskTitle.value = todo.title
       taskDescription.value = todo.description || ''
       taskPriority.value = todo.priority
-      taskCategory.value = todo.categoryId || 'none'
+      taskProject.value = todo.categoryId || 'none'
       taskStatus.value = todo.status
       if (todo.deadline) {
         taskDeadline.value = new Date(todo.deadline as number).toISOString().split('T')[0] as string
@@ -115,7 +115,7 @@ const resetForm = () => {
   taskTitle.value = ''
   taskDescription.value = ''
   taskPriority.value = 'medium'
-  taskCategory.value = 'none'
+  taskProject.value = 'none'
   taskDeadline.value = ''
   taskStatus.value = 'pending'
   taskIsSticky.value = false
@@ -145,7 +145,7 @@ const saveChanges = async () => {
         description: taskDescription.value.trim(),
         priority: taskPriority.value,
         deadline: deadline,
-        categoryId: taskCategory.value === 'none' ? null : taskCategory.value,
+        categoryId: taskProject.value === 'none' ? null : taskProject.value,
         status: taskStatus.value,
         isSticky: taskIsSticky.value,
         isSubtaskProcessEnabled: isSubtaskProcessEnabled.value
@@ -165,7 +165,7 @@ const saveChanges = async () => {
         taskDescription.value.trim(),
         taskPriority.value,
         deadline,
-        taskCategory.value === 'none' ? null : taskCategory.value,
+        taskProject.value === 'none' ? null : taskProject.value,
         null, // Recurrence
         false // isSubtaskProcessEnabled (can be added to addTodoItem later if needed)
       )
@@ -341,9 +341,9 @@ const metaItems = computed(() => {
   const items = []
 
   // Category
-  if (taskCategory.value && taskCategory.value !== 'none') {
-    const cat = todoStore.categories.find(c => c.id === taskCategory.value)
-    if (cat) items.push({ icon: Hash, text: cat.title })
+  if (taskProject.value && taskProject.value !== 'none') {
+    const project = todoStore.projects.find(p => p.id === taskProject.value)
+    if (project) items.push({ icon: Hash, text: project.title })
   }
 
   // Priority
@@ -442,15 +442,15 @@ const metaItems = computed(() => {
         <div v-show="isPropertiesOpen" class="properties-content">
           <!-- Properties Grid (Organized Grid) -->
           <div class="properties-grid">
-            <!-- Category -->
-            <div class="property-item" :title="t('modal.category')">
+            <!-- Project -->
+            <div class="property-item" :title="t('modal.project')">
               <div class="prop-icon">
                 <Hash :size="14" />
               </div>
-              <select v-model="taskCategory" @change="handleFieldChange" class="clean-select">
+              <select v-model="taskProject" @change="handleFieldChange" class="clean-select">
                 <option value="none">{{ t('tasks.categories.none') }}</option>
-                <option v-for="cat in todoStore.categories" :key="cat.id" :value="cat.id">
-                  {{ cat.title }}
+                <option v-for="project in todoStore.projects" :key="project.id" :value="project.id">
+                  {{ project.title }}
                 </option>
               </select>
             </div>
@@ -529,7 +529,7 @@ const metaItems = computed(() => {
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-              }}</span>
+                }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -558,7 +558,7 @@ const metaItems = computed(() => {
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-        }}</button>
+          }}</button>
       </div>
     </div>
 

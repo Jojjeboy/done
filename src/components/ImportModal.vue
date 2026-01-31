@@ -6,7 +6,7 @@ import { useTodoStore } from '@/stores/todo'
 
 const props = defineProps<{
   isOpen: boolean
-  categoryId?: string | null
+  projectId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -22,11 +22,11 @@ const showExample = ref(false)
 const importText = ref('')
 const isAnalyzing = ref(false)
 const importError = ref<string | null>(null)
-const selectedCategoryId = ref<string | null>(props.categoryId || null)
+const selectedProjectId = ref<string | null>(props.projectId || null)
 
 import { watch } from 'vue'
-watch(() => props.categoryId, (newId) => {
-  if (newId) selectedCategoryId.value = newId
+watch(() => props.projectId, (newId) => {
+  if (newId) selectedProjectId.value = newId
 })
 interface ImportSubtask {
   title: string
@@ -124,7 +124,7 @@ const performImport = async () => {
         task.description || '',
         priority,
         deadline,
-        selectedCategoryId.value as string | null
+        selectedProjectId.value as string | null
       )
 
       if (task.subtasks && Array.isArray(task.subtasks)) {
@@ -199,19 +199,19 @@ const closeModal = () => {
             <span>{{ importError }}</span>
           </div>
 
-          <!-- Category Selection -->
+          <!-- Project Selection -->
           <div class="category-select-section">
-            <p class="section-label">{{ t('modal.category') }}</p>
+            <p class="section-label">{{ t('modal.project') }}</p>
             <div class="category-options">
-              <button class="category-option" :class="{ active: selectedCategoryId === null }"
-                @click="selectedCategoryId = null">
+              <button class="category-option" :class="{ active: selectedProjectId === null }"
+                @click="selectedProjectId = null">
                 <div class="color-dot none"></div>
-                <span>{{ t('modal.categories.none') }}</span>
+                <span>{{ t('tasks.categories.none') }}</span>
               </button>
-              <button v-for="cat in todoStore.categories" :key="cat.id" class="category-option"
-                :class="{ active: selectedCategoryId === cat.id }" @click="selectedCategoryId = cat.id">
-                <div class="color-dot" :style="{ backgroundColor: cat.color || '#ccc' }"></div>
-                <span>{{ cat.title }}</span>
+              <button v-for="project in todoStore.projects" :key="project.id" class="category-option"
+                :class="{ active: selectedProjectId === project.id }" @click="selectedProjectId = project.id">
+                <div class="color-dot" :style="{ backgroundColor: project.color || '#ccc' }"></div>
+                <span>{{ project.title }}</span>
               </button>
             </div>
           </div>
@@ -229,7 +229,7 @@ const closeModal = () => {
                 <span class="preview-title">{{ task.title }}</span>
                 <span class="preview-meta">
                   <span v-if="task.priority" class="tag" :class="task.priority">{{ task.priority
-                  }}</span>
+                    }}</span>
                   <span v-if="task.subtasks?.length" class="tag subtasks">{{ task.subtasks.length }}
                     subtasks</span>
                 </span>

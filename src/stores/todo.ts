@@ -3,14 +3,14 @@ import { defineStore } from 'pinia'
 import { getDatabase } from '@/db'
 import { useAuthStore } from '@/stores/auth'
 import { syncService } from '@/services/sync'
-import type { TodoItem, Subtask, Category, Comment } from '@/types/todo'
+import type { TodoItem, Subtask, Project, Comment } from '@/types/todo'
 
 export const useTodoStore = defineStore('todo', () => {
   // State
   const todoItems = ref<TodoItem[]>([])
   const subtasks = ref<Subtask[]>([])
   const comments = ref<Comment[]>([])
-  const categories = ref<Category[]>([])
+  const projects = ref<Project[]>([])
   const loading = ref(true)
   const initialized = ref(false)
   const globalLoading = ref(false)
@@ -47,51 +47,59 @@ export const useTodoStore = defineStore('todo', () => {
     return todoItems.value
   })
 
-  const categoriesById = computed(() => {
-    const map = new Map<string, Category>()
-    categories.value.forEach((category) => {
-      map.set(category.id, category)
+  const projectsById = computed(() => {
+    const map = new Map<string, Project>()
+    projects.value.forEach((project) => {
+      map.set(project.id, project)
     })
     return map
   })
 
-  const categoriesSortedByActivity = computed(() => {
-    const activityMap = new Map<string, { lastUpdated: number; pendingCount: number }>()
+  // Calculate project statistics (progress)
+  const projectsWithStats = computed(() => {
+    const statsMap = new Map<string, { total: number, completed: number, lastUpdated: number }>()
 
-    // Initialize map
-    categories.value.forEach((cat) => {
-      activityMap.set(cat.id, { lastUpdated: 0, pendingCount: 0 })
+    // Initialize
+    projects.value.forEach(p => {
+      statsMap.set(p.id, { total: 0, completed: 0, lastUpdated: 0 })
     })
 
-    // Calculate activity per category
-    todoItems.value.forEach((item) => {
-      if (item.categoryId && activityMap.has(item.categoryId)) {
-        const stats = activityMap.get(item.categoryId)!
-        stats.lastUpdated = Math.max(stats.lastUpdated, item.updatedAt)
-        if (item.status !== 'completed') {
-          stats.pendingCount++
+    // Aggregate
+    todoItems.value.forEach(item => {
+      if (item.categoryId && statsMap.has(item.categoryId)) {
+        const stats = statsMap.get(item.categoryId)!
+        stats.total++
+        if (item.status === 'completed') {
+          stats.completed++
         }
+        stats.lastUpdated = Math.max(stats.lastUpdated, item.updatedAt)
       }
     })
 
-    return [...categories.value].sort((a, b) => {
-      const statsA = activityMap.get(a.id)!
-      const statsB = activityMap.get(b.id)!
-
-      // Sort by last updated (descending)
-      if (statsB.lastUpdated !== statsA.lastUpdated) {
-        return statsB.lastUpdated - statsA.lastUpdated
+    return projects.value.map(p => {
+      const stats = statsMap.get(p.id)!
+      const progress = stats.total > 0 ?  Math.round((stats.completed / stats.total) * 100) : 0
+      return {
+        ...p,
+        totalTasks: stats.total,
+        completedTasks: stats.completed,
+        progress
       }
-
-      // Then by pending count (descending)
-      if (statsB.pendingCount !== statsA.pendingCount) {
-        return statsB.pendingCount - statsA.pendingCount
-      }
-
-      // Fallback to title
-      return a.title.localeCompare(b.title)
     })
   })
+
+  const projectsSortedByActivity = computed(() => {
+     // Use the stats computed above
+     return [...projectsWithStats.value].sort((a, b) => {
+        // Sort activity logic could use lastUpdated from stats if we kept it exposed,
+        // but let's stick to simplest or preserve 'categoriesSortedByActivity' logic if needed.
+        // For now, let's just return them in 'order' which is what the sidebar mostly uses if we don't use this one.
+        // Actually, sidebar used categoriesSortedByActivity? No, sidebar used `todoStore.categories` directly which was order sorted.
+        // But let's keep a sorted version if needed by other components.
+        return a.order - b.order
+     })
+  })
+
 
   // Helper function to generate IDs
   const generateId = (): string => {
@@ -123,31 +131,31 @@ export const useTodoStore = defineStore('todo', () => {
       const db = getDatabase()
 
       // Load all data from IndexedDB
-      const [dbItems, dbSubtasks, dbCategories, dbComments] = await Promise.all([
+      const [dbItems, dbSubtasks, dbProjects, dbComments] = await Promise.all([
         db.table('todoItems').toArray(),
         db.table('subtasks').toArray(),
-        db.table('categories').toArray(),
+        db.table('categories').toArray(), // Keep table name 'categories' for DB compatibility
         db.table('comments').toArray(),
       ])
 
-      let finalCategories = dbCategories
+      let finalProjects = dbProjects
       const itemsToUpdate: TodoItem[] = []
-      const categoriesToAdd: Category[] = []
+      const projectsToAdd: Project[] = []
 
-      // Initialize default categories if none exist
-      if (finalCategories.length === 0) {
+      // Initialize default projects if none exist
+      if (finalProjects.length === 0) {
         const defaults = [
           { id: generateId(), title: 'Work', color: '#6c5ce7', isDefault: true, createdAt: Date.now(), order: 0 },
           { id: generateId(), title: 'Lifestyle', color: '#ff6b9d', isDefault: true, createdAt: Date.now(), order: 1 },
           { id: generateId(), title: 'Personal', color: '#ff8a50', isDefault: true, createdAt: Date.now(), order: 2 },
           { id: generateId(), title: 'Hobby', color: '#5b8def', isDefault: true, createdAt: Date.now(), order: 3 },
         ]
-        categoriesToAdd.push(...defaults)
-        finalCategories = [...defaults]
+        projectsToAdd.push(...defaults)
+        finalProjects = [...defaults]
       }
 
       // Safe Access for mapping
-      const getCategoryId = (oldCategory: string): string | null => {
+      const getProjectId = (oldCategory: string): string | null => {
         const titleMap: Record<string, string> = {
             'work': 'Work',
             'lifestyle': 'Lifestyle',
@@ -156,7 +164,7 @@ export const useTodoStore = defineStore('todo', () => {
         }
         const targetTitle = titleMap[oldCategory]
         if (!targetTitle) return null
-        return finalCategories.find(c => c.title === targetTitle)?.id || null
+        return finalProjects.find(c => c.title === targetTitle)?.id || null
       }
 
       // Migrate items (handle both "category" string and missing "categoryId")
@@ -167,7 +175,7 @@ export const useTodoStore = defineStore('todo', () => {
 
         // Migration from string category to categoryId
         if ('category' in newItem && typeof newItem.category === 'string') {
-          const newId = getCategoryId(newItem.category)
+          const newId = getProjectId(newItem.category)
           newItem.categoryId = newId
           delete newItem.category
           needsUpdate = true
@@ -186,8 +194,8 @@ export const useTodoStore = defineStore('todo', () => {
 
 
       // Persist changes
-      if (categoriesToAdd.length > 0) {
-        await db.table('categories').bulkAdd(categoriesToAdd)
+      if (projectsToAdd.length > 0) {
+        await db.table('categories').bulkAdd(projectsToAdd)
       }
 
       if (itemsToUpdate.length > 0) {
@@ -205,7 +213,7 @@ export const useTodoStore = defineStore('todo', () => {
         status: s.status || (s.completed ? 'completed' : 'pending')
       }))
       comments.value = dbComments || []
-      categories.value = finalCategories.map((c, index) => ({
+      projects.value = finalProjects.map((c, index) => ({
         ...c,
         order: typeof c.order === 'number' ? c.order : index
       })).sort((a, b) => a.order - b.order)
@@ -225,71 +233,74 @@ export const useTodoStore = defineStore('todo', () => {
     }
   }
 
-  // Category CRUD
+  // Project CRUD
 
-  const addCategory = async (title: string, color?: string, icon?: string) => {
+  const addProject = async (title: string, color?: string, icon?: string, description?: string, deadline?: number | null, showProgress?: boolean) => {
       // Find the first unused color from the palette
-      const usedColors = new Set(categories.value.map(c => c.color))
+      const usedColors = new Set(projects.value.map(c => c.color))
       const autoColor = color || COLOR_PALETTE.find(c => !usedColors.has(c)) || DEFAULT_COLOR
 
-      const category: Category = {
+      const project: Project = {
           id: generateId(),
           title,
           color: autoColor,
           icon,
+          description,
+          deadline,
+          showProgress: showProgress ?? true,
           createdAt: Date.now(),
-          order: categories.value.length
+          order: projects.value.length
       }
-      categories.value.push(category)
+      projects.value.push(project)
       try {
-          await getDatabase().table('categories').add(category)
-          await syncService.pushCategory(category)
+          await getDatabase().table('categories').add(project) // Table remains 'categories'
+          await syncService.pushProject(project) // Sync service renaming deferred
       } catch (e) {
-          console.error('Failed to add category', e)
-          categories.value = categories.value.filter(c => c.id !== category.id)
+          console.error('Failed to add project', e)
+          projects.value = projects.value.filter(c => c.id !== project.id)
           throw e
       }
-      return category
+      return project
   }
 
-  const updateCategoriesOrder = async (updatedCategories: Category[]) => {
-      categories.value = [...updatedCategories].sort((a, b) => a.order - b.order)
+  const updateProjectsOrder = async (updatedProjects: Project[]) => {
+      projects.value = [...updatedProjects].sort((a, b) => a.order - b.order)
       try {
-          await getDatabase().table('categories').bulkPut(updatedCategories)
-          for (const cat of updatedCategories) {
-              await syncService.pushCategory(cat)
+          await getDatabase().table('categories').bulkPut(updatedProjects)
+          for (const p of updatedProjects) {
+              await syncService.pushProject(p)
           }
       } catch (e) {
-          console.error('Failed to update categories order', e)
+          console.error('Failed to update projects order', e)
           throw e
       }
   }
 
-  const updateCategory = async (id: string, updates: Partial<Category>) => {
-    const index = categories.value.findIndex((c) => c.id === id)
-    if (index === -1) throw new Error('Category not found')
+  const updateProject = async (id: string, updates: Partial<Project>) => {
+    const index = projects.value.findIndex((p) => p.id === id)
+    if (index === -1) throw new Error('Project not found')
 
-    const original = categories.value[index]!
-    const updated: Category = { ...original, ...updates }
-    categories.value[index] = updated
+    const original = projects.value[index]!
+    const updated: Project = { ...original, ...updates }
+    projects.value[index] = updated
 
     try {
       await getDatabase().table('categories').update(id, updates)
-      await syncService.pushCategory(updated)
+      await syncService.pushProject(updated)
     } catch (e) {
-      console.error('Failed to update category', e)
-      categories.value[index] = original
+      console.error('Failed to update project', e)
+      projects.value[index] = original
       throw e
     }
   }
 
-  const deleteCategory = async (id: string) => {
-      const index = categories.value.findIndex(c => c.id === id)
-      if (index === -1) throw new Error('Category not found')
+  const deleteProject = async (id: string) => {
+      const index = projects.value.findIndex(c => c.id === id)
+      if (index === -1) throw new Error('Project not found')
 
-      categories.value.splice(index, 1)
+      projects.value.splice(index, 1)
 
-      // Also update tasks to remove this category
+      // Also update tasks to remove this project (categoryId)
       const tasksToUpdate = todoItems.value.filter(i => i.categoryId === id)
       tasksToUpdate.forEach(t => t.categoryId = null)
 
@@ -299,13 +310,13 @@ export const useTodoStore = defineStore('todo', () => {
               await db.table('categories').delete(id)
               await db.table('todoItems').bulkPut(tasksToUpdate.map(t => ({...t}))) // Persist the nullified categoryId
           })
-          await syncService.deleteCategory(id)
+          await syncService.deleteProject(id)
           // Also sync the tasks updates (category stripped)
           for (const task of tasksToUpdate) {
               await syncService.pushTodo(task)
           }
       } catch (e) {
-          console.error('Failed to delete category', e)
+          console.error('Failed to delete project', e)
           throw e
       }
   }
@@ -883,20 +894,21 @@ export const useTodoStore = defineStore('todo', () => {
     // State
     todoItems,
     subtasks,
-    categories,
+    projects,
     loading,
     initialized,
     // Computed
     subtasksByTodoId,
     allItems,
-    categoriesById,
-    categoriesSortedByActivity,
+    projectsById,
+    projectsSortedByActivity,
+    projectsWithStats,
     // Methods
     initialize,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    updateCategoriesOrder,
+    addProject,
+    updateProject,
+    deleteProject,
+    updateProjectsOrder,
     addTodoItem,
     updateTodoItem,
     deleteTodoItem,

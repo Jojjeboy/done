@@ -2,7 +2,7 @@
  * TypeScript interfaces for the simplified todo list app
  */
 
-export interface Category {
+export interface Project {
   id: string
   title: string
   icon?: string
@@ -10,6 +10,9 @@ export interface Category {
   isDefault?: boolean
   createdAt: number
   order: number
+  description?: string
+  deadline?: number | null
+  showProgress?: boolean // Default true
 }
 
 export interface TodoItem {

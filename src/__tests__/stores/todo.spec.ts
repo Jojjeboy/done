@@ -27,24 +27,24 @@ describe('Todo Store', () => {
     })
   })
 
-  describe('Categories', () => {
-    it('initializes with empty categories', () => {
+  describe('Projects', () => {
+    it('initializes with empty projects', () => {
       const store = useTodoStore()
-      expect(Array.isArray(store.categories)).toBe(true)
+      expect(Array.isArray(store.projects)).toBe(true)
     })
 
-    it('can add a category', async () => {
+    it('can add a project', async () => {
       const store = useTodoStore()
-      await store.addCategory('New Category', '#000000')
-      expect(store.categories.length).toBe(1)
-      expect(store.categories[0].title).toBe('New Category')
+      await store.addProject('New Project', '#000000')
+      expect(store.projects.length).toBe(1)
+      expect(store.projects[0].title).toBe('New Project')
     })
 
-    it('can delete a category', async () => {
+    it('can delete a project', async () => {
         const store = useTodoStore()
-        const cat = await store.addCategory('To Delete')
-        await store.deleteCategory(cat.id)
-        expect(store.categories.length).toBe(0)
+        const project = await store.addProject('To Delete')
+        await store.deleteProject(project.id)
+        expect(store.projects.length).toBe(0)
     })
   })
 

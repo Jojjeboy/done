@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import type { TodoItem, Subtask, Category, Comment } from '@/types/todo'
+import type { TodoItem, Subtask, Project, Comment } from '@/types/todo'
 import { useAuthStore } from '@/stores/auth'
 
 /**
@@ -13,7 +13,7 @@ interface Setting {
 class TodoDatabase extends Dexie {
   todoItems!: Table<TodoItem>
   subtasks!: Table<Subtask>
-  categories!: Table<Category>
+  categories!: Table<Project>
   comments!: Table<Comment>
   settings!: Table<Setting>
 

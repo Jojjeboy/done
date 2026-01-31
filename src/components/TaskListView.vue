@@ -28,7 +28,7 @@ watch(() => route.query.filter, (newFilter) => {
   }
 })
 
-const activeCategoryId = computed(() => route.query.category as string | undefined)
+const activeProjectId = computed(() => route.query.category as string | undefined)
 
 const showFilterModal = ref(false)
 
@@ -38,11 +38,11 @@ const resetFilters = () => {
 }
 
 const currentViewLabel = computed(() => {
-  if (activeCategoryId.value) {
-    if (activeCategoryId.value === '__none__') {
+  if (activeProjectId.value) {
+    if (activeProjectId.value === '__none__') {
       return t('tasks.categories.none')
     }
-    return todoStore.categoriesById.get(activeCategoryId.value)?.title || t('modal.category')
+    return todoStore.projectsById.get(activeProjectId.value)?.title || t('modal.project')
   }
   return t(`tasks.filters.${activeFilter.value}`)
 })
@@ -51,11 +51,11 @@ const currentViewLabel = computed(() => {
 const allTasks = computed(() => {
   let tasks = todoStore.todoItems
 
-  if (activeCategoryId.value) {
-    if (activeCategoryId.value === '__none__') {
+  if (activeProjectId.value) {
+    if (activeProjectId.value === '__none__') {
       tasks = tasks.filter(t => t.categoryId === null)
     } else {
-      tasks = tasks.filter(t => t.categoryId === activeCategoryId.value)
+      tasks = tasks.filter(t => t.categoryId === activeProjectId.value)
     }
   }
 
@@ -326,7 +326,7 @@ onMounted(async () => {
           <h2 class="view-title">{{ currentViewLabel }}</h2>
           <ChevronRight :size="20" class="rotate-90" />
         </div>
-        <button v-if="activeFilter !== 'all' || activeCategoryId" class="reset-btn" @click="resetFilters"
+        <button v-if="activeFilter !== 'all' || activeProjectId" class="reset-btn" @click="resetFilters"
           :title="t('tasks.clearFilters')">
           <X :size="14" />
         </button>
@@ -380,11 +380,10 @@ onMounted(async () => {
                   <h4 class="task-title">{{ task.title }}</h4>
                 </div>
                 <div class="task-meta-row">
-                  <div v-if="task.categoryId && todoStore.categoriesById.has(task.categoryId)"
-                    class="task-category-info">
+                  <div v-if="task.categoryId && todoStore.projectsById.has(task.categoryId)" class="task-category-info">
                     <span class="task-category-dot"
-                      :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span> &nbsp;
-                    <span class="task-category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title }}</span>
+                      :style="{ backgroundColor: todoStore.projectsById.get(task.categoryId)?.color }"></span> &nbsp;
+                    <span class="task-category-name">{{ todoStore.projectsById.get(task.categoryId)?.title }}</span>
                   </div>
                   <div class="task-time" v-if="task.deadline" :class="{ 'is-today': isOverdue(task.deadline) }">
                     <Clock :size="12" />
@@ -434,10 +433,10 @@ onMounted(async () => {
             <div class="task-main-info">
               <h4 class="task-title">{{ task.title }}</h4>
               <div class="task-meta-row">
-                <div v-if="task.categoryId && todoStore.categoriesById.has(task.categoryId)" class="task-category-info">
+                <div v-if="task.categoryId && todoStore.projectsById.has(task.categoryId)" class="task-category-info">
                   <span class="task-category-dot"
-                    :style="{ backgroundColor: todoStore.categoriesById.get(task.categoryId)?.color }"></span>
-                  <span class="task-category-name">{{ todoStore.categoriesById.get(task.categoryId)?.title }}</span>
+                    :style="{ backgroundColor: todoStore.projectsById.get(task.categoryId)?.color }"></span>
+                  <span class="task-category-name">{{ todoStore.projectsById.get(task.categoryId)?.title }}</span>
                 </div>
                 <div class="task-time" v-if="task.deadline" :class="{ 'is-today': isOverdue(task.deadline) }">
                   <Clock :size="12" />
@@ -458,7 +457,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <FilterModal :isOpen="showFilterModal" :active-filter="activeFilter" :active-category="activeCategoryId || null"
+    <FilterModal :isOpen="showFilterModal" :active-filter="activeFilter" :active-category="activeProjectId || null"
       @update:filter="activeFilter = $event as any"
       @update:category="(id) => router.replace({ query: { category: id } })" @close="showFilterModal = false" />
 

@@ -7,16 +7,11 @@ import {
   Settings,
   Plus,
   Trash2,
-  Edit2,
-  Check,
-  X,
-  BarChart,
-  FileJson,
-  Star
+  Edit2
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
-import type { Category } from '@/types/todo'
 import ImportModal from '@/components/ImportModal.vue'
+import ProjectDetailModal from '@/components/ProjectDetailModal.vue'
 
 const todoStore = useTodoStore()
 const router = useRouter()
@@ -32,26 +27,16 @@ const handleCategoryClick = (categoryId: string) => {
 }
 
 const showImportModal = ref(false)
+const showProjectDetailModal = ref(false)
+const selectedProjectId = ref<string | null>(null)
 
-const isEditingCategory = ref<string | null>(null)
-const editingTitle = ref('')
-const isAddingCategory = ref(false)
-const newCategoryTitle = ref('')
+const openProjectModal = (id: string) => {
+  selectedProjectId.value = id
+  showProjectDetailModal.value = true
+}
 
 const isActive = (path: string) => route.path === path
 const isCategoryActive = (id: string) => route.query.category === id
-
-const startEditing = (category: Category) => {
-  isEditingCategory.value = category.id
-  editingTitle.value = category.title
-}
-
-const saveCategory = async (id: string) => {
-  if (editingTitle.value.trim()) {
-    await todoStore.updateCategory(id, { title: editingTitle.value.trim() })
-  }
-  isEditingCategory.value = null
-}
 
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 
@@ -59,25 +44,17 @@ import ConfirmationModal from '@/components/ConfirmationModal.vue'
 const showDeleteCategoryConfirm = ref(false)
 const categoryToDelete = ref<string | null>(null)
 
-const deleteCategory = (id: string) => {
+const deleteProject = (id: string) => {
   categoryToDelete.value = id
   showDeleteCategoryConfirm.value = true
 }
 
 const confirmDeleteCategory = async () => {
   if (categoryToDelete.value) {
-    await todoStore.deleteCategory(categoryToDelete.value)
+    await todoStore.deleteProject(categoryToDelete.value)
     categoryToDelete.value = null
   }
   showDeleteCategoryConfirm.value = false
-}
-
-const addCategory = async () => {
-  if (newCategoryTitle.value.trim()) {
-    await todoStore.addCategory(newCategoryTitle.value.trim())
-    newCategoryTitle.value = ''
-    isAddingCategory.value = false
-  }
 }
 
 // Drag and Drop
@@ -97,7 +74,7 @@ const handleDragOver = (e: DragEvent) => {
 const handleDrop = async (targetIndex: number) => {
   if (draggedCategoryIndex.value === null || draggedCategoryIndex.value === targetIndex) return
 
-  const list = [...todoStore.categories]
+  const list = [...todoStore.projects]
   const [removed] = list.splice(draggedCategoryIndex.value, 1)
   if (!removed) return
   list.splice(targetIndex, 0, removed)
@@ -108,7 +85,7 @@ const handleDrop = async (targetIndex: number) => {
     order: idx
   }))
 
-  await todoStore.updateCategoriesOrder(updated)
+  await todoStore.updateProjectsOrder(updated)
   draggedCategoryIndex.value = null
 }
 </script>
@@ -141,55 +118,49 @@ const handleDrop = async (targetIndex: number) => {
         <span>{{ t('common.importTasks') }}</span>
       </button>
 
-      <div class="categories-section">
+      <div class="projects-section">
         <div class="section-header">
-          <h2>{{ t('modal.category') }}</h2>
-          <button @click="isAddingCategory = true" class="add-cat-btn">
+          <h2>{{ t('modal.project') }}</h2>
+          <button @click="showProjectDetailModal = true; selectedProjectId = null" class="add-cat-btn">
             <Plus :size="16" />
           </button>
         </div>
 
-        <div v-if="isAddingCategory" class="edit-row">
-          <input v-model="newCategoryTitle" class="edit-input" autofocus @keyup.enter="addCategory"
-            @keyup.esc="isAddingCategory = false" />
-          <button @click="addCategory" class="icon-btn success">
-            <Check :size="14" />
-          </button>
-          <button @click="isAddingCategory = false" class="icon-btn">
-            <X :size="14" />
-          </button>
-        </div>
-
-        <div class="category-item">
-          <button class="nav-item category-link" :class="{ active: isCategoryActive('__none__') }"
+        <div class="project-item">
+          <button class="nav-item project-link" :class="{ active: isCategoryActive('__none__') }"
             @click="handleCategoryClick('__none__')">
             <div class="color-dot none"></div>
-            <span class="category-title">{{ t('tasks.categories.none') }}</span>
+            <span class="project-title">{{ t('tasks.categories.none') }}</span>
           </button>
         </div>
 
-        <div v-for="(category, index) in todoStore.categories" :key="category.id" class="category-item" draggable="true"
-          @dragstart="handleDragStart(index)" @dragover="handleDragOver" @drop="handleDrop(index)"
+        <div v-for="(project, index) in todoStore.projectsWithStats" :key="project.id" class="project-item"
+          draggable="true" @dragstart="handleDragStart(index)" @dragover="handleDragOver" @drop="handleDrop(index)"
           :class="{ dragging: draggedCategoryIndex === index }">
-          <div v-if="isEditingCategory === category.id" class="edit-row">
-            <input v-model="editingTitle" class="edit-input" autofocus @keyup.enter="saveCategory(category.id)"
-              @keyup.esc="isEditingCategory = null" />
-            <button @click="saveCategory(category.id)" class="icon-btn success">
-              <Check :size="14" />
-            </button>
-            <button @click="isEditingCategory = null" class="icon-btn">
-              <X :size="14" />
-            </button>
-          </div>
-          <button v-else class="nav-item category-link" :class="{ active: isCategoryActive(category.id) }"
-            @click="handleCategoryClick(category.id)">
-            <div class="color-dot" :style="{ backgroundColor: category.color || '#ccc' }"></div>
-            <span class="category-title">{{ category.title }}</span>
+
+          <button class="nav-item project-link" :class="{ active: isCategoryActive(project.id) }"
+            @click="handleCategoryClick(project.id)">
+            <!-- Icon / Dot -->
+            <div class="project-icon-wrapper">
+              <div class="color-dot" :style="{ backgroundColor: project.color || '#ccc' }"></div>
+            </div>
+
+            <div class="project-info">
+              <span class="project-title">{{ project.title }}</span>
+              <div v-if="project.showProgress" class="project-progress">
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill"
+                    :style="{ width: project.progress + '%', backgroundColor: project.color }"></div>
+                </div>
+                <span class="progress-text">{{ project.progress }}%</span>
+              </div>
+            </div>
+
             <div class="actions">
-              <button @click.stop="startEditing(category)" class="action-btn">
+              <button @click.stop="openProjectModal(project.id)" class="action-btn">
                 <Edit2 :size="12" />
               </button>
-              <button @click.stop="deleteCategory(category.id)" class="action-btn delete">
+              <button @click.stop="deleteProject(project.id)" class="action-btn delete">
                 <Trash2 :size="12" />
               </button>
             </div>
@@ -205,11 +176,14 @@ const handleDrop = async (targetIndex: number) => {
       </button>
     </div>
 
-    <ConfirmationModal :isOpen="showDeleteCategoryConfirm" :title="t('modal.deleteCategory')"
-      :message="t('modal.deleteCategoryConfirm')" :confirmText="t('common.delete')" :cancelText="t('common.cancel')"
+    <ConfirmationModal :isOpen="showDeleteCategoryConfirm" :title="t('modal.deleteProject')"
+      :message="t('modal.deleteProjectConfirm')" :confirmText="t('common.delete')" :cancelText="t('common.cancel')"
       type="danger" @confirm="confirmDeleteCategory" @cancel="showDeleteCategoryConfirm = false" />
 
     <ImportModal :isOpen="showImportModal" @close="showImportModal = false" @import="showImportModal = false" />
+
+    <ProjectDetailModal :isOpen="showProjectDetailModal" :projectId="selectedProjectId || ''"
+      @close="showProjectDetailModal = false; selectedProjectId = null" />
   </aside>
 </template>
 
@@ -286,7 +260,7 @@ const handleDrop = async (targetIndex: number) => {
   border-top: 1px solid var(--color-border);
 }
 
-.categories-section {
+.projects-section {
   margin-top: 2rem;
 }
 
@@ -320,23 +294,23 @@ const handleDrop = async (targetIndex: number) => {
   color: var(--color-primary);
 }
 
-.category-item.dragging {
+.project-item.dragging {
   opacity: 0.5;
 }
 
-.category-item {
+.project-item {
   cursor: grab;
 }
 
-.category-item:active {
+.project-item:active {
   cursor: grabbing;
 }
 
-.category-link {
+.project-link {
   justify-content: space-between;
 }
 
-.category-link .category-title {
+.project-link .project-title {
   flex: 1;
   white-space: nowrap;
   overflow: hidden;

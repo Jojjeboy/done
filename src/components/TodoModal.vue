@@ -24,7 +24,7 @@ const { t } = useI18n()
 const taskTitle = ref('')
 const taskDescription = ref('')
 const taskPriority = ref<'low' | 'medium' | 'high'>('medium')
-const taskCategory = ref<string>('none')
+const taskProject = ref<string>('none')
 const taskDeadline = ref<string>('')
 const taskRecurrence = ref<'daily' | 'weekly' | 'monthly' | 'none'>('none')
 const parsedIntent = ref<DateParseResult | null>(null)
@@ -41,7 +41,7 @@ const loadTodoData = () => {
       taskTitle.value = todo.title
       taskDescription.value = todo.description || ''
       taskPriority.value = todo.priority
-      taskCategory.value = todo.categoryId || 'none'
+      taskProject.value = todo.categoryId || 'none'
       if (todo.deadline) {
         taskDeadline.value = new Date(todo.deadline as number).toISOString().split('T')[0] as string
       } else {
@@ -68,7 +68,7 @@ const resetForm = () => {
   taskTitle.value = ''
   taskDescription.value = ''
   taskPriority.value = 'medium'
-  taskCategory.value = props.initialCategoryId || 'none'
+  taskProject.value = props.initialCategoryId || 'none'
   taskDeadline.value = ''
   taskRecurrence.value = 'none'
   parsedIntent.value = null
@@ -116,7 +116,7 @@ const handleSave = async () => {
         description: taskDescription.value.trim(),
         priority: taskPriority.value,
         deadline: parsedIntent.value && parsedIntent.value.date ? parsedIntent.value.date : deadline,
-        categoryId: taskCategory.value === 'none' ? null : taskCategory.value,
+        categoryId: taskProject.value === 'none' ? null : taskProject.value,
         recurrence: taskRecurrence.value === 'none' ? null : taskRecurrence.value
       })
     } else {
@@ -125,7 +125,7 @@ const handleSave = async () => {
         taskDescription.value.trim(),
         taskPriority.value,
         parsedIntent.value && parsedIntent.value.date ? parsedIntent.value.date : deadline,
-        taskCategory.value === 'none' ? null : taskCategory.value,
+        taskProject.value === 'none' ? null : taskProject.value,
         taskRecurrence.value === 'none' ? null : taskRecurrence.value
       )
 
@@ -187,9 +187,9 @@ const confirmDelete = async () => {
         <div class="header-left">
           <h2 class="modal-title" v-if="!viewMode">{{ isEditMode ? t('modal.editTask') : t('modal.newTask') }}</h2>
           <div v-else class="view-header">
-            <span class="category-badge" v-if="taskCategory !== 'none'"
-              :style="{ backgroundColor: todoStore.categoriesById.get(taskCategory)?.color + '20', color: todoStore.categoriesById.get(taskCategory)?.color }">
-              {{ todoStore.categoriesById.get(taskCategory)?.title }}
+            <span class="category-badge" v-if="taskProject !== 'none'"
+              :style="{ backgroundColor: todoStore.projectsById.get(taskProject)?.color + '20', color: todoStore.projectsById.get(taskProject)?.color }">
+              {{ todoStore.projectsById.get(taskProject)?.title }}
             </span>
           </div>
         </div>
@@ -263,11 +263,11 @@ const confirmDelete = async () => {
               </select>
             </div>
             <div class="form-group flex-1">
-              <label class="label">{{ t('modal.category') }}</label>
-              <select v-model="taskCategory" class="form-select">
-                <option value="none">{{ t('modal.categories.none') }}</option>
-                <option v-for="category in todoStore.categories" :key="category.id" :value="category.id">
-                  {{ category.title }}
+              <label class="label">{{ t('modal.project') }}</label>
+              <select v-model="taskProject" class="form-select">
+                <option value="none">{{ t('tasks.categories.none') }}</option>
+                <option v-for="project in todoStore.projects" :key="project.id" :value="project.id">
+                  {{ project.title }}
                 </option>
               </select>
             </div>

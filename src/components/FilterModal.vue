@@ -56,17 +56,17 @@ const selectCategory = (categoryId: string | null) => {
             </div>
 
             <div class="section">
-                <label class="label">{{ t('modal.category') }}</label>
+                <label class="label">{{ t('modal.project') }}</label>
                 <div class="category-grid">
                     <button class="category-card" :class="{ active: activeCategory === null }"
                         @click="selectCategory(null)">
                         <div class="dot" style="background-color: #9CA3AF"></div>
-                        <span>{{ t('tasks.filters.all') }} {{ t('modal.category').toLowerCase() }}</span>
+                        <span>{{ t('tasks.filters.all') }} {{ t('modal.project').toLowerCase() }}</span>
                     </button>
-                    <button v-for="category in todoStore.categories" :key="category.id" class="category-card"
-                        :class="{ active: activeCategory === category.id }" @click="selectCategory(category.id)">
-                        <div class="dot" :style="{ backgroundColor: category.color }"></div>
-                        <span>{{ category.title }}</span>
+                    <button v-for="project in todoStore.projects" :key="project.id" class="category-card"
+                        :class="{ active: activeCategory === project.id }" @click="selectCategory(project.id)">
+                        <div class="dot" :style="{ backgroundColor: project.color }"></div>
+                        <span>{{ project.title }}</span>
                     </button>
                 </div>
             </div>
