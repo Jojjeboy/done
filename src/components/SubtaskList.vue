@@ -48,8 +48,7 @@ const newSubtaskTitle = ref('') // Top level input
 const isAddingKey = ref(false)
 const isSubmittingSubtask = ref(false)
 const addingToParentId = ref<string | null>(null)
-const newSubSubtaskTitle = ref('')
-const subSubInputRef = ref<HTMLInputElement | HTMLInputElement[] | null>(null)
+const newSubSubtaskTitles = ref<Record<string, string>>({})
 const mainInputRef = ref<{ focus: () => void } | null>(null)
 
 // Editing
@@ -159,18 +158,17 @@ watch(() => allSubtasks.value, () => {
 }, { deep: true })
 
 // Actions
-const focusSubSubInput = () => {
-  const el = subSubInputRef.value
-  if (Array.isArray(el)) {
-    // If it's an array (inside v-for), pick the first one (since only one is visible via v-if)
-    el[0]?.focus()
-  } else {
-    el?.focus()
-  }
+const focusSubSubInput = (parentId: string) => {
+  nextTick(() => {
+    const inputs = document.querySelectorAll(`.child-input[data-parent="${parentId}"]`) as NodeListOf<HTMLInputElement>
+    if (inputs.length > 0 && inputs[0]) {
+      inputs[0].focus()
+    }
+  })
 }
 
 const handleAddSubtask = async (parentId: string | null = null) => {
-  const title = parentId ? newSubSubtaskTitle.value.trim() : newSubtaskTitle.value.trim()
+  const title = parentId ? (newSubSubtaskTitles.value[parentId] || '').trim() : newSubtaskTitle.value.trim()
   if (!title) {
     // If empty title and adding sub-subtask transparently, maybe close?
     // Users might hit enter to close.
@@ -206,15 +204,13 @@ const handleAddSubtask = async (parentId: string | null = null) => {
     }
 
     if (parentId) {
-      newSubSubtaskTitle.value = ''
+      newSubSubtaskTitles.value[parentId] = ''
       // Re-focus for continuous entry
-      nextTick(() => {
-        focusSubSubInput()
-        // Reset flag after focus is restored
-        setTimeout(() => {
-          isSubmittingSubtask.value = false
-        }, 100)
-      })
+      focusSubSubInput(parentId)
+      // Reset flag after focus is restored
+      setTimeout(() => {
+        isSubmittingSubtask.value = false
+      }, 100)
     } else {
       newSubtaskTitle.value = ''
       nextTick(() => {
@@ -231,11 +227,11 @@ const handleAddSubtask = async (parentId: string | null = null) => {
 
 const startAddingSubSubtask = (parentId: string) => {
   addingToParentId.value = parentId
-  newSubSubtaskTitle.value = ''
+  if (!newSubSubtaskTitles.value[parentId]) {
+    newSubSubtaskTitles.value[parentId] = ''
+  }
   expandedParents.value.add(parentId)
-  nextTick(() => {
-    focusSubSubInput()
-  })
+  focusSubSubInput(parentId)
 }
 
 const toggleSubtask = async (subtask: { id: string; completed: boolean; parentId?: string | null }) => {
@@ -476,7 +472,7 @@ const executeConvert = async () => {
         </div>
 
         <!-- Children Row (Indented) -->
-        <div v-if="isExpanded(parent.id) || addingToParentId === parent.id" class="children-container">
+        <div v-if="isExpanded(parent.id)" class="children-container">
           <div v-for="child in getChildren(parent.id)" :key="child.id" class="subtask-item child-item"
             :class="{ completed: child.completed }">
             <div class="indent-line">
@@ -515,12 +511,14 @@ const executeConvert = async () => {
             </div>
           </div>
 
-          <!-- Input for new child -->
-          <div v-if="addingToParentId === parent.id" class="subtask-item child-item adding-row">
-            <div class="indent-line"></div>
-            <input ref="subSubInputRef" v-model="newSubSubtaskTitle" class="child-input"
+          <!-- Input for new child - Always visible for incomplete parents -->
+          <div class="subtask-item child-item adding-row">
+            <div class="indent-line">
+              <CornerDownRight :size="14" class="corner-icon" />
+            </div>
+            <input class="child-input" :data-parent="parent.id" v-model="newSubSubtaskTitles[parent.id]"
               :placeholder="t('modal.addSubtask')" @keyup.enter="handleAddSubtask(parent.id)"
-              @blur="!isSubmittingSubtask && (addingToParentId = null)" @keyup.escape="addingToParentId = null" />
+              @blur="isSubmittingSubtask = false" />
           </div>
         </div>
       </div>
