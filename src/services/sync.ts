@@ -127,6 +127,25 @@ class SyncService {
              this.isSyncing = false
          }
      }))
+
+      // 4. Listen to Settings
+      const settingsQuery = collection(db, `users/${this.userId}/settings`)
+      this.unsubscribers.push(onSnapshot(settingsQuery, async (snapshot) => {
+          this.isSyncing = true
+          try {
+              const changes = snapshot.docChanges()
+              for (const change of changes) {
+                  const data = change.doc.data() as { key: string; value: string | number | boolean }
+                  if (change.type === 'added' || change.type === 'modified') {
+                      await dexieDb.table('settings').put(data, 'key')
+                  } else if (change.type === 'removed') {
+                      await dexieDb.table('settings').delete(change.doc.id)
+                  }
+              }
+          } finally {
+              this.isSyncing = false
+          }
+      }))
   }
 
   // --- Push Methods ---
@@ -165,6 +184,13 @@ class SyncService {
   public async deleteSubtask(subtaskId: string) {
       if (!this.userId) return
       await deleteDoc(doc(db, `users/${this.userId}/subtasks`, subtaskId))
+  }
+
+  public async pushSetting(key: string, value: string | number | boolean) {
+    if (!this.userId) return
+    if (this.isSyncing) return // Avoid loop
+    const data = { key, value }
+    await setDoc(doc(db, `users/${this.userId}/settings`, key), data)
   }
 
 

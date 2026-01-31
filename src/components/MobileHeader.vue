@@ -52,6 +52,10 @@ const toggleTheme = () => {
   <header class="mobile-header">
     <div class="header-content">
       <div class="profile-section">
+        <router-link to="/" class="logo-link">
+          <img src="/done.png" alt="Done Logo" class="app-logo" />
+          <span class="app-name">{{ t('common.appName') }}</span>
+        </router-link>
         <div class="profile-avatar">
           <img v-if="userPhotoURL" :src="userPhotoURL" alt="Profile" class="avatar-image" />
           <span v-else>{{ userInitials }}</span>
@@ -110,7 +114,30 @@ const toggleTheme = () => {
 .profile-section {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 0.75rem;
+}
+
+.logo-link {
+  display: flex;
+  align-items: center;
+  transition: opacity var(--transition-base);
+}
+
+.logo-link:hover {
+  opacity: 0.8;
+}
+
+.app-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.app-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: var(--color-primary);
+  margin-left: 0.5rem;
 }
 
 .profile-avatar {

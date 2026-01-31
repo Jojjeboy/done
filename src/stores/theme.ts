@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { getDatabase } from '@/db'
+import { syncService } from '@/services/sync'
 
 export type Theme = 'light' | 'dark'
 export type ColorPalette = 'purple' | 'blue' | 'green' | 'rose' | 'orange' | 'indigo' | 'teal' | 'cyan' | 'fuchsia'
@@ -146,10 +147,11 @@ export const useThemeStore = defineStore('theme', () => {
     // Persist to localStorage immediately
     localStorage.setItem('done-theme', theme.value)
 
-    // Also persist to IndexedDB if available
+    // Also persist to IndexedDB and Firebase if available
     try {
       const db = getDatabase()
       await db.table('settings').put({ key: 'theme', value: theme.value }, 'key')
+      await syncService.pushSetting('theme', theme.value)
     } catch {
       // Database not available yet, that's fine - localStorage has it
     }
@@ -163,10 +165,11 @@ export const useThemeStore = defineStore('theme', () => {
     // Persist to localStorage immediately
     localStorage.setItem('done-theme', newTheme)
 
-    // Also persist to IndexedDB if available
+    // Also persist to IndexedDB and Firebase if available
     try {
       const db = getDatabase()
       await db.table('settings').put({ key: 'theme', value: newTheme }, 'key')
+      await syncService.pushSetting('theme', newTheme)
     } catch {
       // Database not available yet, that's fine - localStorage has it
     }
@@ -180,10 +183,11 @@ export const useThemeStore = defineStore('theme', () => {
     // Persist to localStorage immediately
     localStorage.setItem('done-color-palette', palette)
 
-    // Also persist to IndexedDB if available
+    // Also persist to IndexedDB and Firebase if available
     try {
       const db = getDatabase()
       await db.table('settings').put({ key: 'colorPalette', value: palette }, 'key')
+      await syncService.pushSetting('colorPalette', palette)
     } catch {
       // Database not available yet, that's fine - localStorage has it
     }

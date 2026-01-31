@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import i18n from '@/i18n'
 import type { SupportedLocale } from '@/i18n'
 import { getDatabase } from '@/db'
+import { syncService } from '@/services/sync'
 
 export const useI18nStore = defineStore('i18n', () => {
   const initialized = ref(false)
@@ -37,6 +38,7 @@ export const useI18nStore = defineStore('i18n', () => {
     try {
       const db = getDatabase()
       await db.table('settings').put({ key: 'locale', value: newLocale }, 'key')
+      await syncService.pushSetting('locale', newLocale)
     } catch (err) {
       console.warn('Could not persist locale preference:', err)
     }

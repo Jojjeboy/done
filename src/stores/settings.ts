@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { getDatabase } from '@/db'
+import { syncService } from '@/services/sync'
 
 export const useSettingsStore = defineStore('settings', () => {
   const isThreeStepEnabled = ref(false)
@@ -38,6 +39,7 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       const db = getDatabase()
       await db.table('settings').put({ key: 'isThreeStepEnabled', value })
+      await syncService.pushSetting('isThreeStepEnabled', value)
     } catch (e) {
       console.error('Failed to save settings', e)
     }
@@ -75,10 +77,12 @@ export const useSettingsStore = defineStore('settings', () => {
   const saveFocusModeIds = async () => {
     try {
       const db = getDatabase()
+      const stringValue = JSON.stringify(focusModeTaskIds.value)
       await db.table('settings').put({
         key: 'focusModeTaskIds',
-        value: JSON.stringify(focusModeTaskIds.value)
+        value: stringValue
       })
+      await syncService.pushSetting('focusModeTaskIds', stringValue)
     } catch (e) {
       console.error('Failed to save focus mode settings', e)
     }

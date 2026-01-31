@@ -9,10 +9,9 @@ import { useI18nStore } from '@/stores/i18n'
 import { useI18n } from 'vue-i18n'
 import {
   ArrowLeft, LogOut, Moon, Sun, Globe,
-  RotateCcw, FileText, User,
-  Palette, Info, ChevronRight, Star, BarChart
+  RotateCcw, User,
+  Palette, Info, ChevronRight, BarChart, Bug
 } from 'lucide-vue-next'
-import { useRegisterSW } from 'virtual:pwa-register/vue'
 import type { SupportedLocale } from '@/i18n'
 
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
@@ -25,9 +24,6 @@ const themeStore = useThemeStore()
 const i18nStore = useI18nStore()
 const { t, locale } = useI18n()
 
-const { updateServiceWorker } = useRegisterSW()
-const isCheckingForUpdate = vueRef(false)
-const updateStatusMessage = vueRef('')
 const showLogoutConfirm = vueRef(false)
 
 const latestCommit = computed<CommitData>(() => commitData as CommitData)
@@ -64,23 +60,6 @@ const confirmLogout = async () => {
     console.error('Logout failed:', error)
   } finally {
     showLogoutConfirm.value = false
-  }
-}
-
-const handleCheckForUpdates = async () => {
-  try {
-    isCheckingForUpdate.value = true
-    updateStatusMessage.value = t('pwa.updateCheck')
-    await updateServiceWorker(true)
-    setTimeout(() => {
-      isCheckingForUpdate.value = false
-      updateStatusMessage.value = t('pwa.noUpdate')
-      setTimeout(() => { updateStatusMessage.value = '' }, 3000)
-    }, 2000)
-  } catch (error) {
-    console.error('Update check failed:', error)
-    isCheckingForUpdate.value = false
-    updateStatusMessage.value = t('pwa.updateError')
   }
 }
 </script>
@@ -218,41 +197,26 @@ const handleCheckForUpdates = async () => {
                 <ChevronRight :size="18" class="chevron" />
               </div>
               <div class="list-divider"></div>
-              <div class="list-item clickable" @click="handleCheckForUpdates">
+              <div class="list-item clickable" @click="router.push('/changelog')">
                 <div class="item-info">
                   <div class="item-icon-circle about">
-                    <RotateCcw :size="16" :class="{ spinning: isCheckingForUpdate }" />
+                    <RotateCcw :size="16" />
                   </div>
                   <div class="item-text-group">
-                    <span class="item-label">{{ t('pwa.titleCheckForUpdate') }}</span>
+                    <span class="item-label">{{ t('pwa.updatesAndChangelog') }}</span>
                     <span class="item-desc" v-if="latestCommit.latest">{{ latestCommit.latest.message }}</span>
-                  </div>
-                </div>
-                <div class="item-action">
-                  <span class="status-msg" v-if="updateStatusMessage">{{ updateStatusMessage }}</span>
-                  <ChevronRight v-else :size="18" class="chevron" />
-                </div>
-              </div>
-              <div class="list-divider"></div>
-              <div class="list-item clickable" @click="router.push('/features')">
-                <div class="item-info">
-                  <div class="item-icon-circle features">
-                    <Star :size="16" />
-                  </div>
-                  <div class="item-text-group">
-                    <span class="item-label">{{ t('common.features') }}</span>
                   </div>
                 </div>
                 <ChevronRight :size="18" class="chevron" />
               </div>
               <div class="list-divider"></div>
-              <div class="list-item clickable" @click="router.push('/changelog')">
+              <div class="list-item clickable" @click="router.push('/debug')">
                 <div class="item-info">
                   <div class="item-icon-circle changelog">
-                    <FileText :size="16" />
+                    <Bug :size="16" />
                   </div>
                   <div class="item-text-group">
-                    <span class="item-label">{{ t('pwa.viewChangelog') }}</span>
+                    <span class="item-label">Debug Info</span>
                   </div>
                 </div>
                 <ChevronRight :size="18" class="chevron" />

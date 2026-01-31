@@ -93,7 +93,10 @@ const handleDrop = async (targetIndex: number) => {
 <template>
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h1 class="app-title">{{ t('common.appName') }}</h1>
+      <router-link to="/" class="sidebar-brand">
+        <img src="/done.png" alt="Done Logo" class="app-logo" />
+        <h1 class="app-title">{{ t('common.appName') }}</h1>
+      </router-link>
     </div>
 
     <nav class="sidebar-nav">
@@ -206,6 +209,25 @@ const handleDrop = async (targetIndex: number) => {
   border-bottom: 1px solid var(--color-border);
 }
 
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity var(--transition-base);
+}
+
+.logo-link:hover {
+  opacity: 0.8;
+}
+
+.app-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
 .app-title {
   font-size: 1.25rem;
   font-weight: bold;
@@ -306,6 +328,15 @@ const handleDrop = async (targetIndex: number) => {
   cursor: grabbing;
 }
 
+.project-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  align-items: flex-start;
+}
+
 .project-link {
   justify-content: space-between;
 }
@@ -315,6 +346,8 @@ const handleDrop = async (targetIndex: number) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
+  width: 100%;
 }
 
 .color-dot {

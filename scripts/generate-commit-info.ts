@@ -21,9 +21,9 @@ interface CommitData {
 
 function getCommitData(): CommitData {
   try {
-    // Get the last 10 commits
+    // Get the last 50 commits (increased from 10 to ensure more entries are visible)
     const gitLog = execSync(
-      'git log -10 --pretty=format:"%h|%s|%ai|%an"',
+      'git log -50 --pretty=format:"%h|%s|%ai|%an"',
       { encoding: 'utf-8' }
     )
 

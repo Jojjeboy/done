@@ -50,6 +50,11 @@ const router = createRouter({
       component: () => import('../views/FeaturesView.vue'),
     },
     {
+      path: '/debug',
+      name: 'debug',
+      component: () => import('../views/DebugView.vue'),
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../views/NotFoundView.vue'),
