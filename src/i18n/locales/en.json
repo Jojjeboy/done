@@ -31,6 +31,7 @@
     "convert": "Convert",
     "discardChanges": "You have unsaved changes. Do you want to discard them?",
     "board": "Board",
+    "allProjects": "All Projects",
     "appName": "Done"
   },
   "focus": {
@@ -57,7 +58,7 @@
     "taskName": "Task name",
     "status": {
       "pending": "Pending",
-      "inProgress": "In Progress",
+      "in_progress": "In Progress",
       "completed": "Completed"
     },
     "priority": {

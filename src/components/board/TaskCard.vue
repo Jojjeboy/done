@@ -56,8 +56,25 @@ const isOverdue = computed(() => {
 })
 
 const navigateToDetail = () => {
-    // We navigate to the home view with the task ID opened in sidebar/modal
-    router.push({ name: 'home', params: { id: props.task.id } })
+    // Check if we are in a project-specific board view
+    const currentProjectId = router.currentRoute.value.params.projectId
+
+    if (router.currentRoute.value.path.startsWith('/board')) {
+       if (currentProjectId) {
+           router.push({
+               name: 'board-project-task-detail',
+               params: { projectId: currentProjectId, id: props.task.id }
+           })
+       } else {
+           router.push({
+               name: 'board-task-detail',
+               params: { id: props.task.id }
+           })
+       }
+    } else {
+        // Fallback to home view (list view) navigation
+        router.push({ name: 'home', params: { id: props.task.id } })
+    }
 }
 </script>
 

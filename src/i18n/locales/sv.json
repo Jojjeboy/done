@@ -31,6 +31,7 @@
     "convert": "Konvertera",
     "discardChanges": "Du har osparade ändringar. Vill du slänga dem?",
     "board": "Tavla",
+    "allProjects": "Alla Projekt",
     "appName": "Done"
   },
   "focus": {
@@ -57,7 +58,7 @@
     "taskName": "Uppgiftsnamn",
     "status": {
       "pending": "Väntande",
-      "inProgress": "Pågående",
+      "in_progress": "Pågående",
       "completed": "Klar"
     },
     "priority": {
