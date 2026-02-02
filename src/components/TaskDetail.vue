@@ -427,7 +427,8 @@ const metaItems = computed(() => {
             <CheckCircle :size="12" />
             <span>{{ t('tasks.status.completed') }}</span>
           </div>
-          <input v-model="taskTitle" type="text" class="task-title-input" :placeholder="t('modal.whatTask')"
+          <input v-model="taskTitle" type="text" class="task-title-input"
+            :class="{ completed: taskStatus === 'completed' }" :placeholder="t('modal.whatTask')"
             @blur="handleFieldChange" @keydown.enter="handleFieldChange">
           <div v-if="parsedIntent" class="intent-badge" @click="saveChanges">
             <Sparkles :size="12" />
@@ -547,7 +548,7 @@ const metaItems = computed(() => {
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-              }}</span>
+                }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -576,7 +577,7 @@ const metaItems = computed(() => {
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-        }}</button>
+          }}</button>
       </div>
     </div>
 
@@ -758,6 +759,12 @@ const metaItems = computed(() => {
   width: 100%;
   color: var(--color-text-primary);
   padding: 0;
+  transition: color 0.2s;
+}
+
+.task-title-input.completed {
+  text-decoration: line-through;
+  color: var(--color-text-secondary);
 }
 
 .task-title-input:focus {
