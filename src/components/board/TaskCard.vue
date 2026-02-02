@@ -86,11 +86,9 @@ const navigateToDetail = () => {
 <template>
   <div class="task-card" :class="{ 'is-completed': isCompleted }" @click="navigateToDetail">
     <div class="card-header">
-      <span class="priority-badge" :class="priorityColor">
-        {{ priorityLabel }}
-      </span>
       <div v-if="project" class="project-dot" :style="{ backgroundColor: project.color || '#ccc' }"
         :title="project.title"></div>
+      <div v-else class="spacer"></div>
     </div>
 
     <h4 class="task-title" :class="{ 'completed': task.status === 'completed' }">
@@ -111,14 +109,16 @@ const navigateToDetail = () => {
       </div>
       <div v-else class="spacer"></div>
 
-      <!-- Placeholder for assignee or other icons -->
+      <span class="priority-badge" :class="priorityColor">
+        {{ priorityLabel }}
+      </span>
     </div>
   </div>
 </template>
 
 <style scoped>
 .task-card {
-  background: var(--color-bg-primary);
+  background: #ffffff;
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
   box-shadow: var(--shadow-sm);
@@ -129,6 +129,11 @@ const navigateToDetail = () => {
   /* Important for dragging */
   position: relative;
   overflow: hidden;
+}
+
+.dark .task-card {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border);
 }
 
 
@@ -150,8 +155,6 @@ const navigateToDetail = () => {
 
 .dark .task-card {
   background: var(--color-bg-secondary);
-  /* Slightly lighter than pure dark bg */
-  border-color: var(--color-border);
 }
 
 .card-header {
