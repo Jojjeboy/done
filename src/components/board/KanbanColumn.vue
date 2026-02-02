@@ -86,13 +86,29 @@ function onChange(event: any) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md);
-  margin-bottom: var(--spacing-md);
-  border-top: 3px solid transparent;
-  /* Colored top border */
-  background: var(--color-bg-primary);
-  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  background: var(--color-bg-white);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
+}
+
+.dark .column-header {
+  background: var(--color-bg-card);
+  border-color: var(--color-border);
+}
+
+.kanban-column:nth-child(1) .column-header {
+  border-left: 4px solid #3b82f6;
+}
+
+.kanban-column:nth-child(2) .column-header {
+  border-left: 4px solid #f97316;
+}
+
+.kanban-column:nth-child(3) .column-header {
+  border-left: 4px solid #22c55e;
 }
 
 .header-title-row {

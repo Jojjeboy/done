@@ -34,6 +34,7 @@
     "allProjects": "Alla Projekt",
     "pin": "Fäst",
     "unpin": "Lossa",
+    "move": "Flytta",
     "appName": "Done"
   },
   "focus": {
@@ -209,7 +210,9 @@
     "completeTask": "Slutför uppgift",
     "restartTask": "Återstarta uppgift",
     "select": "Välj",
-    "deselect": "Avmarkera"
+    "deselect": "Avmarkera",
+    "moveTask": "Flytta uppgift",
+    "confirmMoveProject": "Är du säker på att du vill flytta denna uppgift till {project}?"
   },
   "pwa": {
     "readyOffline": "Appen är redo att användas offline",

@@ -34,6 +34,7 @@
     "allProjects": "All Projects",
     "pin": "Pin",
     "unpin": "Unpin",
+    "move": "Move",
     "appName": "Done"
   },
   "focus": {
@@ -209,7 +210,9 @@
     "completeTask": "Complete task",
     "restartTask": "Restart task",
     "select": "Select",
-    "deselect": "Deselect"
+    "deselect": "Deselect",
+    "moveTask": "Move Task",
+    "confirmMoveProject": "Are you sure you want to move this task to {project}?"
   },
   "pwa": {
     "readyOffline": "App ready to work offline",
