@@ -314,7 +314,7 @@ function toggleMobileSection(laneId: string, status: string) {
                 <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
                 <h3>{{ lane.title }}</h3>
                 <span class="lane-count">{{ lane.pending.length + lane.inProgress.length + lane.completed.length
-                  }}</span>
+                }}</span>
               </div>
               <div class="lane-actions">
                 <button v-if="lane.projectId" class="pin-btn" :class="{ 'is-pinned': lane.isPinned }"
@@ -351,7 +351,7 @@ function toggleMobileSection(laneId: string, status: string) {
                     <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
                     <h3>{{ lane.title }}</h3>
                     <span class="lane-count">{{ lane.pending.length + lane.inProgress.length + lane.completed.length
-                      }}</span>
+                    }}</span>
                   </div>
                   <div class="lane-actions">
                     <button v-if="lane.projectId" class="pin-btn" :class="{ 'is-pinned': lane.isPinned }"
@@ -532,13 +532,21 @@ function toggleMobileSection(laneId: string, status: string) {
 }
 
 .swimlane {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
+  background: rgba(0, 0, 0, 0.01);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.dark .swimlane {
+  background: rgba(255, 255, 255, 0.01);
 }
 
 .swimlane-header {
-  padding: var(--spacing-sm) var(--spacing-xl);
-  background: var(--color-bg-white);
-  border-bottom: 1px solid var(--color-border-light);
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: transparent;
+  /* border-bottom: 1px solid var(--color-border-light); */
+  /* Removed */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -551,12 +559,17 @@ function toggleMobileSection(laneId: string, status: string) {
 }
 
 .dark .swimlane-header {
-  background: var(--color-bg-card);
-  border-color: var(--color-border);
+  background: transparent;
+  /* border-color: var(--color-border); */
+  /* Removed */
 }
 
 .swimlane-header:hover {
-  background: var(--color-bg-lighter);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark .swimlane-header:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .lane-title-group {
@@ -569,25 +582,27 @@ function toggleMobileSection(laneId: string, status: string) {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--color-bg-white), 0 0 0 4px rgba(0, 0, 0, 0.05);
+  /* box-shadow: 0 0 0 2px var(--color-bg-white), 0 0 0 4px rgba(0, 0, 0, 0.05); */
+  /* Removed */
 }
 
 .dark .lane-dot {
-  box-shadow: 0 0 0 2px var(--color-bg-card), 0 0 0 4px rgba(255, 255, 255, 0.05);
+  /* box-shadow: 0 0 0 2px var(--color-bg-card), 0 0 0 4px rgba(255, 255, 255, 0.05); */
+  /* Removed */
 }
 
 .swimlane-header h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--color-text-primary);
   letter-spacing: -0.01em;
 }
 
 .lane-count {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  background: var(--color-bg-lighter);
+  background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
   padding: 2px 8px;
   border-radius: 10px;
@@ -619,8 +634,12 @@ function toggleMobileSection(laneId: string, status: string) {
 }
 
 .pin-btn:hover {
-  background: var(--color-bg-lavender);
+  background: rgba(0, 0, 0, 0.05);
   color: var(--color-primary);
+}
+
+.dark .pin-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .pin-btn.is-pinned {
@@ -634,9 +653,11 @@ function toggleMobileSection(laneId: string, status: string) {
 
 .kanban-container.desktop-board {
   display: flex;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg) var(--spacing-xl);
-  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-xl) var(--spacing-xl);
+  align-items: stretch;
+  /* Stretch columns */
+  min-height: 200px;
 }
 
 /* Mobile Styles */

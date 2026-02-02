@@ -15,8 +15,12 @@ const props = defineProps<{
 const router = useRouter()
 const todoStore = useTodoStore()
 
+const isCompleted = computed(() => props.task.status === 'completed')
+
 // Priority Colors
 const priorityColor = computed(() => {
+  if (isCompleted.value) return 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
+
   switch (props.task.priority) {
     case 'high': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
     case 'medium': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
@@ -79,7 +83,7 @@ const navigateToDetail = () => {
 </script>
 
 <template>
-  <div class="task-card" @click="navigateToDetail">
+  <div class="task-card" :class="{ 'is-completed': isCompleted }" @click="navigateToDetail">
     <div class="card-header">
       <span class="priority-badge" :class="priorityColor">
         {{ priorityLabel }}
@@ -133,9 +137,19 @@ const navigateToDetail = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: v-bind('project?.color || "transparent"');
+  background-color: v-bind('isCompleted ? "transparent" : (project?.color || "transparent")');
   opacity: 0.15;
   pointer-events: none;
+}
+
+.task-card.is-completed {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-border-light);
+  opacity: 0.8;
+}
+
+.dark .task-card.is-completed {
+  background-color: rgba(255, 255, 255, 0.03);
 }
 
 .dark .task-card::before {

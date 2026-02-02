@@ -39,7 +39,7 @@ const headerColor = computed(() => {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function onChange(event: any) {
-    emit('change', event)
+  emit('change', event)
 }
 </script>
 
@@ -60,22 +60,11 @@ function onChange(event: any) {
        group="tasks" allows moving between columns
        item-key="id" required for Vue 3
     -->
-    <draggable
-      class="task-list"
-      v-model="taskList"
-      group="tasks"
-      item-key="id"
-      :animation="200"
-      ghost-class="ghost-card"
-      drag-class="drag-card"
-      @change="onChange"
-    >
+    <draggable class="task-list" v-model="taskList" group="tasks" item-key="id" :animation="200"
+      ghost-class="ghost-card" drag-class="drag-card" @change="onChange">
       <template #item="{ element }">
-         <TaskCard
-           :task="element"
-           :project="element.categoryId ? projects.get(element.categoryId) : undefined"
-           class="mb-3"
-         />
+        <TaskCard :task="element" :project="element.categoryId ? projects.get(element.categoryId) : undefined"
+          class="mb-3" />
       </template>
     </draggable>
   </div>
@@ -86,9 +75,9 @@ function onChange(event: any) {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-width: 280px;
-  max-width: 100%;
-  background: var(--color-bg-secondary);
+  flex: 1;
+  min-width: 250px;
+  background: rgba(0, 0, 0, 0.02);
   border-radius: var(--radius-lg);
   padding: var(--spacing-sm);
 }
@@ -99,7 +88,8 @@ function onChange(event: any) {
   align-items: center;
   padding: var(--spacing-sm) var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  border-top: 3px solid transparent; /* Colored top border */
+  border-top: 3px solid transparent;
+  /* Colored top border */
   background: var(--color-bg-primary);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
@@ -149,17 +139,21 @@ function onChange(event: any) {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 4px; /* Space for scrollbar */
-  min-height: 100px; /* Drop target size */
+  padding-right: 4px;
+  /* Space for scrollbar */
+  min-height: 100px;
+  /* Drop target size */
 }
 
 /* Scrollbar styling */
 .task-list::-webkit-scrollbar {
   width: 4px;
 }
+
 .task-list::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .task-list::-webkit-scrollbar-thumb {
   background: var(--color-border);
   border-radius: 4px;
@@ -180,8 +174,19 @@ function onChange(event: any) {
 }
 
 /* Header colors */
-.border-blue-500 { border-top-color: #3b82f6; }
-.border-orange-500 { border-top-color: #f97316; }
-.border-green-500 { border-top-color: #22c55e; }
-.border-gray-500 { border-top-color: #6b7280; }
+.border-blue-500 {
+  border-top-color: #3b82f6;
+}
+
+.border-orange-500 {
+  border-top-color: #f97316;
+}
+
+.border-green-500 {
+  border-top-color: #22c55e;
+}
+
+.border-gray-500 {
+  border-top-color: #6b7280;
+}
 </style>
