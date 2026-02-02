@@ -288,7 +288,7 @@ function hexToRgb(hex: string) {
                 <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
                 <h3>{{ lane.title }}</h3>
                 <span class="lane-count">{{ lane.pending.length + lane.inProgress.length + lane.completed.length
-                }}</span>
+                  }}</span>
               </div>
               <div class="lane-actions">
                 <button v-if="lane.projectId" class="pin-btn" :class="{ 'is-pinned': lane.isPinned }"
@@ -321,7 +321,8 @@ function hexToRgb(hex: string) {
                     </div>
                     <div v-show="isSectionOpen(lane.id, 'pending')" class="mobile-task-list">
                       <draggable :list="lane.pending" item-key="id" group="tasks" class="drag-area"
-                        @change="onTaskChange($event, 'pending', lane.projectId)">
+                        @change="onTaskChange($event, 'pending', lane.projectId)" :delay="100"
+                        :delay-on-touch-only="true">
                         <template #item="{ element }">
                           <TaskCard :task="element"
                             :project="element.categoryId ? todoStore.projectsById.get(element.categoryId) : undefined" />
@@ -340,7 +341,8 @@ function hexToRgb(hex: string) {
                     </div>
                     <div v-show="isSectionOpen(lane.id, 'inProgress')" class="mobile-task-list">
                       <draggable :list="lane.inProgress" item-key="id" group="tasks" class="drag-area"
-                        @change="onTaskChange($event, 'in-progress', lane.projectId)">
+                        @change="onTaskChange($event, 'in-progress', lane.projectId)" :delay="100"
+                        :delay-on-touch-only="true">
                         <template #item="{ element }">
                           <TaskCard :task="element"
                             :project="element.categoryId ? todoStore.projectsById.get(element.categoryId) : undefined" />
@@ -359,7 +361,8 @@ function hexToRgb(hex: string) {
                     </div>
                     <div v-show="isSectionOpen(lane.id, 'completed')" class="mobile-task-list">
                       <draggable :list="lane.completed" item-key="id" group="tasks" class="drag-area"
-                        @change="onTaskChange($event, 'completed', lane.projectId)">
+                        @change="onTaskChange($event, 'completed', lane.projectId)" :delay="100"
+                        :delay-on-touch-only="true">
                         <template #item="{ element }">
                           <TaskCard :task="element"
                             :project="element.categoryId ? todoStore.projectsById.get(element.categoryId) : undefined" />

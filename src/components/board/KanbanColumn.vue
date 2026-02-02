@@ -61,7 +61,7 @@ function onChange(event: any) {
        item-key="id" required for Vue 3
     -->
     <draggable class="task-list" v-model="taskList" group="tasks" item-key="id" :animation="200"
-      ghost-class="ghost-card" drag-class="drag-card" @change="onChange">
+      ghost-class="ghost-card" drag-class="drag-card" @change="onChange" :delay="100" :delay-on-touch-only="true">
       <template #item="{ element }">
         <TaskCard :task="element" :project="element.categoryId ? projects.get(element.categoryId) : undefined"
           class="mb-3" />
