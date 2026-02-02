@@ -39,12 +39,14 @@ describe('BottomNavigation Component', () => {
           Home: true,
           Plus: true,
           Settings: true,
+          LayoutDashboard: true
         },
       },
     })
 
     const buttons = wrapper.findAll('button')
-    expect(buttons.length).toBe(3)
+    // Home, Board, Add, Settings = 4
+    expect(buttons.length).toBe(4)
   })
 
   it('has appropriate ARIA labels', () => {
@@ -54,6 +56,7 @@ describe('BottomNavigation Component', () => {
           Home: true,
           Plus: true,
           Settings: true,
+          LayoutDashboard: true
         },
       },
     })

@@ -59,6 +59,30 @@ const router = createRouter({
       name: 'not-found',
       component: () => import('../views/NotFoundView.vue'),
     },
+    {
+       path: '/board',
+       component: () => import('../views/BoardView.vue'),
+       name: 'board',
+       children: [
+            {
+            path: 'task/:id',
+            name: 'board-task-detail',
+            component: () => import('../views/TaskDetailView.vue'),
+            },
+       ]
+    },
+    {
+        path: '/board/:projectId',
+        component: () => import('../views/BoardView.vue'),
+        name: 'board-project',
+        children: [
+             {
+             path: 'task/:id',
+             name: 'board-project-task-detail',
+             component: () => import('../views/TaskDetailView.vue'),
+             },
+        ]
+     },
   ],
 })
 

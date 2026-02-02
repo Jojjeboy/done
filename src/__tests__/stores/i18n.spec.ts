@@ -1,6 +1,21 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useI18nStore } from '@/stores/i18n'
+
+vi.mock('@/db', () => ({
+  getDatabase: vi.fn(() => ({
+    table: vi.fn(() => ({
+      get: vi.fn(),
+      put: vi.fn(),
+    })),
+  })),
+}))
+
+vi.mock('@/services/sync', () => ({
+  syncService: {
+    pushSetting: vi.fn(),
+  },
+}))
 
 describe('i18n Store', () => {
   beforeEach(() => {
