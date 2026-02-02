@@ -95,6 +95,10 @@ const navigateToDetail = () => {
       {{ task.title }}
     </h4>
 
+    <p v-if="task.description" class="task-description">
+      {{ task.description }}
+    </p>
+
     <div v-if="progress" class="progress-section">
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" :style="{ width: `${progress.percentage}%` }"></div>
@@ -195,6 +199,18 @@ const navigateToDetail = () => {
 .task-title.completed {
   text-decoration: line-through;
   color: var(--color-text-secondary);
+}
+
+.task-description {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .progress-section {
