@@ -19,6 +19,7 @@ const title = ref('')
 const description = ref('')
 const color = ref('#ccc')
 const showProgress = ref(true)
+const isPinned = ref(false)
 const deadline = ref('')
 
 const isSaving = ref(false)
@@ -30,6 +31,7 @@ const loadProject = () => {
         description.value = project.description || ''
         color.value = project.color || '#ccc'
         showProgress.value = project.showProgress ?? true
+        isPinned.value = project.isPinned ?? false
         if (project.deadline && typeof project.deadline === 'number') {
             deadline.value = new Date(project.deadline).toISOString().split('T')[0]!
         } else {
@@ -52,6 +54,7 @@ const handleSave = async () => {
             description: description.value.trim(),
             color: color.value,
             showProgress: showProgress.value,
+            isPinned: isPinned.value,
             deadline: deadline.value ? new Date(deadline.value).getTime() : null
         })
         emit('close')
@@ -115,6 +118,14 @@ const colors = [
                     <span>{{ t('modal.showProgress') }}</span>
                     <button class="toggle-switch" :class="{ active: showProgress }"
                         @click="showProgress = !showProgress">
+                        <div class="toggle-thumb"></div>
+                    </button>
+                </div>
+
+                <!-- Pinned Toggle -->
+                <div class="form-row toggle-row">
+                    <span>{{ t('modal.pinned') }}</span>
+                    <button class="toggle-switch" :class="{ active: isPinned }" @click="isPinned = !isPinned">
                         <div class="toggle-thumb"></div>
                     </button>
                 </div>

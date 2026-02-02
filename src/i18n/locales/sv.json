@@ -32,6 +32,8 @@
     "discardChanges": "Du har osparade ändringar. Vill du slänga dem?",
     "board": "Tavla",
     "allProjects": "Alla Projekt",
+    "pin": "Fäst",
+    "unpin": "Lossa",
     "appName": "Done"
   },
   "focus": {

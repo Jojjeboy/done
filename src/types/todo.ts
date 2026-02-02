@@ -13,6 +13,7 @@ export interface Project {
   description?: string
   deadline?: number | null
   showProgress?: boolean // Default true
+  isPinned?: boolean
 }
 
 export interface TodoItem {

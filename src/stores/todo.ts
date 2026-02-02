@@ -235,7 +235,7 @@ export const useTodoStore = defineStore('todo', () => {
 
   // Project CRUD
 
-  const addProject = async (title: string, color?: string, icon?: string, description?: string, deadline?: number | null, showProgress?: boolean) => {
+  const addProject = async (title: string, color?: string, icon?: string, description?: string, deadline?: number | null, showProgress?: boolean, isPinned: boolean = false) => {
       // Find the first unused color from the palette
       const usedColors = new Set(projects.value.map(c => c.color))
       const autoColor = color || COLOR_PALETTE.find(c => !usedColors.has(c)) || DEFAULT_COLOR
@@ -248,6 +248,7 @@ export const useTodoStore = defineStore('todo', () => {
           description,
           deadline,
           showProgress: showProgress ?? true,
+          isPinned,
           createdAt: Date.now(),
           order: projects.value.length
       }

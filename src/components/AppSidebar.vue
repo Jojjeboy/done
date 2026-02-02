@@ -8,7 +8,8 @@ import {
   Plus,
   Trash2,
   Edit2,
-  LayoutDashboard
+  LayoutDashboard,
+  Star
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import ImportModal from '@/components/ImportModal.vue'
@@ -115,16 +116,6 @@ const handleDrop = async (targetIndex: number) => {
       <button class="nav-item" :class="{ active: isActive('/board') }" @click="router.push('/board')">
         <LayoutDashboard :size="20" />
         <span>{{ t('common.board') || 'Board' }}</span>
-      </button>
-
-      <button class="nav-item" :class="{ active: isActive('/stats') }" @click="router.push('/stats')">
-        <BarChart :size="20" />
-        <span>{{ t('common.insights') }}</span>
-      </button>
-
-      <button class="nav-item" @click="showImportModal = true">
-        <FileJson :size="20" />
-        <span>{{ t('common.importTasks') }}</span>
       </button>
 
       <div class="projects-section">

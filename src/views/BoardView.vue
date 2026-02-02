@@ -40,6 +40,7 @@ interface Swimlane {
   completed: TodoItem[]
   projectId: string | null // null for Uncategorized
   isOpen: boolean
+  isPinned: boolean
 }
 
 // We map Projects -> Swimlanes
@@ -80,7 +81,12 @@ function syncSwimlanes() {
     }
   } else {
     // All Projects View
-    projectsToShow = [...todoStore.projects]
+    projectsToShow = [...todoStore.projects].sort((a, b) => {
+      // Pinned first
+      if (a.isPinned && !b.isPinned) return -1
+      if (!a.isPinned && b.isPinned) return 1
+      return a.order - b.order
+    })
   }
 
   // Preserve existing open states if re-syncing
@@ -88,15 +94,16 @@ function syncSwimlanes() {
   swimlanes.value.forEach(l => existingStates.set(l.id, l.isOpen))
 
   // Helper to init swimlane
-  const createSwimlane = (id: string, title: string, color?: string, pid: string | null = null) => ({
+  const createSwimlane = (id: string, title: string, color?: string, pid: string | null = null, isPinned: boolean = false) => ({
     id,
     title,
     color,
     projectId: pid,
+    isPinned,
     pending: [] as TodoItem[],
     inProgress: [] as TodoItem[],
     completed: [] as TodoItem[],
-    isOpen: existingStates.has(id) ? existingStates.get(id)! : true
+    isOpen: true // Default to true, logic below will handle auto-collapse
   })
 
   // Build map
@@ -104,7 +111,7 @@ function syncSwimlanes() {
 
   // Create lanes for projects
   projectsToShow.forEach(p => {
-    laneMap.set(p.id, createSwimlane(p.id, p.title, p.color, p.id))
+    laneMap.set(p.id, createSwimlane(p.id, p.title, p.color, p.id, p.isPinned))
   })
 
   // Create Uncategorized lane if needed (always needed if showing all, or if filtered to none)
@@ -133,22 +140,64 @@ function syncSwimlanes() {
     }
   })
 
-  // Convert map to array. Projects should be sorted by stored order (handled by store.projects already)
-  // Uncategorized usually goes last or first? Let's put it last.
-  const result: Swimlane[] = []
+  // Final swimlane list with Sorting & Auto-collapse logic
+
+  // 1. Map to array
+  const tempLanes: Swimlane[] = []
   projectsToShow.forEach(p => {
     const l = laneMap.get(p.id)
-    if (l) result.push(l)
+    if (l) tempLanes.push(l)
   })
   if (showUncategorized && laneMap.has('__none__')) {
-    result.push(laneMap.get('__none__')!)
+    tempLanes.push(laneMap.get('__none__')!)
   }
 
-  swimlanes.value = result
+  // 2. Adjust Open state & Final Sort
+  // "Auto collapse projects that hasn't any tasks in them and put them at the bottom."
+  tempLanes.forEach(lane => {
+    const totalTasks = lane.pending.length + lane.inProgress.length + lane.completed.length
+
+    // If it was already manually toggled, preserve that? Or auto-collapse empty ones always?
+    // User said "Auto collapse projects that hasn't any tasks in them".
+    // Let's force close if empty, otherwise use existing state or default to open.
+    if (totalTasks === 0) {
+      lane.isOpen = false
+    } else {
+      lane.isOpen = existingStates.has(lane.id) ? existingStates.get(lane.id)! : true
+    }
+  })
+
+  // Sort: Pinned First, then Non-Empty, then Empty
+  tempLanes.sort((a, b) => {
+    // Pinned always top
+    if (a.isPinned && !b.isPinned) return -1
+    if (!a.isPinned && b.isPinned) return 1
+
+    const aTasks = a.pending.length + a.inProgress.length + a.completed.length
+    const bTasks = b.pending.length + b.inProgress.length + b.completed.length
+
+    // Active (has tasks) before Empty
+    if (aTasks > 0 && bTasks === 0) return -1
+    if (aTasks === 0 && bTasks > 0) return 1
+
+    return 0 // Keep relative project order
+  })
+
+  swimlanes.value = tempLanes
 }
 
 function toggleSwimlane(lane: Swimlane) {
   lane.isOpen = !lane.isOpen
+}
+
+async function togglePin(lane: Swimlane) {
+  if (!lane.projectId) return
+  try {
+    const newPinned = !lane.isPinned
+    await todoStore.updateProject(lane.projectId, { isPinned: newPinned })
+  } catch (e) {
+    console.error("Failed to toggle pin", e)
+  }
 }
 
 // Watchers
@@ -261,9 +310,18 @@ function toggleMobileSection(laneId: string, status: string) {
             <!-- Swimlane Header (Only if showing all projects) -->
             <div v-if="!projectId" class="swimlane-header" @click="toggleSwimlane(lane)">
               <div class="lane-title-group">
-                <ChevronDown class="collapse-icon" :class="{ 'rotate-180': !lane.isOpen }" :size="20" />
+                <ChevronDown class="collapse-icon" :class="{ 'rotate-180': !lane.isOpen }" :size="18" />
                 <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
                 <h3>{{ lane.title }}</h3>
+                <span class="lane-count">{{ lane.pending.length + lane.inProgress.length + lane.completed.length
+                  }}</span>
+              </div>
+              <div class="lane-actions">
+                <button v-if="lane.projectId" class="pin-btn" :class="{ 'is-pinned': lane.isPinned }"
+                  @click.stop="togglePin(lane)" :title="lane.isPinned ? t('common.unpin') : t('common.pin')">
+                  <Pin v-if="!lane.isPinned" :size="16" />
+                  <PinOff v-else :size="16" />
+                </button>
               </div>
             </div>
 
@@ -288,10 +346,19 @@ function toggleMobileSection(laneId: string, status: string) {
               <div class="mobile-board">
                 <!-- If showing all projects, repeat swimlane header inside mobile too -->
                 <div v-if="!projectId" class="mobile-swimlane-header" @click="toggleSwimlane(lane)">
-                  <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="lane-title-group">
                     <ChevronDown class="collapse-icon" :class="{ 'rotate-180': !lane.isOpen }" :size="20" />
                     <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
                     <h3>{{ lane.title }}</h3>
+                    <span class="lane-count">{{ lane.pending.length + lane.inProgress.length + lane.completed.length
+                      }}</span>
+                  </div>
+                  <div class="lane-actions">
+                    <button v-if="lane.projectId" class="pin-btn" :class="{ 'is-pinned': lane.isPinned }"
+                      @click.stop="togglePin(lane)">
+                      <Pin v-if="!lane.isPinned" :size="16" />
+                      <PinOff v-else :size="16" />
+                    </button>
                   </div>
                 </div>
 
@@ -469,42 +536,106 @@ function toggleMobileSection(laneId: string, status: string) {
 }
 
 .swimlane-header {
-  padding: var(--spacing-md) var(--spacing-xl);
-  background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border);
-  border-top: 1px solid var(--color-border);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  background: var(--color-bg-white);
+  border-bottom: 1px solid var(--color-border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.dark .swimlane-header {
+  background: var(--color-bg-card);
+  border-color: var(--color-border);
+}
+
+.swimlane-header:hover {
+  background: var(--color-bg-lighter);
 }
 
 .lane-title-group {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 .lane-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--color-bg-white), 0 0 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.dark .lane-dot {
+  box-shadow: 0 0 0 2px var(--color-bg-card), 0 0 0 4px rgba(255, 255, 255, 0.05);
 }
 
 .swimlane-header h3 {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.lane-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--color-bg-lighter);
+  color: var(--color-text-secondary);
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.dark .lane-count {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lane-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.pin-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.pin-btn:hover {
+  background: var(--color-bg-lavender);
+  color: var(--color-primary);
+}
+
+.pin-btn.is-pinned {
+  color: var(--color-primary);
 }
 
 .collapse-icon {
-  transition: transform 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--color-text-muted);
 }
 
 .kanban-container.desktop-board {
   display: flex;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-xl);
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
   align-items: flex-start;
 }
 
@@ -512,17 +643,25 @@ function toggleMobileSection(laneId: string, status: string) {
 .mobile-board {
   display: none;
   flex-direction: column;
-  padding: var(--spacing-sm);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
 }
 
 .mobile-swimlane-header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-sm);
-  font-weight: bold;
-  color: var(--color-text-primary);
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: var(--color-bg-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
+  border: 1px solid var(--color-border-light);
+}
+
+.dark .mobile-swimlane-header {
+  background: var(--color-bg-card);
+  border-color: var(--color-border);
 }
 
 .accordion-section {
