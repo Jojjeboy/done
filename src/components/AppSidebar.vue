@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useRouter, useRoute } from 'vue-router'
 import {
@@ -9,17 +9,42 @@ import {
   Trash2,
   Edit2,
   LayoutDashboard,
-  Star
+  Star,
+  Pin,
+  PinOff
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
+import type { Project } from '@/types/todo'
 import ImportModal from '@/components/ImportModal.vue'
 import ProjectDetailModal from '@/components/ProjectDetailModal.vue'
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
 
 const todoStore = useTodoStore()
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 
+// State
+const showImportModal = ref(false)
+const showProjectDetailModal = ref(false)
+const selectedProjectId = ref<string | null>(null)
+const showDeleteCategoryConfirm = ref(false)
+const categoryToDelete = ref<string | null>(null)
+const draggedCategoryIndex = ref<number | null>(null)
+
+// Computed
+const sortedProjects = computed(() => {
+  return [...todoStore.projectsWithStats].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1
+    if (!a.isPinned && b.isPinned) return 1
+    return a.order - b.order
+  })
+})
+
+const isActive = (path: string) => route.path === path
+const isCategoryActive = (id: string) => route.query.category === id
+
+// Actions
 const handleCategoryClick = (categoryId: string) => {
   if (isCategoryActive(categoryId)) {
     router.push('/')
@@ -28,23 +53,18 @@ const handleCategoryClick = (categoryId: string) => {
   }
 }
 
-const showImportModal = ref(false)
-const showProjectDetailModal = ref(false)
-const selectedProjectId = ref<string | null>(null)
-
 const openProjectModal = (id: string) => {
   selectedProjectId.value = id
   showProjectDetailModal.value = true
 }
 
-const isActive = (path: string) => route.path === path
-const isCategoryActive = (id: string) => route.query.category === id
-
-import ConfirmationModal from '@/components/ConfirmationModal.vue'
-
-// ... existing code ...
-const showDeleteCategoryConfirm = ref(false)
-const categoryToDelete = ref<string | null>(null)
+const togglePin = async (project: Project) => {
+  try {
+    await todoStore.updateProject(project.id, { isPinned: !project.isPinned })
+  } catch (e) {
+    console.error("Failed to toggle pin in sidebar", e)
+  }
+}
 
 const deleteProject = (id: string) => {
   categoryToDelete.value = id
@@ -60,8 +80,6 @@ const confirmDeleteCategory = async () => {
 }
 
 // Drag and Drop
-const draggedCategoryIndex = ref<number | null>(null)
-
 const handleDragStart = (index: number) => {
   draggedCategoryIndex.value = index
 }
@@ -76,12 +94,12 @@ const handleDragOver = (e: DragEvent) => {
 const handleDrop = async (targetIndex: number) => {
   if (draggedCategoryIndex.value === null || draggedCategoryIndex.value === targetIndex) return
 
-  const list = [...todoStore.projects]
+  const list = [...sortedProjects.value]
   const [removed] = list.splice(draggedCategoryIndex.value, 1)
   if (!removed) return
   list.splice(targetIndex, 0, removed)
 
-  // Update order property
+  // Update order property globally
   const updated = list.map((cat, idx) => ({
     ...cat,
     order: idx
@@ -102,7 +120,8 @@ const handleDrop = async (targetIndex: number) => {
     </div>
 
     <nav class="sidebar-nav">
-      <button class="nav-item" :class="{ active: isActive('/') && !route.query.category }" @click="router.push('/')">
+      <button class="nav-item" :class="{ active: isActive('/') && !route.query.category && !route.query.filter }"
+        @click="router.push('/')">
         <Home :size="20" />
         <span>{{ t('tasks.filters.all') }}</span>
       </button>
@@ -134,28 +153,35 @@ const handleDrop = async (targetIndex: number) => {
           </button>
         </div>
 
-        <div v-for="(project, index) in todoStore.projectsWithStats" :key="project.id" class="project-item"
-          draggable="true" @dragstart="handleDragStart(index)" @dragover="handleDragOver" @drop="handleDrop(index)"
-          :class="{ dragging: draggedCategoryIndex === index }">
+        <div v-for="(project, index) in sortedProjects" :key="project.id" class="project-item" draggable="true"
+          @dragstart="handleDragStart(index)" @dragover="handleDragOver" @drop="handleDrop(index)"
+          :class="{ dragging: draggedCategoryIndex === index, 'is-pinned': project.isPinned }">
 
-          <button class="nav-item project-link" :class="{ active: isCategoryActive(project.id) }"
-            @click="handleCategoryClick(project.id)">
-            <!-- Icon / Dot -->
-            <div class="project-icon-wrapper">
-              <div class="color-dot" :style="{ backgroundColor: project.color || '#ccc' }"></div>
-            </div>
-
-            <div class="project-info">
-              <span class="project-title">{{ project.title }}</span>
-              <div v-if="project.showProgress" class="project-progress">
-                <div class="progress-bar-bg">
-                  <div class="progress-bar-fill"
-                    :style="{ width: project.progress + '%', backgroundColor: project.color }"></div>
-                </div>
-                <span class="progress-text">{{ project.progress }}%</span>
+          <div class="project-link-row">
+            <button class="nav-item project-link" :class="{ active: isCategoryActive(project.id) }"
+              @click="handleCategoryClick(project.id)">
+              <!-- Icon / Dot -->
+              <div class="project-icon-wrapper">
+                <div class="color-dot" :style="{ backgroundColor: project.color || '#ccc' }"></div>
               </div>
-            </div>
 
+              <div class="project-info">
+                <span class="project-title">{{ project.title }}</span>
+                <div v-if="project.showProgress" class="project-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill"
+                      :style="{ width: project.progress + '%', backgroundColor: project.color }"></div>
+                  </div>
+                  <span class="progress-text">{{ project.progress }}%</span>
+                </div>
+              </div>
+            </button>
+
+            <button class="pin-toggle-btn" @click.stop="togglePin(project)"
+              :title="project.isPinned ? t('common.unpin') : t('common.pin')">
+              <Pin v-if="!project.isPinned" :size="14" />
+              <PinOff v-else :size="14" />
+            </button>
             <div class="actions">
               <button @click.stop="openProjectModal(project.id)" class="action-btn">
                 <Edit2 :size="12" />
@@ -164,7 +190,7 @@ const handleDrop = async (targetIndex: number) => {
                 <Trash2 :size="12" />
               </button>
             </div>
-          </button>
+          </div>
         </div>
       </div>
     </nav>
@@ -334,23 +360,42 @@ const handleDrop = async (targetIndex: number) => {
   align-items: flex-start;
 }
 
-.project-link {
-  justify-content: space-between;
-}
-
-.project-link .project-title {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: left;
+.project-link-row {
+  display: flex;
+  align-items: center;
   width: 100%;
 }
 
-.color-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.project-link-row .project-link {
+  flex: 1;
+}
+
+.pin-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.project-item:hover .pin-toggle-btn,
+.project-item.is-pinned .pin-toggle-btn {
+  opacity: 1;
+}
+
+.pin-toggle-btn:hover {
+  background: var(--color-bg-lighter);
+  color: var(--color-text-primary);
+}
+
+.project-item.is-pinned .project-title {
+  font-weight: 600;
 }
 
 .actions {
