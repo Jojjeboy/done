@@ -556,16 +556,23 @@ export const useTodoStore = defineStore('todo', () => {
       const collectDescendants = (parentId: string) => {
         const children = subtasks.value.filter((s) => s.parentId === parentId)
         children.forEach((child) => {
-          child.todoId = targetTodoId
-          subtasksToUpdate.push({ ...child })
-          collectDescendants(child.id)
+          const childIdx = subtasks.value.findIndex(s => s.id === child.id)
+          if (childIdx !== -1) {
+            const updatedChild = { ...child, todoId: targetTodoId }
+            subtasks.value[childIdx] = updatedChild
+            subtasksToUpdate.push(updatedChild)
+            collectDescendants(child.id)
+          }
         })
       }
 
       // Update the main subtask
-      subtask.todoId = targetTodoId
-      subtask.parentId = null // Becomes top-level in the new task
-      subtasksToUpdate.push({ ...subtask })
+      const mainIdx = subtasks.value.findIndex(s => s.id === subtaskId)
+      if (mainIdx !== -1) {
+        const updatedMain = { ...subtasks.value[mainIdx], todoId: targetTodoId, parentId: null } as Subtask
+        subtasks.value[mainIdx] = updatedMain
+        subtasksToUpdate.push(updatedMain)
+      }
 
       // Recursively update all descendants
       collectDescendants(subtaskId)

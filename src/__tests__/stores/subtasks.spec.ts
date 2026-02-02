@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useTodoStore } from '@/stores/todo'
-import type { Subtask } from '@/types/todo'
+import type { Subtask, TodoItem } from '@/types/todo'
 
 // Mock auth store
 vi.mock('@/stores/auth', () => ({
@@ -116,5 +116,51 @@ describe('Subtasks Logic', () => {
 
     const updatedParent = store.subtasks.find((s: Subtask) => s.id === parent.id)
     expect(updatedParent?.completed).toBe(false)
+  })
+
+  it('can reparent a subtask', async () => {
+    const store = useTodoStore()
+    const todo1 = await store.addTodoItem('Todo 1')
+    const todo2 = await store.addTodoItem('Todo 2')
+    const subtask = await store.addSubtask(todo1.id, 'Move me')
+
+    await store.reparentSubtask(subtask.id, todo2.id)
+
+    const updatedSubtask = store.subtasks.find((s: Subtask) => s.id === subtask.id)
+    expect(updatedSubtask?.todoId).toBe(todo2.id)
+    expect(store.subtasksByTodoId.get(todo1.id) || []).not.toContainEqual(expect.objectContaining({ id: subtask.id }))
+    expect(store.subtasksByTodoId.get(todo2.id)).toContainEqual(expect.objectContaining({ id: subtask.id }))
+  })
+
+  it('can update subtasks order', async () => {
+    const store = useTodoStore()
+    const todo = await store.addTodoItem('Todo')
+    const s1 = await store.addSubtask(todo.id, 'S1')
+    const s2 = await store.addSubtask(todo.id, 'S2')
+
+    const reordered = [
+      { ...s2, order: 0 },
+      { ...s1, order: 1 }
+    ] as Subtask[]
+
+    await store.updateSubtasksOrder(reordered)
+
+    const updatedS1 = store.subtasks.find((s: Subtask) => s.id === s1.id)
+    const updatedS2 = store.subtasks.find((s: Subtask) => s.id === s2.id)
+    expect(updatedS1?.order).toBe(1)
+    expect(updatedS2?.order).toBe(0)
+  })
+
+  it('can convert a subtask to a todo', async () => {
+    const store = useTodoStore()
+    const todo = await store.addTodoItem('Todo')
+    const subtask = await store.addSubtask(todo.id, 'Convert me')
+
+    await store.convertSubtaskToTodo(subtask.id)
+
+    expect(store.subtasks.find((s: Subtask) => s.id === subtask.id)).toBeUndefined()
+    const newTodo = store.todoItems.find((t: TodoItem) => t.title === 'Convert me')
+    expect(newTodo).toBeDefined()
+    expect(newTodo?.parentId).toBeUndefined()
   })
 })

@@ -947,8 +947,8 @@ const executeConvert = async () => {
   border: none;
   border-bottom: 1px solid var(--color-border);
   background: transparent;
-  padding: 4px 0;
-  font-size: 0.9em;
+  padding: var(--spacing-sm) 0;
+  font-size: var(--font-size-sm);
   color: var(--color-text-primary);
 }
 

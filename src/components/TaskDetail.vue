@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
 import type { Subtask } from '@/types/todo'
-import { X, Calendar, Flag, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft, Pin, ChevronRight, MessageSquarePlus, Layers } from 'lucide-vue-next'
+import { X, Calendar, Flag, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft, Pin, ChevronRight, Layers } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import ConvertTaskModal from '@/components/ConvertTaskModal.vue'
@@ -39,7 +39,6 @@ const taskIsSticky = ref(false)
 const isSubtaskProcessEnabled = ref(false)
 const showDiscardConfirm = ref(false)
 const isPropertiesOpen = ref(false)
-const showCommentInput = ref(false)
 const localSubtasks = ref<Subtask[]>([])
 
 // Change Detection
@@ -237,11 +236,6 @@ const handleFieldChange = () => {
   }
 }
 
-const toggleCompletion = () => {
-  taskStatus.value = taskStatus.value === 'completed' ? 'pending' : 'completed'
-  handleFieldChange()
-}
-
 const postComment = async () => {
   if (!newCommentText.value.trim() || isNew.value) return
 
@@ -418,10 +412,23 @@ const metaItems = computed(() => {
     <div class="modal-content">
       <!-- Title Section -->
       <div class="title-section">
-        <button class="status-checkbox" @click="toggleCompletion" :class="{ completed: taskStatus === 'completed' }">
-          <CheckCircle v-if="taskStatus === 'completed'" :size="24" class="check-icon" />
-          <Circle v-else :size="24" class="circle-icon" />
-        </button>
+        <div class="status-segmented-control">
+          <div class="status-selection-bg" :class="taskStatus"></div>
+          <button @click="taskStatus = 'pending'; handleFieldChange()" :class="{ active: taskStatus === 'pending' }"
+            class="status-btn" :title="t('tasks.status.pending')">
+            <Circle :size="18" />
+          </button>
+          <button @click="taskStatus = 'in-progress'; handleFieldChange()"
+            :class="{ active: taskStatus === 'in-progress' }" class="status-btn" :title="t('tasks.status.in-progress')">
+            <div class="inner-dot-wrapper">
+              <div class="inner-dot"></div>
+            </div>
+          </button>
+          <button @click="taskStatus = 'completed'; handleFieldChange()" :class="{ active: taskStatus === 'completed' }"
+            class="status-btn" :title="t('tasks.status.completed')">
+            <CheckCircle :size="18" />
+          </button>
+        </div>
         <div class="title-details">
           <div v-if="taskStatus === 'completed'" class="completed-badge">
             <CheckCircle :size="12" />
@@ -513,13 +520,6 @@ const metaItems = computed(() => {
                 {{ t('tasks.threeStep') }}
               </button>
             </div>
-
-            <!-- Comment Toggle Button -->
-            <button class="sticky-toggle-btn" :class="{ active: showCommentInput }"
-              @click="showCommentInput = !showCommentInput" :title="t('tasks.comments')">
-              <MessageSquarePlus :size="14" :class="{ filled: showCommentInput }" />
-              <span>{{ t('tasks.comments') }}</span>
-            </button>
           </div>
         </div>
       </div>
@@ -534,7 +534,7 @@ const metaItems = computed(() => {
         </div>
       </div>
 
-      <div class="divider" v-if="!isNew && (comments.length > 0 || showCommentInput)"></div>
+      <div class="divider" v-if="!isNew"></div>
 
       <!-- Comments -->
       <div class="comments-section" v-if="!isNew">
@@ -560,7 +560,7 @@ const metaItems = computed(() => {
         </div>
 
         <!-- New Comment Input -->
-        <div class="new-comment-row" v-if="showCommentInput">
+        <div class="new-comment-row">
           <div class="comment-avatar">
             <img v-if="currentUserAvatar" :src="currentUserAvatar" alt="User">
             <div v-else class="avatar-placeholder">{{ currentUserName.charAt(0) }}</div>
@@ -729,19 +729,85 @@ const metaItems = computed(() => {
   /* Top align */
 }
 
-.status-checkbox {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  /* Align closer to top */
+/* Status Segmented Control */
+.status-segmented-control {
+  display: flex;
+  background: var(--color-bg-lighter);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+  position: relative;
+  width: 100px;
+  height: 32px;
+  align-items: stretch;
+  flex-shrink: 0;
   margin-top: 4px;
-  /* Fine tune with title font */
-  color: var(--color-text-muted);
 }
 
-.status-checkbox.completed {
-  color: var(--color-status-completed);
+.status-selection-bg {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(33.33% - 2.66px);
+  bottom: 2px;
+  background: #9ca3af;
+  border-radius: 18px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 0;
+}
+
+.status-selection-bg.pending {
+  transform: translateX(0);
+  background: #9ca3af;
+}
+
+.status-selection-bg.in-progress {
+  transform: translateX(calc(100% + 2px));
+  background: #ff8a50;
+}
+
+.status-selection-bg.completed {
+  transform: translateX(calc(200% + 4px));
+  background: #4ade80;
+}
+
+.status-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  z-index: 1;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.status-btn.active {
+  color: white;
+}
+
+.inner-dot-wrapper {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inner-dot {
+  width: 8px;
+  height: 8px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.status-btn.active .inner-dot {
+  background: white;
+  border-color: white;
 }
 
 .title-details {
