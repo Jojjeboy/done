@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   Calendar,
 } from 'lucide-vue-next'
@@ -14,6 +15,7 @@ const props = defineProps<{
 
 const router = useRouter()
 const todoStore = useTodoStore()
+const { t } = useI18n()
 
 const isCompleted = computed(() => props.task.status === 'completed')
 
@@ -30,7 +32,7 @@ const priorityColor = computed(() => {
 })
 
 const priorityLabel = computed(() => {
-  return props.task.priority.charAt(0).toUpperCase() + props.task.priority.slice(1)
+  return t(`tasks.priority.${props.task.priority}`)
 })
 
 // Subtask Progress
@@ -58,7 +60,6 @@ const isOverdue = computed(() => {
   today.setHours(0, 0, 0, 0)
   return props.task.deadline < today.getTime() && props.task.status !== 'completed'
 })
-
 const navigateToDetail = () => {
   // Check if we are in a project-specific board view
   const currentProjectId = router.currentRoute.value.params.projectId
@@ -130,17 +131,6 @@ const navigateToDetail = () => {
   overflow: hidden;
 }
 
-.task-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: v-bind('isCompleted ? "transparent" : (project?.color || "transparent")');
-  opacity: 0.15;
-  pointer-events: none;
-}
 
 .task-card.is-completed {
   background-color: var(--color-bg-tertiary);
@@ -152,9 +142,6 @@ const navigateToDetail = () => {
   background-color: rgba(255, 255, 255, 0.03);
 }
 
-.dark .task-card::before {
-  opacity: 0.1;
-}
 
 .task-card:hover {
   box-shadow: var(--shadow-md);
@@ -175,9 +162,9 @@ const navigateToDetail = () => {
 }
 
 .priority-badge {
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 12px;
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 8px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;

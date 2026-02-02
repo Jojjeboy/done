@@ -45,20 +45,26 @@ const parsedTasks = ref<ImportTask[]>([])
 
 const exampleJson = `[
   {
-    "title": "Buy groceries",
+    "title": "Project Alpha",
     "priority": "high",
-    "deadline": "2026-01-30",
+    "deadline": "2026-03-01",
     "subtasks": [
-      "Milk",
+      "Initial Setup",
       {
-        "title": "Vegetables",
-        "subtasks": ["Carrots", "Spinach"]
-      }
+        "title": "Core Features",
+        "subtasks": [
+          "User Authentication",
+          "Database Schema",
+          "API Endpoints"
+        ]
+      },
+      "Documentation"
     ]
   },
   {
-    "title": "Call dentist",
-    "priority": "medium"
+    "title": "Simple Task",
+    "priority": "medium",
+    "subtasks": ["Subtask 1", "Subtask 2"]
   }
 ]`
 
@@ -229,7 +235,7 @@ const closeModal = () => {
                 <span class="preview-title">{{ task.title }}</span>
                 <span class="preview-meta">
                   <span v-if="task.priority" class="tag" :class="task.priority">{{ task.priority
-                    }}</span>
+                  }}</span>
                   <span v-if="task.subtasks?.length" class="tag subtasks">{{ task.subtasks.length }}
                     subtasks</span>
                 </span>

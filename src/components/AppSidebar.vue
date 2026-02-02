@@ -42,14 +42,24 @@ const sortedProjects = computed(() => {
 })
 
 const isActive = (path: string) => route.path === path
-const isCategoryActive = (id: string) => route.query.category === id
+const isCategoryActive = (id: string) => {
+  if (route.path.startsWith('/board')) {
+    return route.params.projectId === id
+  }
+  return route.query.category === id
+}
 
 // Actions
 const handleCategoryClick = (categoryId: string) => {
+  const isBoard = route.path.startsWith('/board')
   if (isCategoryActive(categoryId)) {
-    router.push('/')
+    router.push(isBoard ? '/board' : '/')
   } else {
-    router.push({ path: '/', query: { category: categoryId } })
+    if (isBoard) {
+      router.push(`/board/${categoryId}`)
+    } else {
+      router.push({ path: '/', query: { category: categoryId } })
+    }
   }
 }
 

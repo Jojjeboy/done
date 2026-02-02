@@ -29,6 +29,7 @@ export interface TodoItem {
   updatedAt: number
   isSticky?: boolean
   isSubtaskProcessEnabled?: boolean
+  order: number
 }
 
 export interface Subtask {

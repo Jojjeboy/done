@@ -60,7 +60,7 @@
     "addTask": "Lägg till uppgift",
     "taskName": "Uppgiftsnamn",
     "status": {
-      "pending": "Väntande",
+      "pending": "Att göra",
       "inProgress": "Pågående",
       "completed": "Klar"
     },

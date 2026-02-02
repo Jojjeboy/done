@@ -60,7 +60,7 @@
     "addTask": "Add Task",
     "taskName": "Task name",
     "status": {
-      "pending": "Pending",
+      "pending": "To do",
       "inProgress": "In Progress",
       "completed": "Completed"
     },

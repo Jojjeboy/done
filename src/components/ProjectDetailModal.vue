@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useTodoStore } from '@/stores/todo'
+import { useTodoStore, COLOR_PALETTE, DEFAULT_COLOR } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
 import { X, Check } from 'lucide-vue-next'
 
 const props = defineProps<{
     isOpen: boolean
-    projectId: string
+    projectId: string | null
 }>()
 
 const emit = defineEmits(['close'])
@@ -17,7 +17,7 @@ const { t } = useI18n()
 // Local State
 const title = ref('')
 const description = ref('')
-const color = ref('#ccc')
+const color = ref(DEFAULT_COLOR)
 const showProgress = ref(true)
 const isPinned = ref(false)
 const deadline = ref('')
@@ -25,11 +25,22 @@ const deadline = ref('')
 const isSaving = ref(false)
 
 const loadProject = () => {
+    if (!props.projectId) {
+        // Reset for new project
+        title.value = ''
+        description.value = ''
+        color.value = COLOR_PALETTE[0] || DEFAULT_COLOR
+        showProgress.value = true
+        isPinned.value = false
+        deadline.value = ''
+        return
+    }
+
     const project = todoStore.projects.find(p => p.id === props.projectId)
     if (project) {
         title.value = project.title
         description.value = project.description || ''
-        color.value = project.color || '#ccc'
+        color.value = project.color || DEFAULT_COLOR
         showProgress.value = project.showProgress ?? true
         isPinned.value = project.isPinned ?? false
         if (project.deadline && typeof project.deadline === 'number') {
@@ -49,14 +60,28 @@ watch(() => props.isOpen, (isOpen) => {
 const handleSave = async () => {
     isSaving.value = true
     try {
-        await todoStore.updateProject(props.projectId, {
+        const payload = {
             title: title.value.trim(),
             description: description.value.trim(),
             color: color.value,
             showProgress: showProgress.value,
             isPinned: isPinned.value,
             deadline: deadline.value ? new Date(deadline.value).getTime() : null
-        })
+        }
+
+        if (props.projectId) {
+            await todoStore.updateProject(props.projectId, payload)
+        } else {
+            await todoStore.addProject(
+                payload.title,
+                payload.color,
+                undefined, // icon
+                payload.description,
+                payload.deadline,
+                payload.showProgress,
+                payload.isPinned
+            )
+        }
         emit('close')
     } catch (e) {
         console.error("Failed to save project", e)
@@ -65,11 +90,7 @@ const handleSave = async () => {
     }
 }
 
-const colors = [
-    '#6c5ce7', '#ff6b9d', '#ff8a50', '#5b8def',
-    '#4ade80', '#f87171', '#fbbf24', '#22d3ee',
-    '#818cf8', '#fb7185', '#9ca3af'
-]
+const colors = COLOR_PALETTE
 </script>
 
 <template>

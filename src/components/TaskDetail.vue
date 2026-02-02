@@ -316,7 +316,16 @@ const handleClose = () => {
 
 const forceClose = () => {
   emit('close')
-  router.push('/')
+  // Determine where to redirect:
+  // If we are in a sub-route (e.g., /board/task/123), go back to the parent (/board)
+  // If we are in a dedicated task route (/task/123), go home (/)
+  const currentPath = router.currentRoute.value.path
+  if (currentPath.includes('/task/')) {
+    const parentPath = currentPath.split('/task/')[0] || '/'
+    router.push(parentPath)
+  } else {
+    router.push('/')
+  }
 }
 
 // Watchers
@@ -761,12 +770,12 @@ const metaItems = computed(() => {
   gap: 4px;
   background: var(--color-status-completed-light, #ecfdf5);
   color: var(--color-status-completed, #10b981);
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 100px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   margin-bottom: 4px;
   width: fit-content;
 }

@@ -140,6 +140,20 @@ function syncSwimlanes() {
     return 0
   })
 
+  // Sort tasks within each lane by order
+  tempLanes.forEach(lane => {
+    lane.pending.sort((a, b) => a.order - b.order)
+    lane.inProgress.sort((a, b) => a.order - b.order)
+    lane.completed.sort((a, b) => a.order - b.order)
+  })
+
+  // Auto-collapse mobile sections with no tasks by default
+  tempLanes.forEach(lane => {
+    if (lane.pending.length === 0) closedMobileSections.value.add(`${lane.id}-pending`)
+    if (lane.inProgress.length === 0) closedMobileSections.value.add(`${lane.id}-inProgress`)
+    if (lane.completed.length === 0) closedMobileSections.value.add(`${lane.id}-completed`)
+  })
+
   swimlanes.value = tempLanes
 }
 
@@ -161,7 +175,13 @@ watch(projectId, syncSwimlanes)
 watch(() => todoStore.searchQuery, syncSwimlanes)
 watch(() => todoStore.projects, syncSwimlanes, { deep: true })
 
-function onTaskChange(event: { added?: { element: TodoItem } }, newStatus: TodoItem['status'], targetProjectId: string | null) {
+interface DraggableEvent {
+  added?: { element: TodoItem; newIndex: number }
+  removed?: { element: TodoItem; oldIndex: number }
+  moved?: { element: TodoItem; newIndex: number; oldIndex: number }
+}
+
+function onTaskChange(event: DraggableEvent, newStatus: TodoItem['status'], targetProjectId: string | null) {
   if (event.added) {
     const task = event.added.element
     const normalizedTarget = targetProjectId === '__none__' ? null : targetProjectId
@@ -171,14 +191,37 @@ function onTaskChange(event: { added?: { element: TodoItem } }, newStatus: TodoI
       showMoveConfirm.value = true
     } else {
       todoStore.updateTodoItem(task.id, { status: newStatus, updatedAt: Date.now() })
+      // After status update, persist the new order of the entire list
+      persistOrder(newStatus, targetProjectId)
     }
+  } else if (event.moved || event.removed) {
+    persistOrder(newStatus, targetProjectId)
   }
+}
+
+async function persistOrder(status: TodoItem['status'], projectId: string | null) {
+  const lane = swimlanes.value.find(l => l.projectId === (projectId === '__none__' ? null : projectId))
+  if (!lane) return
+
+  let tasks: TodoItem[] = []
+  if (status === 'pending') tasks = lane.pending
+  else if (status === 'in-progress') tasks = lane.inProgress
+  else if (status === 'completed') tasks = lane.completed
+
+  const updatedTasks = tasks.map((t, index) => ({
+    ...t,
+    order: index
+  }))
+
+  await todoStore.updateTodoItemsOrder(updatedTasks)
 }
 
 async function confirmMove() {
   if (pendingMove.value) {
     const { task, newStatus, targetProjectId } = pendingMove.value
     await todoStore.updateTodoItem(task.id, { status: newStatus, categoryId: targetProjectId, updatedAt: Date.now() })
+    // Also persist order in the new lane
+    await persistOrder(newStatus, targetProjectId)
   }
   showMoveConfirm.value = false
   pendingMove.value = null
@@ -223,7 +266,7 @@ function hexToRgb(hex: string) {
       <AppSidebar />
     </div>
 
-    <main v-if="isDesktop || !route.params.id" class="main-content">
+    <main v-show="isDesktop || !route.params.id" class="main-content">
       <div v-if="loading && !initialized" class="loading">
         <div class="spinner"></div>
       </div>
@@ -270,15 +313,6 @@ function hexToRgb(hex: string) {
               </div>
 
               <div class="mobile-board">
-                <div v-if="!projectId" class="mobile-swimlane-header" @click="toggleSwimlane(lane)">
-                  <div class="lane-title-group">
-                    <ChevronDown class="collapse-icon" :class="{ 'rotate-180': !lane.isOpen }" :size="20" />
-                    <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
-                    <h3>{{ lane.title }}</h3>
-                    <span class="lane-count">{{ lane.pending.length + lane.inProgress.length + lane.completed.length
-                    }}</span>
-                  </div>
-                </div>
                 <div v-show="lane.isOpen || projectId" class="mobile-columns">
                   <div class="mobile-column">
                     <div class="mobile-column-header" @click="toggleMobileSection(lane.id, 'pending')">
@@ -289,7 +323,8 @@ function hexToRgb(hex: string) {
                       <draggable :list="lane.pending" item-key="id" group="tasks" class="drag-area"
                         @change="onTaskChange($event, 'pending', lane.projectId)">
                         <template #item="{ element }">
-                          <TaskCard :task="element" :projects="todoStore.projectsById" />
+                          <TaskCard :task="element"
+                            :project="element.categoryId ? todoStore.projectsById.get(element.categoryId) : undefined" />
                         </template>
                       </draggable>
                       <button class="quick-add-mobile" @click="onQuickAdd('pending', lane.projectId)">
@@ -307,7 +342,8 @@ function hexToRgb(hex: string) {
                       <draggable :list="lane.inProgress" item-key="id" group="tasks" class="drag-area"
                         @change="onTaskChange($event, 'in-progress', lane.projectId)">
                         <template #item="{ element }">
-                          <TaskCard :task="element" :projects="todoStore.projectsById" />
+                          <TaskCard :task="element"
+                            :project="element.categoryId ? todoStore.projectsById.get(element.categoryId) : undefined" />
                         </template>
                       </draggable>
                       <button class="quick-add-mobile" @click="onQuickAdd('in-progress', lane.projectId)">
@@ -325,7 +361,8 @@ function hexToRgb(hex: string) {
                       <draggable :list="lane.completed" item-key="id" group="tasks" class="drag-area"
                         @change="onTaskChange($event, 'completed', lane.projectId)">
                         <template #item="{ element }">
-                          <TaskCard :task="element" :projects="todoStore.projectsById" />
+                          <TaskCard :task="element"
+                            :project="element.categoryId ? todoStore.projectsById.get(element.categoryId) : undefined" />
                         </template>
                       </draggable>
                       <button class="quick-add-mobile" @click="onQuickAdd('completed', lane.projectId)">
@@ -346,7 +383,9 @@ function hexToRgb(hex: string) {
       <RouterView />
     </div>
 
-    <BottomNavigation class="mobile-only" v-if="!isDesktop && !route.params.id" @openAddTask="onQuickAdd" />
+    <div class="mobile-only">
+      <BottomNavigation v-if="!isDesktop && !route.params.id" @openAddTask="onQuickAdd" />
+    </div>
 
     <ConfirmationModal :isOpen="showMoveConfirm" :title="t('modal.moveTask')"
       :message="t('modal.confirmMoveProject', { project: todoStore.projectsById.get(pendingMove?.targetProjectId || '')?.title || t('tasks.categories.none') })"
@@ -430,8 +469,20 @@ function hexToRgb(hex: string) {
   overflow-y: auto;
 }
 
+@media (max-width: 768px) {
+  .board-view {
+    padding: 0.75rem;
+  }
+}
+
 .board-toolbar {
   margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .board-toolbar {
+    margin-bottom: 1rem;
+  }
 }
 
 .view-title {
@@ -453,6 +504,14 @@ function hexToRgb(hex: string) {
   margin-bottom: var(--spacing-xxl);
   border: 1px solid rgba(var(--lane-color-rgb), 0.08);
   transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .swimlane {
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+  }
 }
 
 .dark .swimlane {
@@ -556,21 +615,18 @@ function hexToRgb(hex: string) {
     gap: 12px;
   }
 
-  .mobile-swimlane-header {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    background: var(--color-bg-white);
-    border: 1px solid var(--color-border-light);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-  }
 
   .mobile-columns {
     display: flex;
     flex-direction: column;
     gap: 8px;
     padding-left: 12px;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-columns {
+      padding-left: 0;
+    }
   }
 
   .mobile-column {
@@ -595,6 +651,12 @@ function hexToRgb(hex: string) {
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-task-list {
+      padding: 8px 6px;
+    }
   }
 
   .quick-add-mobile {

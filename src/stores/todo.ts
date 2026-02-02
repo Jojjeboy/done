@@ -5,6 +5,20 @@ import { useAuthStore } from '@/stores/auth'
 import { syncService } from '@/services/sync'
 import type { TodoItem, Subtask, Project, Comment } from '@/types/todo'
 
+export const COLOR_PALETTE = [
+  '#6c5ce7', // Purple
+  '#ff6b9d', // Pink
+  '#ff8a50', // Orange
+  '#5b8def', // Blue
+  '#4ade80', // Green
+  '#f87171', // Red
+  '#fbbf24', // Amber
+  '#22d3ee', // Cyan
+  '#818cf8', // Indigo
+  '#fb7185'  // Rose
+]
+export const DEFAULT_COLOR = '#9ca3af' // Grey
+
 export const useTodoStore = defineStore('todo', () => {
   // State
   const todoItems = ref<TodoItem[]>([])
@@ -106,19 +120,7 @@ export const useTodoStore = defineStore('todo', () => {
     return crypto.randomUUID()
   }
 
-  const COLOR_PALETTE = [
-    '#6c5ce7', // Purple
-    '#ff6b9d', // Pink
-    '#ff8a50', // Orange
-    '#5b8def', // Blue
-    '#4ade80', // Green
-    '#f87171', // Red
-    '#fbbf24', // Amber
-    '#22d3ee', // Cyan
-    '#818cf8', // Indigo
-    '#fb7185'  // Rose
-  ]
-  const DEFAULT_COLOR = '#9ca3af' // Grey
+  // CRUD operations
 
   // Initialize store from IndexedDB
   const initialize = async () => {
@@ -336,6 +338,7 @@ export const useTodoStore = defineStore('todo', () => {
     globalLoading.value = true
     try {
       const now = Date.now()
+      const order = todoItems.value.length
       const item: TodoItem = {
         id: generateId(),
         title,
@@ -349,6 +352,7 @@ export const useTodoStore = defineStore('todo', () => {
         updatedAt: now,
         isSticky: false,
         isSubtaskProcessEnabled,
+        order,
       }
 
       todoItems.value.push(item)
@@ -395,6 +399,28 @@ export const useTodoStore = defineStore('todo', () => {
           // For simplicity, we'll try to find it again.
       }
       throw error
+    } finally {
+      globalLoading.value = false
+    }
+  }
+
+  const updateTodoItemsOrder = async (updatedItems: TodoItem[]) => {
+    globalLoading.value = true
+    try {
+      const db = getDatabase()
+      for (const item of updatedItems) {
+        const idx = todoItems.value.findIndex(i => i.id === item.id)
+        if (idx !== -1) {
+          todoItems.value[idx] = { ...item, updatedAt: Date.now() }
+          await db.table('todoItems').update(item.id, {
+            order: item.order,
+            updatedAt: Date.now()
+          })
+          await syncService.pushTodo(todoItems.value[idx]!)
+        }
+      }
+    } catch (e) {
+      console.error('Failed to update todo items order', e)
     } finally {
       globalLoading.value = false
     }
@@ -784,7 +810,8 @@ export const useTodoStore = defineStore('todo', () => {
           deadline: parentTodo.deadline,
           categoryId: parentTodo.categoryId,
           createdAt: Date.now(),
-          updatedAt: Date.now()
+          updatedAt: Date.now(),
+          order: todoItems.value.length
       }
 
       // 2. Add new Todo
@@ -912,6 +939,7 @@ export const useTodoStore = defineStore('todo', () => {
     updateProjectsOrder,
     addTodoItem,
     updateTodoItem,
+    updateTodoItemsOrder,
     deleteTodoItem,
     toggleTodoCompletion,
     addSubtask,
