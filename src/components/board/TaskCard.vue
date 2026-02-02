@@ -159,7 +159,6 @@ const navigateToDetail = () => {
 .task-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
-  border-color: var(--color-primary-light);
 }
 
 .dark .task-card {

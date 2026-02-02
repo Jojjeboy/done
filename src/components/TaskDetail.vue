@@ -273,8 +273,17 @@ const confirmDelete = async () => {
       await todoStore.deleteTodoItem(todoId.value)
     }
     emit('deleted', todoId.value)
-    // Always go to home to clear sidepanel/modal
-    router.push('/')
+
+    // Determine where to redirect:
+    // If we are in a sub-route (e.g., /board/task/123), go back to the parent (/board)
+    // If we are in a dedicated task route (/task/123), go home (/)
+    const currentPath = router.currentRoute.value.path
+    if (currentPath.includes('/task/')) {
+      const parentPath = currentPath.split('/task/')[0] || '/'
+      router.push(parentPath)
+    } else {
+      router.push('/')
+    }
   } catch (error) {
     console.error('Failed to delete task:', error)
   } finally {
@@ -529,7 +538,7 @@ const metaItems = computed(() => {
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-                }}</span>
+              }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -558,7 +567,7 @@ const metaItems = computed(() => {
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-          }}</button>
+        }}</button>
       </div>
     </div>
 

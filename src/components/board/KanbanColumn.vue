@@ -100,7 +100,7 @@ function onChange(event: any) {
 }
 
 .kanban-column:nth-child(1) .column-header {
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid #6b7280;
 }
 
 .kanban-column:nth-child(2) .column-header {
