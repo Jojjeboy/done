@@ -1,13 +1,13 @@
-```
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import type { TodoItem } from '@/types/todo'
+import type { TodoItem, Project } from '@/types/todo'
 import KanbanColumn from '@/components/board/KanbanColumn.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import BottomNavigation from '@/components/BottomNavigation.vue'
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import { ChevronDown } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -28,255 +28,389 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
 
-// Local state for columns (synced with store)
-const pendingTasks = ref<TodoItem[]>([])
-const inProgressTasks = ref<TodoItem[]>([])
-const completedTasks = ref<TodoItem[]>([])
-
 const projectId = computed(() => route.params.projectId as string | undefined)
 
-// Initialize & Sync Logic
-const filteredSourceTasks = computed(() => {
-  let tasks = todoStore.todoItems
-
-  if (projectId.value) {
-    if (projectId.value === '__none__') {
-       tasks = tasks.filter(t => !t.categoryId)
-    } else {
-       tasks = tasks.filter(t => t.categoryId === projectId.value)
-    }
-  }
-
-  if (todoStore.searchQuery) {
-    const q = todoStore.searchQuery.toLowerCase()
-    tasks = tasks.filter(t => t.title.toLowerCase().includes(q))
-  }
-
-  return tasks
-})
-
-function syncLocalState() {
-  const source = filteredSourceTasks.value
-  // We prefer replacing the arrays completely to ensure valid state
-  // But for smoother reordering we might want to preserve order if possible?
-  // For now, simple filtering is safest.
-  pendingTasks.value = source.filter(t => t.status === 'pending')
-  inProgressTasks.value = source.filter(t => t.status === 'in-progress')
-  completedTasks.value = source.filter(t => t.status === 'completed')
-
-  // Sort by priority/date within columns?
-  // Current list logic sorts by deadline helpers.
-  // We'll leave them as is (insertion order) or apply a default sort.
+// Swimlane Data Structure
+interface Swimlane {
+  id: string
+  title: string
+  color?: string
+  pending: TodoItem[]
+  inProgress: TodoItem[]
+  completed: TodoItem[]
+  projectId: string | null // null for Uncategorized
 }
 
-// Watch for store changes
-watch(() => todoStore.todoItems, syncLocalState, { deep: true })
-watch(projectId, syncLocalState)
-watch(() => todoStore.searchQuery, syncLocalState)
+// We map Projects -> Swimlanes
+const swimlanes = ref<Swimlane[]>([])
 
-onMounted(async () => {
-    if (!todoStore.initialized) {
-        await todoStore.initialize()
-    }
-    syncLocalState()
-})
+// State for Move Confirmation
+const showMoveConfirm = ref(false)
+const pendingMove = ref<{
+  task: TodoItem
+  newStatus: TodoItem['status']
+  targetProjectId: string | null
+} | null>(null)
 
-// Drag & Drop Handlers
-function onTaskChange(event: { added?: { element: TodoItem } }, newStatus: TodoItem['status']) {
-  // event contains { added, removed, moved }
-  if (event.added) {
-    const task = event.added.element
-    // Update status in store
-    todoStore.updateTodoItem(task.id, {
-        status: newStatus,
-        updatedAt: Date.now()
-    })
-  }
-  // We don't need to handle 'removed' because the 'added' handler in the target column handles the logic
-  // We don't need to handle 'moved' (reorder) as we aren't persisting order yet
-}
-
-// Quick Add Handler
-function onQuickAdd(status?: TodoItem['status']) {
-    // Placeholder for future implementation
-    console.log('Quick add requested for status:', status)
-}
-
-// Filter Logic
 const projectTitle = computed(() => {
     if (!projectId.value) return t('common.allProjects')
     if (projectId.value === '__none__') return t('tasks.categories.none')
     return todoStore.projectsById.get(projectId.value)?.title || t('common.project')
 })
 
-// Mobile Accordion State
-const openAccordions = ref({
-    pending: true,
-    inProgress: true,
-    completed: true
+function getProjectName(id: string | null) {
+  if (!id) return t('tasks.categories.none')
+  return todoStore.projectsById.get(id)?.title || t('modal.project')
+}
+
+// Sync Logic
+function syncSwimlanes() {
+  const allTasks = todoStore.todoItems
+  let projectsToShow: Project[] = []
+
+  if (projectId.value) {
+     // Single Project View
+     if (projectId.value === '__none__') {
+        // Only Uncategorized
+        projectsToShow = [] // Special handling below
+     } else {
+        const p = todoStore.projectsById.get(projectId.value)
+        if (p) projectsToShow = [p]
+     }
+  } else {
+     // All Projects View
+     projectsToShow = [...todoStore.projects]
+  }
+
+  // Helper to init swimlane
+  const createSwimlane = (id: string, title: string, color?: string, pid: string | null = null) => ({
+      id,
+      title,
+      color,
+      projectId: pid,
+      pending: [] as TodoItem[],
+      inProgress: [] as TodoItem[],
+      completed: [] as TodoItem[],
+  })
+
+  // Build map
+  const laneMap = new Map<string, Swimlane>()
+
+  // Create lanes for projects
+  projectsToShow.forEach(p => {
+      laneMap.set(p.id, createSwimlane(p.id, p.title, p.color, p.id))
+  })
+
+  // Create Uncategorized lane if needed (always needed if showing all, or if filtered to none)
+  const showUncategorized = !projectId.value || projectId.value === '__none__'
+  if (showUncategorized) {
+      laneMap.set('__none__', createSwimlane('__none__', t('tasks.categories.none'), undefined, null))
+  }
+
+  // Distribute tasks
+  allTasks.forEach(task => {
+      // Filter by global search
+      if (todoStore.searchQuery) {
+          if (!task.title.toLowerCase().includes(todoStore.searchQuery.toLowerCase())) return
+      }
+
+      const pId = task.categoryId || '__none__'
+
+      // If we are filtering by specific project, skip tasks not in it
+      if (projectId.value && projectId.value !== pId) return
+
+      const lane = laneMap.get(pId)
+      if (lane) {
+          if (task.status === 'pending') lane.pending.push(task)
+          else if (task.status === 'in-progress') lane.inProgress.push(task)
+          else if (task.status === 'completed') lane.completed.push(task)
+      }
+  })
+
+  // Convert map to array. Projects should be sorted by stored order (handled by store.projects already)
+  // Uncategorized usually goes last or first? Let's put it last.
+  const result: Swimlane[] = []
+  projectsToShow.forEach(p => {
+      const l = laneMap.get(p.id)
+      if (l) result.push(l)
+  })
+  if (showUncategorized && laneMap.has('__none__')) {
+      result.push(laneMap.get('__none__')!)
+  }
+
+  swimlanes.value = result
+}
+
+// Watchers
+watch(() => todoStore.todoItems, syncSwimlanes, { deep: true })
+watch(projectId, syncSwimlanes)
+watch(() => todoStore.searchQuery, syncSwimlanes)
+watch(() => todoStore.projects, syncSwimlanes, { deep: true })
+
+onMounted(async () => {
+    if (!todoStore.initialized) {
+        await todoStore.initialize()
+    }
+    syncSwimlanes()
 })
 
-function toggleAccordion(key: 'pending' | 'inProgress' | 'completed') {
-    openAccordions.value[key] = !openAccordions.value[key]
+// Drag Handler
+function onTaskChange(event: { added?: { element: TodoItem } }, newStatus: TodoItem['status'], targetProjectId: string | null) {
+  if (event.added) {
+    const task = event.added.element
+    const currentProjectId = task.categoryId || null // Treat undefined as null
+
+    // Check if moving to a different project
+    // Note: targetProjectId comes from the swimlane rendering logic.
+    // If targetProjectId is null (Uncategorized) and task.categoryId is undefined/null, they are equal.
+    const normalizedTarget = targetProjectId === '__none__' ? null : targetProjectId
+    const normalizedCurrent = currentProjectId
+
+    if (normalizedCurrent !== normalizedTarget) {
+        // Trigger Confirmation
+        pendingMove.value = {
+            task,
+            newStatus,
+            targetProjectId: normalizedTarget
+        }
+        showMoveConfirm.value = true
+        // Note: The UI already reflects the move because vuedraggable moved the element in the local array.
+        // If user cancels, we must force-refresh.
+    } else {
+        // Same project, just update status
+        todoStore.updateTodoItem(task.id, {
+            status: newStatus,
+            updatedAt: Date.now()
+        })
+    }
+  }
+}
+
+async function confirmMove() {
+    if (pendingMove.value) {
+        const { task, newStatus, targetProjectId } = pendingMove.value
+        await todoStore.updateTodoItem(task.id, {
+            status: newStatus,
+            categoryId: targetProjectId,
+            updatedAt: Date.now()
+        })
+    }
+    showMoveConfirm.value = false
+    pendingMove.value = null
+}
+
+function cancelMove() {
+    showMoveConfirm.value = false
+    pendingMove.value = null
+    syncSwimlanes() // Revert UI (re-fetches from store state which hasn't changed project yet)
+}
+
+// Quick Add Handler
+function onQuickAdd(status?: TodoItem['status']) {
+    console.log('Quick add requested', status)
+}
+
+
+// Pre-open sections initially if desired?
+// Let's default to open. Or just map specific logic.
+// A simpler way: checking existence in a Set means "Closed" or "Open"?
+// Let's say Set contains OPEN sections.
+// Default all open requires knowing all IDs.
+// Instead, let's say Set contains CLOSED sections.
+const closedMobileSections = ref<Set<string>>(new Set())
+
+function isSectionOpen(laneId: string, status: string) {
+    return !closedMobileSections.value.has(`${laneId}-${status}`)
+}
+
+function toggleMobileSection(laneId: string, status: string) {
+    const key = `${laneId}-${status}`
+    if (closedMobileSections.value.has(key)) {
+        closedMobileSections.value.delete(key)
+    } else {
+        closedMobileSections.value.add(key)
+    }
 }
 </script>
 
 <template>
   <div class="app-layout">
-    <!-- Desktop Sidebar -->
     <div class="desktop-sidebar">
       <AppSidebar />
     </div>
 
-    <!-- Main Content Area -->
     <main v-if="isDesktop || !route.params.id" class="main-content">
         <div class="board-view">
-            <!-- Header / Toolbar -->
             <div class="board-toolbar">
-            <div class="toolbar-left">
-                <h2 class="view-title">{{ projectTitle }}</h2>
+                <div class="toolbar-left">
+                    <h2 class="view-title">{{ projectTitle }}</h2>
+                </div>
             </div>
 
-            <div class="toolbar-right">
-                <!-- Placeholder for future filters -->
-            </div>
-            </div>
-
-            <!-- Desktop: Horizontal Columns -->
-            <div class="kanban-container desktop-board">
-            <KanbanColumn
-                :title="t('tasks.status.pending')"
-                status="pending"
-                :tasks="pendingTasks"
-                :projects="todoStore.projectsById"
-                @update:tasks="pendingTasks = $event"
-                @change="onTaskChange($event, 'pending')"
-                @add-task="onQuickAdd"
-            />
-
-            <KanbanColumn
-                :title="t('tasks.status.in_progress')"
-                status="in-progress"
-                :tasks="inProgressTasks"
-                :projects="todoStore.projectsById"
-                @update:tasks="inProgressTasks = $event"
-                @change="onTaskChange($event, 'in-progress')"
-                @add-task="onQuickAdd"
-            />
-
-            <KanbanColumn
-                :title="t('tasks.status.completed')"
-                status="completed"
-                :tasks="completedTasks"
-                :projects="todoStore.projectsById"
-                @update:tasks="completedTasks = $event"
-                @change="onTaskChange($event, 'completed')"
-                @add-task="onQuickAdd"
-            />
-            </div>
-
-            <!-- Mobile: Accordion / Vertical Stack -->
-            <div class="mobile-board">
-                <!-- Pending -->
-                <div class="accordion-section">
-                    <div class="accordion-header bg-blue-50/50 dark:bg-blue-900/10" @click="toggleAccordion('pending')">
-                        <span class="acc-title">{{ t('tasks.status.pending') }} ({{ pendingTasks.length }})</span>
-                        <ChevronDown :class="{ 'rotate-180': !openAccordions.pending }" class="transition-transform" :size="20"/>
+            <!-- Swimlanes Container -->
+            <div class="kanban-swimlanes">
+                <div v-for="lane in swimlanes" :key="lane.id" class="swimlane">
+                    <!-- Swimlane Header (Only if showing all projects) -->
+                    <div v-if="!projectId" class="swimlane-header">
+                        <div class="lane-title-group">
+                             <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
+                             <h3>{{ lane.title }}</h3>
+                        </div>
                     </div>
-                    <div v-show="openAccordions.pending" class="accordion-content">
+
+                    <!-- Desktop Columns -->
+                    <!-- We output columns for this swimlane -->
+                    <div class="kanban-container desktop-board">
                         <KanbanColumn
-                            title=""
+                            :title="t('tasks.status.pending')"
                             status="pending"
-                            :tasks="pendingTasks"
+                            :tasks="lane.pending"
                             :projects="todoStore.projectsById"
-                            @update:tasks="pendingTasks = $event"
-                            @change="onTaskChange($event, 'pending')"
-                            class="mobile-column-override"
+                            @update:tasks="lane.pending = $event"
+                            @change="onTaskChange($event, 'pending', lane.projectId)"
+                            @add-task="onQuickAdd"
                         />
-                    </div>
-                </div>
 
-                <!-- In Progress -->
-                <div class="accordion-section">
-                    <div class="accordion-header bg-orange-50/50 dark:bg-orange-900/10" @click="toggleAccordion('inProgress')">
-                        <span class="acc-title">{{ t('tasks.status.in_progress') }} ({{ inProgressTasks.length }})</span>
-                        <ChevronDown :class="{ 'rotate-180': !openAccordions.inProgress }" class="transition-transform" :size="20"/>
-                    </div>
-                    <div v-show="openAccordions.inProgress" class="accordion-content">
                         <KanbanColumn
-                            title=""
+                            :title="t('tasks.status.in_progress')"
                             status="in-progress"
-                            :tasks="inProgressTasks"
+                            :tasks="lane.inProgress"
                             :projects="todoStore.projectsById"
-                            @update:tasks="inProgressTasks = $event"
-                            @change="onTaskChange($event, 'in-progress')"
-                            class="mobile-column-override"
+                            @update:tasks="lane.inProgress = $event"
+                            @change="onTaskChange($event, 'in-progress', lane.projectId)"
+                            @add-task="onQuickAdd"
                         />
-                    </div>
-                </div>
 
-                <!-- Completed -->
-                <div class="accordion-section">
-                    <div class="accordion-header bg-green-50/50 dark:bg-green-900/10" @click="toggleAccordion('completed')">
-                        <span class="acc-title">{{ t('tasks.status.completed') }} ({{ completedTasks.length }})</span>
-                        <ChevronDown :class="{ 'rotate-180': !openAccordions.completed }" class="transition-transform" :size="20"/>
-                    </div>
-                    <div v-show="openAccordions.completed" class="accordion-content">
                         <KanbanColumn
-                            title=""
+                            :title="t('tasks.status.completed')"
                             status="completed"
-                            :tasks="completedTasks"
+                            :tasks="lane.completed"
                             :projects="todoStore.projectsById"
-                            @update:tasks="completedTasks = $event"
-                            @change="onTaskChange($event, 'completed')"
-                            class="mobile-column-override"
+                            @update:tasks="lane.completed = $event"
+                            @change="onTaskChange($event, 'completed', lane.projectId)"
+                            @add-task="onQuickAdd"
                         />
+                    </div>
+
+                     <!-- Mobile Accordions -->
+                    <div class="mobile-board">
+                        <!-- If showing all projects, repeat swimlane header inside mobile too -->
+                        <div v-if="!projectId" class="mobile-swimlane-header">
+                            <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
+                            <h3>{{ lane.title }}</h3>
+                        </div>
+
+                        <!-- Pending -->
+                        <div class="accordion-section">
+                            <div class="accordion-header bg-blue-50/50 dark:bg-blue-900/10" @click="toggleMobileSection(lane.id, 'pending')">
+                                <span class="acc-title">{{ t('tasks.status.pending') }} ({{ lane.pending.length }})</span>
+                                <ChevronDown :class="{ 'rotate-180': !isSectionOpen(lane.id, 'pending') }" class="transition-transform" :size="20"/>
+                            </div>
+                            <div v-show="isSectionOpen(lane.id, 'pending')" class="accordion-content">
+                                <KanbanColumn
+                                    title=""
+                                    status="pending"
+                                    :tasks="lane.pending"
+                                    :projects="todoStore.projectsById"
+                                    @update:tasks="lane.pending = $event"
+                                    @change="onTaskChange($event, 'pending', lane.projectId)"
+                                    class="mobile-column-override"
+                                />
+                            </div>
+                        </div>
+
+                         <!-- In Progress -->
+                        <div class="accordion-section">
+                            <div class="accordion-header bg-orange-50/50 dark:bg-orange-900/10" @click="toggleMobileSection(lane.id, 'inProgress')">
+                                <span class="acc-title">{{ t('tasks.status.in_progress') }} ({{ lane.inProgress.length }})</span>
+                                <ChevronDown :class="{ 'rotate-180': !isSectionOpen(lane.id, 'inProgress') }" class="transition-transform" :size="20"/>
+                            </div>
+                            <div v-show="isSectionOpen(lane.id, 'inProgress')" class="accordion-content">
+                                <KanbanColumn
+                                    title=""
+                                    status="in-progress"
+                                    :tasks="lane.inProgress"
+                                    :projects="todoStore.projectsById"
+                                    @update:tasks="lane.inProgress = $event"
+                                    @change="onTaskChange($event, 'in-progress', lane.projectId)"
+                                    class="mobile-column-override"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Completed -->
+                        <div class="accordion-section">
+                            <div class="accordion-header bg-green-50/50 dark:bg-green-900/10" @click="toggleMobileSection(lane.id, 'completed')">
+                                <span class="acc-title">{{ t('tasks.status.completed') }} ({{ lane.completed.length }})</span>
+                                <ChevronDown :class="{ 'rotate-180': !isSectionOpen(lane.id, 'completed') }" class="transition-transform" :size="20"/>
+                            </div>
+                            <div v-show="isSectionOpen(lane.id, 'completed')" class="accordion-content">
+                                <KanbanColumn
+                                    title=""
+                                    status="completed"
+                                    :tasks="lane.completed"
+                                    :projects="todoStore.projectsById"
+                                    @update:tasks="lane.completed = $event"
+                                    @change="onTaskChange($event, 'completed', lane.projectId)"
+                                    class="mobile-column-override"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Task Detail View (Right Panel) -->
     <div :class="{ 'desktop-detail-panel': isDesktop, 'mobile-detail-page': !isDesktop }"
       v-if="isDesktop || route.params.id">
       <RouterView />
     </div>
 
-    <!-- Mobile Bottom Nav -->
     <BottomNavigation class="mobile-only" v-if="!isDesktop && !route.params.id" @openAddTask="onQuickAdd" />
+
+    <!-- Confirmation Modal for Move -->
+    <ConfirmationModal
+      :isOpen="showMoveConfirm"
+      :title="t('modal.moveTask')"
+      :message="t('modal.confirmMoveProject', { project: getProjectName(pendingMove?.targetProjectId || null) })"
+      :confirmText="pendingMove?.task ? t('common.move') : 'Move'"
+      :cancelText="t('common.cancel')"
+      @confirm="confirmMove"
+      @cancel="cancelMove"
+    />
   </div>
 </template>
 
 <style scoped>
 .app-layout {
   display: flex;
-  height: 100vh; /* Full viewport height */
+  height: 100vh;
   overflow: hidden;
   background-color: var(--color-bg-primary);
 }
 
 .desktop-sidebar {
   flex-shrink: 0;
-  width: var(--sidebar-width); /* Define in CSS variables or config */
+  width: var(--sidebar-width, 280px);
   border-right: 1px solid var(--color-border);
-  display: none; /* Hidden by default, shown on desktop */
+  display: none;
 }
 
 .main-content {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Allows internal scrolling for board-view */
+  overflow: hidden;
 }
 
 .desktop-detail-panel {
   flex-shrink: 0;
-  width: var(--detail-panel-width); /* Define in CSS variables or config */
+  width: var(--detail-panel-width, 450px);
   border-left: 1px solid var(--color-border);
   background-color: var(--color-bg-secondary);
   overflow-y: auto;
-  display: none; /* Hidden by default, shown on desktop when active */
+  display: none;
 }
 
 .mobile-detail-page {
@@ -291,42 +425,26 @@ function toggleAccordion(key: 'pending' | 'inProgress' | 'completed') {
 }
 
 .mobile-only {
-  display: none; /* Hidden by default, shown on mobile */
+  display: none;
 }
 
 @media (min-width: 769px) {
-  .desktop-sidebar {
-    display: block;
-  }
-  .desktop-detail-panel {
-    display: block;
-  }
-  .mobile-only {
-    display: none !important;
-  }
+  .desktop-sidebar, .desktop-detail-panel { display: block; }
 }
 
 @media (max-width: 768px) {
-  .app-layout {
-    flex-direction: column;
-  }
-  .desktop-sidebar {
-    display: none;
-  }
-  .main-content {
-    height: calc(100vh - var(--bottom-nav-height, 60px)); /* Adjust for mobile nav */
-  }
-  .mobile-only {
-    display: block;
-  }
+  .app-layout { flex-direction: column; }
+  .desktop-sidebar { display: none; }
+  .main-content { height: calc(100vh - 60px); }
+  .mobile-only { display: block; }
 }
 
+/* Board specific styles */
 .board-view {
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  background-color: var(--color-bg-primary);
+  overflow-y: hidden;
 }
 
 .board-toolbar {
@@ -344,14 +462,48 @@ function toggleAccordion(key: 'pending' | 'inProgress' | 'completed') {
     color: var(--color-text-primary);
 }
 
-/* Desktop Styles */
-.desktop-board {
+.kanban-swimlanes {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: var(--spacing-xl);
+}
+
+.swimlane {
+    margin-bottom: var(--spacing-xl);
+}
+
+.swimlane-header {
+    padding: var(--spacing-md) var(--spacing-xl);
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
+    border-top: 1px solid var(--color-border);
+}
+
+.lane-title-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.lane-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.swimlane-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.kanban-container.desktop-board {
     display: flex;
     gap: var(--spacing-md);
     padding: var(--spacing-md) var(--spacing-xl);
-    overflow-x: auto;
-    flex: 1;
-    align-items: flex-start; /* items stick to top */
+    align-items: flex-start;
 }
 
 /* Mobile Styles */
@@ -359,8 +511,15 @@ function toggleAccordion(key: 'pending' | 'inProgress' | 'completed') {
     display: none;
     flex-direction: column;
     padding: var(--spacing-sm);
-    overflow-y: auto;
-    flex: 1;
+}
+
+.mobile-swimlane-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-sm);
+    font-weight: bold;
+    color: var(--color-text-primary);
 }
 
 .accordion-section {
@@ -376,26 +535,18 @@ function toggleAccordion(key: 'pending' | 'inProgress' | 'completed') {
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
-    background: var(--color-bg-tertiary);
     font-weight: 600;
 }
 
-.accordion-content {
-    background: var(--color-bg-secondary);
-    /* Remove padding to let column handle it */
-}
-
-/* Hide header in mobile columns since accordion handles it */
-.mobile-column-override :deep(.column-header) {
-    display: none;
-}
 .mobile-column-override {
     background: transparent;
-    min-width: 0;
     padding: var(--spacing-sm);
 }
 
-/* Responsive Switch */
+.mobile-column-override :deep(.column-header) {
+    display: none;
+}
+
 @media (max-width: 768px) {
     .desktop-board { display: none; }
     .mobile-board { display: flex; }
