@@ -10,11 +10,12 @@ import { useI18n } from 'vue-i18n'
 import {
   ArrowLeft, LogOut, Moon, Sun, Globe,
   RotateCcw, User,
-  Palette, Info, ChevronRight, BarChart, Bug
+  Palette, Info, ChevronRight, BarChart, Bug, Database, Upload
 } from 'lucide-vue-next'
 import type { SupportedLocale } from '@/i18n'
 
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
+import ImportModal from '@/components/ImportModal.vue'
 import type { CommitData } from '@/types/commit-info'
 import commitData from '@/generated/commit-info.json'
 
@@ -25,6 +26,7 @@ const i18nStore = useI18nStore()
 const { t, locale } = useI18n()
 
 const showLogoutConfirm = vueRef(false)
+const showImportModal = vueRef(false)
 
 const latestCommit = computed<CommitData>(() => commitData as CommitData)
 
@@ -158,7 +160,6 @@ const confirmLogout = async () => {
               <div class="list-divider"></div>
               <div class="list-item column-layout">
                 <div class="item-info">
-
                   <div class="item-text-group">
                     <span class="item-label">{{ t('settings.colorPalette') }}</span>
                   </div>
@@ -177,17 +178,16 @@ const confirmLogout = async () => {
             </div>
           </div>
 
-
-          <!-- About Section -->
+          <!-- Analytics Section -->
           <div class="settings-group">
             <div class="group-header">
-              <Info :size="16" />
-              <span>{{ t('settings.about') }}</span>
+              <BarChart :size="16" />
+              <span>{{ t('settings.analytics') }}</span>
             </div>
             <div class="settings-card list-card">
               <div class="list-item clickable" @click="router.push('/stats')">
                 <div class="item-info">
-                  <div class="item-icon-circle theme">
+                  <div class="item-icon-circle features">
                     <BarChart :size="16" />
                   </div>
                   <div class="item-text-group">
@@ -196,7 +196,37 @@ const confirmLogout = async () => {
                 </div>
                 <ChevronRight :size="18" class="chevron" />
               </div>
-              <div class="list-divider"></div>
+            </div>
+          </div>
+
+          <!-- Data Section -->
+          <div class="settings-group">
+            <div class="group-header">
+              <Database :size="16" />
+              <span>{{ t('settings.data') }}</span>
+            </div>
+            <div class="settings-card list-card">
+              <div class="list-item clickable" @click="showImportModal = true">
+                <div class="item-info">
+                  <div class="item-icon-circle lang">
+                    <Upload :size="16" />
+                  </div>
+                  <div class="item-text-group">
+                    <span class="item-label">{{ t('settings.import') }}</span>
+                  </div>
+                </div>
+                <ChevronRight :size="18" class="chevron" />
+              </div>
+            </div>
+          </div>
+
+          <!-- About Section -->
+          <div class="settings-group">
+            <div class="group-header">
+              <Info :size="16" />
+              <span>{{ t('settings.about') }}</span>
+            </div>
+            <div class="settings-card list-card">
               <div class="list-item clickable" @click="router.push('/changelog')">
                 <div class="item-info">
                   <div class="item-icon-circle about">
@@ -246,6 +276,8 @@ const confirmLogout = async () => {
 
     <ConfirmationModal :isOpen="showLogoutConfirm" :title="t('auth.signOut')" :message="t('auth.confirmLogout')"
       :confirmText="t('auth.signOut')" type="danger" @confirm="confirmLogout" @cancel="showLogoutConfirm = false" />
+
+    <ImportModal :isOpen="showImportModal" @close="showImportModal = false" />
   </div>
 </template>
 

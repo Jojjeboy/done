@@ -58,7 +58,7 @@
     "taskName": "Uppgiftsnamn",
     "status": {
       "pending": "Väntande",
-      "in_progress": "Pågående",
+      "inProgress": "Pågående",
       "completed": "Klar"
     },
     "priority": {
@@ -127,6 +127,9 @@
     "appearance": "Utseende",
     "behavior": "Beteende",
     "about": "Om appen",
+    "analytics": "Analys",
+    "data": "Data",
+    "import": "Importera",
     "colorPalette": "Färgtema",
     "colorPalettes": {
       "purple": "Lila",

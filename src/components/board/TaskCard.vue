@@ -56,38 +56,36 @@ const isOverdue = computed(() => {
 })
 
 const navigateToDetail = () => {
-    // Check if we are in a project-specific board view
-    const currentProjectId = router.currentRoute.value.params.projectId
+  // Check if we are in a project-specific board view
+  const currentProjectId = router.currentRoute.value.params.projectId
 
-    if (router.currentRoute.value.path.startsWith('/board')) {
-       if (currentProjectId) {
-           router.push({
-               name: 'board-project-task-detail',
-               params: { projectId: currentProjectId, id: props.task.id }
-           })
-       } else {
-           router.push({
-               name: 'board-task-detail',
-               params: { id: props.task.id }
-           })
-       }
+  if (router.currentRoute.value.path.startsWith('/board')) {
+    if (currentProjectId) {
+      router.push({
+        name: 'board-project-task-detail',
+        params: { projectId: currentProjectId, id: props.task.id }
+      })
     } else {
-        // Fallback to home view (list view) navigation
-        router.push({ name: 'home', params: { id: props.task.id } })
+      router.push({
+        name: 'board-task-detail',
+        params: { id: props.task.id }
+      })
     }
+  } else {
+    // Fallback to home view (list view) navigation
+    router.push({ name: 'home', params: { id: props.task.id } })
+  }
 }
 </script>
 
 <template>
-  <div
-    class="task-card"
-    @click="navigateToDetail"
-  >
+  <div class="task-card" @click="navigateToDetail">
     <div class="card-header">
       <span class="priority-badge" :class="priorityColor">
         {{ priorityLabel }}
       </span>
-      <span v-if="project" class="project-dot" :style="{ backgroundColor: project.color || '#ccc' }" :title="project.title"></span>
+      <div v-if="project" class="project-dot" :style="{ backgroundColor: project.color || '#ccc' }"
+        :title="project.title"></div>
     </div>
 
     <h4 class="task-title" :class="{ 'completed': task.status === 'completed' }">
@@ -122,7 +120,26 @@ const navigateToDetail = () => {
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid var(--color-border);
-  user-select: none; /* Important for dragging */
+  user-select: none;
+  /* Important for dragging */
+  position: relative;
+  overflow: hidden;
+}
+
+.task-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: v-bind('project?.color || "transparent"');
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.dark .task-card::before {
+  opacity: 0.1;
 }
 
 .task-card:hover {
@@ -132,7 +149,8 @@ const navigateToDetail = () => {
 }
 
 .dark .task-card {
-  background: var(--color-bg-secondary); /* Slightly lighter than pure dark bg */
+  background: var(--color-bg-secondary);
+  /* Slightly lighter than pure dark bg */
   border-color: var(--color-border);
 }
 
@@ -167,6 +185,7 @@ const navigateToDetail = () => {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   overflow: hidden;
 }
 

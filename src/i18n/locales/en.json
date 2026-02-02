@@ -58,7 +58,7 @@
     "taskName": "Task name",
     "status": {
       "pending": "Pending",
-      "in_progress": "In Progress",
+      "inProgress": "In Progress",
       "completed": "Completed"
     },
     "priority": {
@@ -126,6 +126,9 @@
     "appearance": "Appearance",
     "behavior": "Behavior",
     "about": "About",
+    "analytics": "Analytics",
+    "data": "Data",
+    "import": "Import",
     "colorPalette": "Color Theme",
     "colorPalettes": {
       "purple": "Purple",
