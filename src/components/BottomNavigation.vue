@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Home, Plus, Settings, LayoutDashboard } from 'lucide-vue-next'
+import { Home, Plus, Settings } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
@@ -24,12 +24,8 @@ const addTask = () => {
 <template>
   <nav class="bottom-nav">
     <button @click="router.push('/')" class="nav-btn" :class="{ active: isActive('/') }"
-      :aria-label="t('common.appName')">
+      :aria-label="t('tasks.filters.all')">
       <Home :size="24" />
-    </button>
-    <button @click="router.push('/board')" class="nav-btn" :class="{ active: isActive('/board') }"
-      :aria-label="t('common.board') || 'Board'">
-      <LayoutDashboard :size="24" />
     </button>
     <button v-if="!isActive('/settings')" @click="addTask" class="nav-btn-add" :aria-label="t('tasks.addTask')">
       <Plus :size="28" />

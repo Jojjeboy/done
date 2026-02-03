@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import type { RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTodoStore } from '@/stores/todo'
 import { useSettingsStore } from '@/stores/settings'
@@ -7,18 +7,7 @@ import { useSettingsStore } from '@/stores/settings'
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-      children: [
-        {
-          path: 'task/:id',
-          name: 'task-detail',
-          component: () => import('../views/TaskDetailView.vue'),
-        },
-      ]
-    },
+
     {
       path: '/focus',
       name: 'focus',
@@ -60,9 +49,9 @@ const router = createRouter({
       component: () => import('../views/NotFoundView.vue'),
     },
     {
-       path: '/board',
+       path: '/',
        component: () => import('../views/BoardView.vue'),
-       name: 'board',
+       name: 'home',
        children: [
             {
             path: 'task/:id',
@@ -87,7 +76,7 @@ const router = createRouter({
 })
 
 // Navigation Guard
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
   const authStore = useAuthStore()
 
   // Always ensure auth is initialized before checking routes
@@ -112,7 +101,7 @@ router.beforeEach(async (to, from, next) => {
   if (!isPublic && !isAuthenticated) {
     next('/login')
   } else if (isPublic && isAuthenticated) {
-    next('/') // Redirect to home if already logged in and trying to access login
+    next('/') // Redirect to home (now board) if already logged in
   } else {
     next()
   }

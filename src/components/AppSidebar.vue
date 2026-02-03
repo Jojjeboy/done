@@ -62,23 +62,17 @@ const sortedProjects = computed(() => {
 
 const isActive = (path: string) => route.path === path
 const isCategoryActive = (id: string) => {
-  if (route.path.startsWith('/board')) {
-    return route.params.projectId === id
-  }
-  return route.query.category === id
+  // Always board mode now
+  return route.params.projectId === id
 }
 
 // Actions
 const handleCategoryClick = (categoryId: string) => {
-  const isBoard = route.path.startsWith('/board')
+  // Board mode only
   if (isCategoryActive(categoryId)) {
-    router.push(isBoard ? '/board' : '/')
+    router.push('/')
   } else {
-    if (isBoard) {
-      router.push(`/board/${categoryId}`)
-    } else {
-      router.push({ path: '/', query: { category: categoryId } })
-    }
+    router.push(`/board/${categoryId}`)
   }
 }
 
@@ -151,14 +145,15 @@ const toggleCollapse = () => {
         <img src="/done.png" alt="Done Logo" class="app-logo" />
         <h1 class="app-title">{{ t('common.appName') }}</h1>
       </router-link>
-      <button class="collapse-toggle" @click="toggleCollapse" :title="isCollapsed ? t('common.expand') || 'Expand' : t('common.collapse') || 'Collapse'">
+      <button class="collapse-toggle" @click="toggleCollapse"
+        :title="isCollapsed ? t('common.expand') || 'Expand' : t('common.collapse') || 'Collapse'">
         <PanelLeftOpen v-if="isCollapsed" :size="20" />
         <PanelLeftClose v-else :size="20" />
       </button>
     </div>
 
     <nav class="sidebar-nav">
-      <button class="nav-item" :class="{ active: isActive('/') && !route.query.category && !route.query.filter }"
+      <button class="nav-item" :class="{ active: route.path === '/' && !route.params.projectId }"
         @click="router.push('/')">
         <Home :size="20" />
         <span>{{ t('tasks.filters.all') }}</span>
@@ -170,7 +165,8 @@ const toggleCollapse = () => {
         <span>{{ t('tasks.filters.starred') }}</span>
       </button>
 
-      <button class="nav-item" :class="{ active: isActive('/board') }" @click="router.push('/board')">
+      <button class="nav-item" :class="{ active: route.path === '/' || route.path.startsWith('/board') }"
+        @click="router.push('/')">
         <LayoutDashboard :size="20" />
         <span>{{ t('common.board') || 'Board' }}</span>
       </button>

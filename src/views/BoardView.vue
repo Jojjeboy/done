@@ -7,10 +7,13 @@ import type { TodoItem, Project } from '@/types/todo'
 import KanbanColumn from '@/components/board/KanbanColumn.vue'
 import TaskCard from '@/components/board/TaskCard.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
+import MobileHeader from '@/components/MobileHeader.vue'
 import BottomNavigation from '@/components/BottomNavigation.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
+import ImportModal from '@/components/ImportModal.vue'
+import FilterModal from '@/components/FilterModal.vue'
 import draggable from 'vuedraggable'
-import { ChevronDown, Plus, Pin, PinOff } from 'lucide-vue-next'
+import { ChevronDown, Plus, Pin, PinOff, Search, X, ChevronRight } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -62,12 +65,15 @@ const pendingMove = ref<{
   newStatus: TodoItem['status']
   targetProjectId: string | null
 } | null>(null)
+const showImportModal = ref(false)
 
 const projectTitle = computed(() => {
   if (!projectId.value) return t('common.allProjects')
   if (projectId.value === '__none__') return t('tasks.categories.none')
-  return todoStore.projectsById.get(projectId.value)?.title || t('common.project')
+  return todoStore.projectsById.get(projectId.value || '')?.title || t('common.allProjects')
 })
+
+const showFilterModal = ref(false)
 
 function syncSwimlanes() {
   const allTasks = todoStore.todoItems
@@ -267,14 +273,30 @@ function hexToRgb(hex: string) {
     </div>
 
     <main v-show="isDesktop || !route.params.id" class="main-content">
+      <div class="mobile-only">
+        <MobileHeader @open-import="showImportModal = true" />
+      </div>
       <div v-if="loading && !initialized" class="loading">
         <div class="spinner"></div>
       </div>
 
       <div v-else class="board-view">
         <div class="board-toolbar">
-          <div class="toolbar-left">
-            <h2 class="view-title">{{ projectTitle }}</h2>
+          <div class="view-group">
+            <div class="view-selector" @click="showFilterModal = true">
+              <h2 class="view-title">{{ projectTitle }}</h2>
+              <ChevronRight :size="20" class="rotate-90" />
+            </div>
+          </div>
+
+          <div class="search-container" v-if="isDesktop">
+            <Search :size="18" class="search-icon" />
+            <input v-model="todoStore.searchQuery" type="text" class="search-input"
+              :placeholder="t('search.placeholder')" />
+            <button v-if="todoStore.searchQuery" class="search-clear-btn" @click="todoStore.searchQuery = ''"
+              :title="t('search.clear')">
+              <X :size="14" />
+            </button>
           </div>
         </div>
 
@@ -288,7 +310,7 @@ function hexToRgb(hex: string) {
                 <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
                 <h3>{{ lane.title }}</h3>
                 <span class="lane-count">{{ lane.pending.length + lane.inProgress.length + lane.completed.length
-                  }}</span>
+                }}</span>
               </div>
               <div class="lane-actions">
                 <button v-if="lane.projectId" class="pin-btn" :class="{ 'is-pinned': lane.isPinned }"
@@ -393,6 +415,12 @@ function hexToRgb(hex: string) {
     <ConfirmationModal :isOpen="showMoveConfirm" :title="t('modal.moveTask')"
       :message="t('modal.confirmMoveProject', { project: todoStore.projectsById.get(pendingMove?.targetProjectId || '')?.title || t('tasks.categories.none') })"
       :confirmText="t('common.move')" :cancelText="t('common.cancel')" @confirm="confirmMove" @cancel="cancelMove" />
+
+    <ImportModal :isOpen="showImportModal" @close="showImportModal = false" @import="showImportModal = false" />
+
+    <FilterModal :isOpen="showFilterModal" active-filter="all" :active-category="projectId || null"
+      @update:filter="() => { }" @update:category="(id) => router.replace(id ? `/board/${id}` : '/')"
+      @close="showFilterModal = false" />
   </div>
 </template>
 
@@ -478,19 +506,109 @@ function hexToRgb(hex: string) {
 }
 
 .board-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 2rem;
+  gap: var(--spacing-lg);
 }
 
 @media (max-width: 768px) {
   .board-toolbar {
     margin-bottom: 1rem;
+    padding: 0 0.5rem;
   }
 }
 
+.view-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.view-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
+  border-radius: var(--radius-md);
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.view-selector:hover {
+  background: var(--color-bg-lavender);
+}
+
 .view-title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--font-size-xl);
+  font-weight: 800;
   color: var(--color-text-primary);
+  margin: 0;
+}
+
+.rotate-90 {
+  transform: rotate(90deg);
+  color: var(--color-text-secondary);
+}
+
+.search-container {
+  position: relative;
+  flex: 1;
+  max-width: 240px;
+}
+
+.search-icon {
+  position: absolute;
+  left: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--spacing-sm) calc(var(--spacing-md) * 2 + 14px) var(--spacing-sm) calc(var(--spacing-md) * 2 + 18px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  background: var(--color-bg-white);
+  color: var(--color-text-primary);
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.1);
+}
+
+.dark .search-input {
+  background: var(--color-bg-lighter);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-bg-lavender);
+  border: none;
+  color: var(--color-primary);
+  padding: 2px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.search-clear-btn:hover {
+  background: var(--color-primary);
+  color: white;
 }
 
 .kanban-swimlanes {
