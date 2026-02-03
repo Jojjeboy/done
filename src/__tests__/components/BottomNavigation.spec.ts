@@ -38,15 +38,14 @@ describe('BottomNavigation Component', () => {
         stubs: {
           Home: true,
           Plus: true,
-          Settings: true,
-          LayoutDashboard: true
+          Settings: true
         },
       },
     })
 
     const buttons = wrapper.findAll('button')
-    // Home, Board, Add, Settings = 4
-    expect(buttons.length).toBe(4)
+    // Home, Add, Settings = 3
+    expect(buttons.length).toBe(3)
   })
 
   it('has appropriate ARIA labels', () => {
@@ -55,8 +54,7 @@ describe('BottomNavigation Component', () => {
         stubs: {
           Home: true,
           Plus: true,
-          Settings: true,
-          LayoutDashboard: true
+          Settings: true
         },
       },
     })
@@ -64,7 +62,7 @@ describe('BottomNavigation Component', () => {
     const buttons = wrapper.findAll('button')
     const ariaLabels = buttons.map((btn) => btn.attributes('aria-label'))
 
-    expect(ariaLabels).toContain('common.appName')
+    expect(ariaLabels).toContain('tasks.filters.all')
     expect(ariaLabels).toContain('tasks.addTask')
     expect(ariaLabels).toContain('settings.title')
   })
