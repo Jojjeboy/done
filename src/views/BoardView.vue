@@ -13,7 +13,7 @@ import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import ImportModal from '@/components/ImportModal.vue'
 import FilterModal from '@/components/FilterModal.vue'
 import draggable from 'vuedraggable'
-import { Plus, Search, X, ChevronRight } from 'lucide-vue-next'
+import { Plus, Search, X, ChevronDown } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -299,7 +299,7 @@ function hexToRgb(hex: string) {
           <div class="view-group">
             <div class="view-selector" @click="showFilterModal = true">
               <h2 class="view-title">{{ projectTitle }}</h2>
-              <ChevronRight :size="20" class="rotate-90" />
+              <ChevronDown :size="20" class="dropdown-icon" />
             </div>
           </div>
 
@@ -324,7 +324,7 @@ function hexToRgb(hex: string) {
                 <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
                 <h3>{{ lane.title }}</h3>
                 <span class="lane-count">{{ lane.pending.length + lane.inProgress.length + lane.completed.length
-                }}</span>
+                  }}</span>
               </div>
               <div class="lane-actions">
                 <button v-if="lane.projectId" class="pin-btn" :class="{ 'is-pinned': lane.isPinned }"
@@ -563,15 +563,20 @@ function hexToRgb(hex: string) {
 }
 
 .view-title {
-  font-size: var(--font-size-xl);
-  font-weight: 800;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--color-text-primary);
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
-.rotate-90 {
-  transform: rotate(90deg);
-  color: var(--color-text-secondary);
+.dropdown-icon {
+  color: var(--color-text-muted);
+  transition: transform 0.2s;
+}
+
+.view-selector:hover .dropdown-icon {
+  color: var(--color-text-primary);
 }
 
 .search-container {

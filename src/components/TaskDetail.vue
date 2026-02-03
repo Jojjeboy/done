@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
 import type { Subtask } from '@/types/todo'
-import { X, Calendar, Flag, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft, Pin, ChevronRight, Layers, Star } from 'lucide-vue-next'
+import { X, Calendar, Flag, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft, Pin, ChevronRight, Layers, Star, CircleDashed } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import ConvertTaskModal from '@/components/ConvertTaskModal.vue'
@@ -418,12 +418,12 @@ const metaItems = computed(() => {
             class="status-btn" :title="t('tasks.status.pending')">
             <Circle :size="18" />
           </button>
+          <div class="status-connector" :class="{ active: taskStatus !== 'pending' }"></div>
           <button @click="taskStatus = 'in-progress'; handleFieldChange()"
             :class="{ active: taskStatus === 'in-progress' }" class="status-btn" :title="t('tasks.status.in-progress')">
-            <div class="inner-dot-wrapper">
-              <div class="inner-dot"></div>
-            </div>
+            <CircleDashed :size="18" />
           </button>
+          <div class="status-connector" :class="{ active: taskStatus === 'completed' }"></div>
           <button @click="taskStatus = 'completed'; handleFieldChange()" :class="{ active: taskStatus === 'completed' }"
             class="status-btn" :title="t('tasks.status.completed')">
             <CheckCircle :size="18" />
@@ -559,7 +559,7 @@ const metaItems = computed(() => {
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-                }}</span>
+              }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -588,7 +588,7 @@ const metaItems = computed(() => {
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-          }}</button>
+        }}</button>
       </div>
     </div>
 
@@ -801,19 +801,17 @@ const metaItems = computed(() => {
   color: white;
 }
 
-.inner-dot-wrapper {
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.status-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--color-bg-tertiary);
+  transition: background 0.3s;
+  z-index: 1;
+  max-width: 12px;
 }
 
-.inner-dot {
-  width: 8px;
-  height: 8px;
-  border: 2px solid currentColor;
-  border-radius: 50%;
+.status-connector.active {
+  background: var(--color-primary);
 }
 
 .status-btn.active .inner-dot {
