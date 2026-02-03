@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useRouter, useRoute } from 'vue-router'
 import {
@@ -11,7 +11,9 @@ import {
   LayoutDashboard,
   Star,
   Pin,
-  PinOff
+  PinOff,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import type { Project } from '@/types/todo'
@@ -31,6 +33,23 @@ const selectedProjectId = ref<string | null>(null)
 const showDeleteCategoryConfirm = ref(false)
 const categoryToDelete = ref<string | null>(null)
 const draggedCategoryIndex = ref<number | null>(null)
+const isCollapsed = ref(false)
+
+// Responsive collapse behavior
+const handleResize = () => {
+  if (window.innerWidth < 1225) {
+    isCollapsed.value = true
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+  handleResize() // Check initial size
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 
 // Computed
 const sortedProjects = computed(() => {
@@ -118,15 +137,24 @@ const handleDrop = async (targetIndex: number) => {
   await todoStore.updateProjectsOrder(updated)
   draggedCategoryIndex.value = null
 }
+
+// Toggle sidebar collapse
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value
+}
 </script>
 
 <template>
-  <aside class="sidebar">
+  <aside class="sidebar" :class="{ collapsed: isCollapsed }">
     <div class="sidebar-header">
       <router-link to="/" class="sidebar-brand">
         <img src="/done.png" alt="Done Logo" class="app-logo" />
         <h1 class="app-title">{{ t('common.appName') }}</h1>
       </router-link>
+      <button class="collapse-toggle" @click="toggleCollapse" :title="isCollapsed ? t('common.expand') || 'Expand' : t('common.collapse') || 'Collapse'">
+        <PanelLeftOpen v-if="isCollapsed" :size="20" />
+        <PanelLeftClose v-else :size="20" />
+      </button>
     </div>
 
     <nav class="sidebar-nav">
@@ -231,6 +259,44 @@ const handleDrop = async (targetIndex: number) => {
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar.collapsed .app-title,
+.sidebar.collapsed .nav-item span,
+.sidebar.collapsed .section-header h2,
+.sidebar.collapsed .add-cat-btn,
+.sidebar.collapsed .actions,
+.sidebar.collapsed .pin-toggle-btn,
+.sidebar.collapsed .project-progress,
+.sidebar.collapsed .lane-count {
+  display: none;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.sidebar.collapsed .project-link {
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-brand {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar.collapsed .color-dot {
+  margin: 0;
 }
 
 .dark .sidebar {
@@ -240,6 +306,33 @@ const handleDrop = async (targetIndex: number) => {
 .sidebar-header {
   padding: 1.5rem;
   border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.collapse-toggle {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.collapse-toggle:hover {
+  background: var(--color-bg-lavender);
+  color: var(--color-primary);
+}
+
+.sidebar.collapsed .collapse-toggle {
+  margin-top: 0.5rem;
 }
 
 .sidebar-brand {

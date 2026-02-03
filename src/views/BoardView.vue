@@ -406,7 +406,6 @@ function hexToRgb(hex: string) {
 
 .desktop-sidebar {
   flex-shrink: 0;
-  width: 280px;
   border-right: 1px solid var(--color-border);
   display: none;
 }
