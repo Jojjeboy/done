@@ -299,6 +299,8 @@ const toggleCollapse = () => {
   margin: 0;
 }
 
+/* Keep icon sizes at 20px even when collapsed */
+
 .dark .sidebar {
   background: var(--color-bg-card);
 }

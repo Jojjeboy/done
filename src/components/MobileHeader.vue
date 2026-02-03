@@ -146,7 +146,7 @@ const toggleTheme = () => {
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, #6C5CE7 0%, #A78BFA 100%);
   color: var(--color-text-white);
-  display: flex;
+  display: none; /* Hidden on mobile */
   align-items: center;
   justify-content: center;
   font-weight: var(--font-weight-bold);
@@ -156,6 +156,12 @@ const toggleTheme = () => {
   overflow: hidden;
 }
 
+@media (min-width: 769px) {
+  .profile-avatar {
+    display: flex; /* Show on desktop */
+  }
+}
+
 .avatar-image {
   width: 100%;
   height: 100%;
@@ -163,9 +169,15 @@ const toggleTheme = () => {
 }
 
 .greeting-section {
-  display: flex;
+  display: none; /* Hidden on mobile */
   flex-direction: column;
   gap: 2px;
+}
+
+@media (min-width: 769px) {
+  .greeting-section {
+    display: flex; /* Show on desktop */
+  }
 }
 
 .greeting {
