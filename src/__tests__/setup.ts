@@ -7,6 +7,26 @@ vi.mock('@/firebase', () => ({
     onAuthStateChanged: vi.fn(),
     signOut: vi.fn(),
   },
+  db: {
+    collection: vi.fn(),
+    doc: vi.fn(),
+  }
+}))
+
+vi.mock('@/services/sync', () => ({
+  syncService: {
+    init: vi.fn(),
+    cleanup: vi.fn(),
+    pushTodo: vi.fn(),
+    deleteTodo: vi.fn(),
+    pushProject: vi.fn(),
+    deleteProject: vi.fn(),
+    pushSubtask: vi.fn(),
+    deleteSubtask: vi.fn(),
+    pushSetting: vi.fn(),
+    pushComment: vi.fn(),
+    deleteComment: vi.fn(),
+  }
 }))
 
 // Also mock the firebase/app and firebase/auth modules if needed,

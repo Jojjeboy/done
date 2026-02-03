@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { getDatabase } from '@/db'
 import { useAuthStore } from '@/stores/auth'
@@ -29,6 +29,17 @@ export const useTodoStore = defineStore('todo', () => {
   const initialized = ref(false)
   const globalLoading = ref(false)
   const searchQuery = ref('')
+  const authStore = useAuthStore()
+
+  // React to auth state changes to start/stop sync
+  watch(() => authStore.user, (user) => {
+    if (user) {
+      syncService.init(user.uid)
+    } else {
+      syncService.cleanup()
+      initialized.value = false
+    }
+  }, { immediate: true })
 
   // Computed
   const subtasksByTodoId = computed(() => {
@@ -222,11 +233,7 @@ export const useTodoStore = defineStore('todo', () => {
 
       initialized.value = true
 
-      // Initialize Sync
-      const authStore = useAuthStore()
-      if (authStore.user) {
-          syncService.init(authStore.user.uid)
-      }
+      // No manual syncService.init call here anymore, we use a watch
     } catch (error) {
       console.error('Failed to initialize todo store:', error)
       throw error
@@ -902,6 +909,7 @@ export const useTodoStore = defineStore('todo', () => {
     try {
       const db = getDatabase()
       await db.table('comments').add(comment)
+      await syncService.pushComment(comment)
     } catch (error) {
       console.error('Failed to persist comment:', error)
       const index = comments.value.findIndex((c) => c.id === comment.id)
@@ -920,6 +928,7 @@ export const useTodoStore = defineStore('todo', () => {
     try {
       const db = getDatabase()
       await db.table('comments').delete(id)
+      await syncService.deleteComment(id)
     } catch (error) {
       console.error('Failed to delete comment:', error)
     }

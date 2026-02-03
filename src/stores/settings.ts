@@ -88,6 +88,14 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
+  const updateThreeStepFromSync = (value: boolean) => {
+    isThreeStepEnabled.value = value
+  }
+
+  const updateFocusModeFromSync = (taskIds: string[]) => {
+    focusModeTaskIds.value = taskIds
+  }
+
   return {
     isThreeStepEnabled,
     focusModeTaskIds,
@@ -98,6 +106,8 @@ export const useSettingsStore = defineStore('settings', () => {
     addToFocusMode,
     removeFromFocusMode,
     toggleTaskInFocusMode,
-    clearFocusMode
+    clearFocusMode,
+    updateThreeStepFromSync,
+    updateFocusModeFromSync
   }
 })

@@ -8,7 +8,8 @@ import {
   type Unsubscribe
 } from 'firebase/firestore'
 import { useTodoStore } from '@/stores/todo'
-import type { TodoItem, Project, Subtask } from '@/types/todo'
+import { useSettingsStore } from '@/stores/settings'
+import type { TodoItem, Project, Subtask, Comment } from '@/types/todo'
 import { getDatabase } from '@/db'
 
 class SyncService {
@@ -33,6 +34,7 @@ class SyncService {
     if (!this.userId) return
 
     const todoStore = useTodoStore()
+    const settingsStore = useSettingsStore()
     const dexieDb = getDatabase()
 
     // 1. Listen to Todos
@@ -135,11 +137,50 @@ class SyncService {
           try {
               const changes = snapshot.docChanges()
               for (const change of changes) {
-                  const data = change.doc.data() as { key: string; value: string | number | boolean }
+                  const data = change.doc.data() as { key: string; value: unknown }
                   if (change.type === 'added' || change.type === 'modified') {
                       await dexieDb.table('settings').put(data, 'key')
+
+                      // Update settings store reactively
+                      if (data.key === 'isThreeStepEnabled') {
+                          settingsStore.updateThreeStepFromSync(!!data.value)
+                      } else if (data.key === 'focusModeTaskIds') {
+                          try {
+                              const ids = typeof data.value === 'string' ? JSON.parse(data.value) : data.value
+                              settingsStore.updateFocusModeFromSync(ids)
+                          } catch (e) {
+                              console.error('Failed to parse focusModeTaskIds from sync', e)
+                          }
+                      }
                   } else if (change.type === 'removed') {
                       await dexieDb.table('settings').delete(change.doc.id)
+                  }
+              }
+          } finally {
+              this.isSyncing = false
+          }
+      }))
+
+      // 5. Listen to Comments
+      const commentsQuery = collection(db, `users/${this.userId}/comments`)
+      this.unsubscribers.push(onSnapshot(commentsQuery, async (snapshot) => {
+          this.isSyncing = true
+          try {
+              const changes = snapshot.docChanges()
+              for (const change of changes) {
+                  const data = change.doc.data() as Comment
+                  if (change.type === 'added' || change.type === 'modified') {
+                      await dexieDb.table('comments').put(data)
+                      const index = todoStore.comments.findIndex(c => c.id === data.id)
+                      if (index !== -1) {
+                          todoStore.comments[index] = data
+                      } else {
+                          todoStore.comments.push(data)
+                      }
+                  } else if (change.type === 'removed') {
+                      await dexieDb.table('comments').delete(change.doc.id)
+                      const index = todoStore.comments.findIndex(c => c.id === change.doc.id)
+                      if (index !== -1) todoStore.comments.splice(index, 1)
                   }
               }
           } finally {
@@ -191,6 +232,17 @@ class SyncService {
     if (this.isSyncing) return // Avoid loop
     const data = { key, value }
     await setDoc(doc(db, `users/${this.userId}/settings`, key), data)
+  }
+
+  public async pushComment(comment: Comment) {
+    if (!this.userId) return
+    const data = JSON.parse(JSON.stringify(comment))
+    await setDoc(doc(db, `users/${this.userId}/comments`, comment.id), data)
+  }
+
+  public async deleteComment(commentId: string) {
+    if (!this.userId) return
+    await deleteDoc(doc(db, `users/${this.userId}/comments`, commentId))
   }
 
 
