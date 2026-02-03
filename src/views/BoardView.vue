@@ -13,7 +13,7 @@ import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import ImportModal from '@/components/ImportModal.vue'
 import FilterModal from '@/components/FilterModal.vue'
 import draggable from 'vuedraggable'
-import { ChevronDown, Plus, Pin, PinOff, Search, X, ChevronRight } from 'lucide-vue-next'
+import { Plus, Search, X, ChevronRight } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -324,7 +324,7 @@ function hexToRgb(hex: string) {
                 <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
                 <h3>{{ lane.title }}</h3>
                 <span class="lane-count">{{ lane.pending.length + lane.inProgress.length + lane.completed.length
-                  }}</span>
+                }}</span>
               </div>
               <div class="lane-actions">
                 <button v-if="lane.projectId" class="pin-btn" :class="{ 'is-pinned': lane.isPinned }"

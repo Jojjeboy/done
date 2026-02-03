@@ -355,7 +355,7 @@ const metaItems = computed(() => {
   // Category
   if (taskProject.value && taskProject.value !== 'none') {
     const project = todoStore.projects.find(p => p.id === taskProject.value)
-    if (project) items.push({ icon: Hash, text: project.title })
+    if (project) items.push({ icon: Hash, text: project.title, color: project.color })
   }
 
   // Priority
@@ -454,7 +454,8 @@ const metaItems = computed(() => {
           <div class="accordion-title-wrapper" v-if="metaItems.length > 0">
             <template v-for="(item, index) in metaItems" :key="index">
               <div class="meta-pill">
-                <component :is="item.icon" :size="12" />
+                <div v-if="item.color" class="project-dot" :style="{ backgroundColor: item.color }"></div>
+                <component v-else :is="item.icon" :size="12" />
                 <span>{{ item.text }}</span>
               </div>
               <span v-if="index < metaItems.length - 1" class="meta-divider">·</span>
@@ -471,7 +472,9 @@ const metaItems = computed(() => {
             <!-- Project -->
             <div class="property-item" :title="t('modal.project')">
               <div class="prop-icon">
-                <Hash :size="14" />
+                <div v-if="taskProject !== 'none'" class="project-dot"
+                  :style="{ backgroundColor: todoStore.projectsById.get(taskProject)?.color || '#ccc' }"></div>
+                <Hash v-else :size="14" />
               </div>
               <select v-model="taskProject" @change="handleFieldChange" class="clean-select">
                 <option value="none">{{ t('tasks.categories.none') }}</option>
@@ -556,7 +559,7 @@ const metaItems = computed(() => {
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-              }}</span>
+                }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -585,7 +588,7 @@ const metaItems = computed(() => {
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-        }}</button>
+          }}</button>
       </div>
     </div>
 
@@ -1038,8 +1041,11 @@ const metaItems = computed(() => {
   color: var(--color-text-muted);
 }
 
-.sticky-toggle-btn.active:hover {
-  color: var(--color-primary);
+.project-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .favorite-toggle-btn {

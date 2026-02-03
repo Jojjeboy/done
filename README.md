@@ -11,7 +11,9 @@ A modern, offline-first Progressive Web App (PWA) for managing personal tasks, b
 - **Subtasks**: Break down complex tasks into smaller, manageable subtasks. Supports one level of nesting (Subtask -> Sub-subtask) for detailed organization.
 - **Cascading Progress**: Completing a parent subtask automatically completes its children.
 - **Deadlines**: Set due dates with a built-in datepicker. Simplified display shows "Today", "Tomorrow", or the date.
-- **Categories**: Organize tasks into color-coded categories (Work, Personal, Hobby, Lifestyle).
+- **Categories & Projects**: Organize tasks into color-coded projects (Work, Personal, Hobby, Lifestyle).
+- **Kanban Board**: Primary view for managing tasks across different projects with drag-and-drop support.
+- **Starred Tasks**: Mark important tasks as favorites (high priority) for quick filtering.
 - **Search**: Fast, responsive search to find any task instantly.
 
 ### 📱 User Experience

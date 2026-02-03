@@ -79,11 +79,7 @@ const navigateToDetail = () => {
 
 <template>
   <div class="task-card" :class="{ 'is-completed': isCompleted }" @click="navigateToDetail">
-    <div class="card-header">
-      <div v-if="project" class="project-dot" :style="{ backgroundColor: project.color || '#ccc' }"
-        :title="project.title"></div>
-      <div v-else class="spacer"></div>
-    </div>
+    <div class="spacer-top"></div>
 
     <h4 class="task-title" :class="{ 'completed': task.status === 'completed' }">
       {{ task.title }}
@@ -155,26 +151,8 @@ const navigateToDetail = () => {
   background: var(--color-bg-secondary);
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-xs);
-}
-
-.priority-badge {
-  font-size: 0.65rem;
-  padding: 1px 6px;
-  border-radius: 8px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.project-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.spacer-top {
+  height: var(--spacing-xs);
 }
 
 .task-title {
