@@ -41,7 +41,11 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
 
-const projectId = computed(() => route.params.projectId as string | undefined)
+watch([() => route.params, () => route.query, () => todoStore.todoItems], () => {
+  syncSwimlanes()
+}, { deep: true })
+
+const projectId = computed(() => (route.params.projectId as string | undefined) || (route.query.category as string | undefined))
 
 // Swimlane Data Structure
 interface Swimlane {
@@ -68,9 +72,17 @@ const pendingMove = ref<{
 const showImportModal = ref(false)
 
 const projectTitle = computed(() => {
-  if (!projectId.value) return t('common.allProjects')
-  if (projectId.value === '__none__') return t('tasks.categories.none')
-  return todoStore.projectsById.get(projectId.value || '')?.title || t('common.allProjects')
+  const activeFilter = route.query.filter as string | undefined
+  let title = ''
+
+  if (!projectId.value) title = t('common.allProjects')
+  else if (projectId.value === '__none__') title = t('tasks.categories.none')
+  else title = todoStore.projectsById.get(projectId.value || '')?.title || t('common.allProjects')
+
+  if (activeFilter === 'starred') {
+    title += ` (${t('tasks.filters.starred')})`
+  }
+  return title
 })
 
 const showFilterModal = ref(false)
@@ -420,9 +432,16 @@ function hexToRgb(hex: string) {
 
     <ImportModal :isOpen="showImportModal" @close="showImportModal = false" @import="showImportModal = false" />
 
-    <FilterModal :isOpen="showFilterModal" active-filter="all" :active-category="projectId || null"
-      @update:filter="() => { }" @update:category="(id) => router.replace(id ? `/board/${id}` : '/')"
-      @close="showFilterModal = false" />
+    <FilterModal :is-open="showFilterModal" :active-filter="(route.query.filter as string) || 'all'"
+      :active-category="projectId || null" @close="showFilterModal = false" @update:filter="f => {
+        const newQuery = { ...route.query };
+        if (f === 'all') delete newQuery.filter;
+        else newQuery.filter = f;
+        router.push({ query: newQuery });
+      }" @update:category="c => {
+        if (!c) router.push('/');
+        else router.push(`/board/${c}${route.query.filter ? '?filter=' + route.query.filter : ''}`);
+      }" />
   </div>
 </template>
 

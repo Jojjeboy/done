@@ -215,14 +215,13 @@ const saveChanges = async () => {
         }
       }
 
-      // Update initial state after save
-      initialState.value = currentTaskState.value
-
       // For embedded mode, we might want to stay here or notify parent
       if (!props.isEmbedded) {
         router.push(`/task/${newItem.id}`)
       }
     }
+    // Update initial state after save (moved here to cover both Edit and New)
+    initialState.value = currentTaskState.value
   } catch (error) {
     console.error('Failed to save:', error)
   } finally {
@@ -301,7 +300,8 @@ const handleConvertTask = async (targetTodoId: string) => {
 }
 
 const handleClose = () => {
-  if (hasUnsavedChanges.value) {
+  // Only show the confirmation modal for brand new tasks that have content
+  if (isNew.value && hasUnsavedChanges.value) {
     showDiscardConfirm.value = true
   } else {
     forceClose()

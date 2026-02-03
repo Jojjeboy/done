@@ -1,5 +1,6 @@
 {
   "common": {
+    "viewOptions": "Vyalternativ",
     "logout": "Logga ut",
     "save": "Spara",
     "cancel": "Avbryt",

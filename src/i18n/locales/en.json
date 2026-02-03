@@ -1,5 +1,6 @@
 {
   "common": {
+    "viewOptions": "View Options",
     "logout": "Logout",
     "save": "Save",
     "cancel": "Cancel",

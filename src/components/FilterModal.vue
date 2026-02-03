@@ -19,7 +19,7 @@ const todoStore = useTodoStore()
 const { t } = useI18n()
 
 // Filters config
-const filters = ['all', 'todo', 'in-progress', 'completed', 'starred']
+const filters = ['all', 'starred']
 
 const selectFilter = (filter: string) => {
     emit('update:filter', filter)
