@@ -113,6 +113,8 @@ function syncSwimlanes() {
 
   allTasks.forEach(task => {
     if (todoStore.searchQuery && !task.title.toLowerCase().includes(todoStore.searchQuery.toLowerCase())) return
+    const activeFilter = route.query.filter as string | undefined
+    if (activeFilter === 'starred' && task.priority !== 'high') return
     const pId = task.categoryId || '__none__'
     if (projectId.value && projectId.value !== pId) return
     const lane = laneMap.get(pId)
@@ -310,7 +312,7 @@ function hexToRgb(hex: string) {
                 <div class="lane-dot" :style="{ backgroundColor: lane.color || '#ccc' }"></div>
                 <h3>{{ lane.title }}</h3>
                 <span class="lane-count">{{ lane.pending.length + lane.inProgress.length + lane.completed.length
-                }}</span>
+                  }}</span>
               </div>
               <div class="lane-actions">
                 <button v-if="lane.projectId" class="pin-btn" :class="{ 'is-pinned': lane.isPinned }"

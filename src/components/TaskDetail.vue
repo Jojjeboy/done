@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { parseDateFromText, type DateParseResult } from '@/utils/dateParser'
 import type { Subtask } from '@/types/todo'
-import { X, Calendar, Flag, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft, Pin, ChevronRight, Layers } from 'lucide-vue-next'
+import { X, Calendar, Flag, Hash, CheckCircle, Circle, Trash2, ArrowLeft, Sparkles, ArrowRightLeft, Pin, ChevronRight, Layers, Star } from 'lucide-vue-next'
 import SubtaskList from '@/components/SubtaskList.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import ConvertTaskModal from '@/components/ConvertTaskModal.vue'
@@ -508,6 +508,14 @@ const metaItems = computed(() => {
               <span>{{ t('tasks.sticky') }}</span>
             </button>
 
+            <!-- Favorite Toggle (Button) -->
+            <button class="favorite-toggle-btn" :class="{ active: taskPriority === 'high' }"
+              @click="taskPriority = (taskPriority === 'high' ? 'medium' : 'high'); handleFieldChange()"
+              :title="t('tasks.filters.starred')">
+              <Star :size="14" :class="{ filled: taskPriority === 'high' }" />
+              <span>{{ t('tasks.filters.starred') }}</span>
+            </button>
+
             <!-- Subtask Process Toggle (Segmented Control) -->
             <div class="segmented-control">
               <div class="selection-bg" :class="{ 'pos-right': isSubtaskProcessEnabled }"></div>
@@ -548,7 +556,7 @@ const metaItems = computed(() => {
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userId === authStore.user?.uid ? currentUserName :
                 t('common.user')
-                }}</span>
+              }}</span>
               <span class="comment-time">{{ new Date(comment.createdAt).toLocaleString() }}</span>
               <button class="delete-comment-btn" @click="deleteComment(comment.id)"
                 v-if="comment.userId === authStore.user?.uid">
@@ -577,7 +585,7 @@ const metaItems = computed(() => {
 
       <div v-if="isNew" class="create-actions">
         <button class="btn-primary" @click="saveChanges" :disabled="!isValid">{{ t('modal.createTask')
-          }}</button>
+        }}</button>
       </div>
     </div>
 
@@ -1032,6 +1040,42 @@ const metaItems = computed(() => {
 
 .sticky-toggle-btn.active:hover {
   color: var(--color-primary);
+}
+
+.favorite-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-bg-lighter);
+  border: none;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+  min-height: 36px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.favorite-toggle-btn.active {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.dark .favorite-toggle-btn.active {
+  background: rgba(217, 119, 6, 0.2);
+  color: #fbbf24;
+}
+
+.favorite-toggle-btn .filled {
+  fill: currentColor;
+}
+
+.favorite-toggle-btn:hover {
+  filter: brightness(0.95);
 }
 
 /* Segmented Control */
