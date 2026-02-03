@@ -468,7 +468,7 @@ function hexToRgb(hex: string) {
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
-  overflow-y: auto;
+  overflow: auto;
 }
 
 @media (max-width: 768px) {
@@ -497,6 +497,8 @@ function hexToRgb(hex: string) {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  min-width: 100%;
+  width: fit-content;
 }
 
 .swimlane {

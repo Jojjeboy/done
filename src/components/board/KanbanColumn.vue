@@ -76,7 +76,7 @@ function onChange(event: any) {
   flex-direction: column;
   height: 100%;
   flex: 1;
-  min-width: 250px;
+  min-width: 220px;
   background: rgba(0, 0, 0, 0.02);
   border-radius: var(--radius-lg);
   padding: var(--spacing-sm);
