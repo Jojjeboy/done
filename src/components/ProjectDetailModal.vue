@@ -2,14 +2,14 @@
 import { ref, watch } from 'vue'
 import { useTodoStore, COLOR_PALETTE, DEFAULT_COLOR } from '@/stores/todo'
 import { useI18n } from 'vue-i18n'
-import { X, Check } from 'lucide-vue-next'
+import { X, Check, Trash2 } from 'lucide-vue-next'
 
 const props = defineProps<{
     isOpen: boolean
     projectId: string | null
 }>()
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'delete'])
 
 const todoStore = useTodoStore()
 const { t } = useI18n()
@@ -90,6 +90,13 @@ const handleSave = async () => {
     }
 }
 
+const handleDelete = () => {
+    if (props.projectId && confirm(t('modal.deleteProjectConfirm'))) {
+        todoStore.deleteProject(props.projectId)
+        emit('close')
+    }
+}
+
 const colors = COLOR_PALETTE
 </script>
 
@@ -153,6 +160,11 @@ const colors = COLOR_PALETTE
             </div>
 
             <div class="modal-footer">
+                <button v-if="projectId" class="btn btn-danger" @click="handleDelete">
+                    <Trash2 :size="16" />
+                    {{ t('common.delete') }}
+                </button>
+                <div class="footer-spacer"></div>
                 <button class="btn btn-secondary" @click="emit('close')">{{ t('common.cancel') }}</button>
                 <button class="btn btn-primary" @click="handleSave" :disabled="!title.trim() || isSaving">
                     {{ isSaving ? t('common.saving') : t('common.save') }}
@@ -327,8 +339,13 @@ const colors = COLOR_PALETTE
     padding: 16px 20px;
     border-top: 1px solid var(--color-border);
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     gap: 12px;
+}
+
+.footer-spacer {
+    flex: 1;
 }
 
 .btn {
@@ -357,5 +374,17 @@ const colors = COLOR_PALETTE
 .btn-primary:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
 }
 </style>

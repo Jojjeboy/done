@@ -6,9 +6,7 @@ import {
   Home,
   Settings,
   Plus,
-  Trash2,
   Edit2,
-  LayoutDashboard,
   Star,
   Pin,
   PinOff,
@@ -19,7 +17,6 @@ import { useI18n } from 'vue-i18n'
 import type { Project } from '@/types/todo'
 import ImportModal from '@/components/ImportModal.vue'
 import ProjectDetailModal from '@/components/ProjectDetailModal.vue'
-import ConfirmationModal from '@/components/ConfirmationModal.vue'
 
 const todoStore = useTodoStore()
 const router = useRouter()
@@ -30,8 +27,6 @@ const { t } = useI18n()
 const showImportModal = ref(false)
 const showProjectDetailModal = ref(false)
 const selectedProjectId = ref<string | null>(null)
-const showDeleteCategoryConfirm = ref(false)
-const categoryToDelete = ref<string | null>(null)
 const draggedCategoryIndex = ref<number | null>(null)
 const isCollapsed = ref(false)
 
@@ -87,19 +82,6 @@ const togglePin = async (project: Project) => {
   } catch (e) {
     console.error("Failed to toggle pin in sidebar", e)
   }
-}
-
-const deleteProject = (id: string) => {
-  categoryToDelete.value = id
-  showDeleteCategoryConfirm.value = true
-}
-
-const confirmDeleteCategory = async () => {
-  if (categoryToDelete.value) {
-    await todoStore.deleteProject(categoryToDelete.value)
-    categoryToDelete.value = null
-  }
-  showDeleteCategoryConfirm.value = false
 }
 
 // Drag and Drop
@@ -160,16 +142,11 @@ const toggleCollapse = () => {
       </button>
 
       <button class="nav-item" :class="{ active: route.query.filter === 'starred' }"
-        @click="router.push({ path: '/', query: { filter: 'starred' } })">
+        @click="router.push({ path: route.path, query: { ...route.query, filter: 'starred' } })">
         <Star :size="20" />
         <span>{{ t('tasks.filters.starred') }}</span>
       </button>
 
-      <button class="nav-item" :class="{ active: route.path === '/' || route.path.startsWith('/board') }"
-        @click="router.push('/')">
-        <LayoutDashboard :size="20" />
-        <span>{{ t('common.board') || 'Board' }}</span>
-      </button>
 
       <div class="projects-section">
         <div class="section-header">
@@ -189,7 +166,8 @@ const toggleCollapse = () => {
 
         <div v-for="(project, index) in sortedProjects" :key="project.id" class="project-item" draggable="true"
           @dragstart="handleDragStart(index)" @dragover="handleDragOver" @drop="handleDrop(index)"
-          :class="{ dragging: draggedCategoryIndex === index, 'is-pinned': project.isPinned }">
+          :class="{ dragging: draggedCategoryIndex === index, 'is-pinned': project.isPinned }"
+          :style="{ borderLeft: '3px solid ' + (project.color || '#ccc') }">
 
           <div class="project-link-row">
             <button class="nav-item project-link" :class="{ active: isCategoryActive(project.id) }"
@@ -220,9 +198,6 @@ const toggleCollapse = () => {
               <button @click.stop="openProjectModal(project.id)" class="action-btn">
                 <Edit2 :size="12" />
               </button>
-              <button @click.stop="deleteProject(project.id)" class="action-btn delete">
-                <Trash2 :size="12" />
-              </button>
             </div>
           </div>
         </div>
@@ -235,10 +210,6 @@ const toggleCollapse = () => {
         <span>{{ t('settings.title') }}</span>
       </button>
     </div>
-
-    <ConfirmationModal :isOpen="showDeleteCategoryConfirm" :title="t('modal.deleteProject')"
-      :message="t('modal.deleteProjectConfirm')" :confirmText="t('common.delete')" :cancelText="t('common.cancel')"
-      type="danger" @confirm="confirmDeleteCategory" @cancel="showDeleteCategoryConfirm = false" />
 
     <ImportModal :isOpen="showImportModal" @close="showImportModal = false" @import="showImportModal = false" />
 
@@ -390,15 +361,24 @@ const toggleCollapse = () => {
   transform: translateX(4px);
 }
 
+.project-link:hover {
+  background: transparent;
+  transform: none;
+}
+
+.project-link:hover .project-title {
+  font-weight: 600;
+}
+
 .nav-item.active {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
+  background: var(--color-border-light);
+  color: var(--color-text-primary);
   font-weight: 600;
 }
 
 .dark .nav-item.active {
-  background: rgba(99, 102, 241, 0.2);
-  color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-primary);
 }
 
 .sidebar-footer {
@@ -446,6 +426,7 @@ const toggleCollapse = () => {
 
 .project-item {
   cursor: grab;
+  padding-left: 6px;
 }
 
 .project-item:active {
@@ -502,12 +483,8 @@ const toggleCollapse = () => {
 .actions {
   display: flex;
   gap: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.nav-item:hover .actions {
   opacity: 1;
+  transition: opacity 0.2s;
 }
 
 .action-btn {
