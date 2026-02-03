@@ -155,6 +155,16 @@ const navigateToDetail = () => {
   height: var(--spacing-xs);
 }
 
+.priority-badge {
+  padding: 2px 3px;
+  font-size: 9px;
+  opacity: 0.75;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 .task-title {
   font-size: 0.95rem;
   font-weight: 500;
